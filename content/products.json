@@ -1,0 +1,11 @@
+[
+  {
+    "repo": "debasisr66/PennyExpenseManager",
+    "slug": "penny",
+    "name": "Penny",
+    "tagline": "Personal expense manager — simple, private, offline-first",
+    "category": "Productivity",
+    "featured": true,
+    "hidden": false
+  }
+]
