@@ -7,5 +7,15 @@
     "category": "Productivity",
     "featured": true,
     "hidden": false
+  },
+  {
+    "repo": "debasisr66/debasis-web",
+    "slug": "debasis-web",
+    "name": "Debasis Web",
+    "tagline": "Personal site — profile, writing and reading by Debasis Ray",
+    "category": "Information",
+    "url": "https://debasisr66.github.io/debasis-web/",
+    "featured": false,
+    "hidden": false
   }
 ]

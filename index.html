@@ -278,6 +278,7 @@ function renderProducts() {
   if (!list.length) { $('#grid').innerHTML = '<div class="empty" style="grid-column:1/-1">No products to show yet.</div>'; return; }
   $('#grid').innerHTML = list.map(p => {
     const l = p.live, lang = l && l.language;
+    const site = safeUrl(p.e.url);
     const dl = p.rel && safeUrl((p.rel.assets && p.rel.assets[0] && p.rel.assets[0].download_url) || p.rel.download_url);
     return `<article class="card${p.e.featured ? ' featured' : ''}">
       <div class="row">${p.e.category ? `<span class="tag">${esc(p.e.category)}</span>` : ''}${p.rel ? `<span class="tag ver mono">${esc(p.rel.tag)}</span>` : ''}</div>
@@ -289,8 +290,8 @@ function renderProducts() {
         ${l && l.pushed_at ? `<span>Updated ${esc(fmtDate(l.pushed_at))}</span>` : ''}
       </div>
       <div class="actions">
-        ${dl ? `<a class="primary" href="${esc(dl)}" rel="noopener">Download</a>` : ''}
-        <a href="${esc(safeUrl(p.url))}" rel="noopener">${dl ? 'Source' : 'View on GitHub'}</a>
+        ${dl ? `<a class="primary" href="${esc(dl)}" rel="noopener">Download</a>` : site ? `<a class="primary" href="${esc(site)}" rel="noopener">Visit site</a>` : ''}
+        <a href="${esc(safeUrl(p.url))}" rel="noopener">${dl || site ? 'Source' : 'View on GitHub'}</a>
       </div></article>`;
   }).join('');
   $('#syncnote').textContent = state.cache ? 'Live from GitHub' : '';
