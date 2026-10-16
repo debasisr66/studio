@@ -6,7 +6,8 @@
     "tagline": "Personal expense manager — simple, private, offline-first",
     "category": "Productivity",
     "featured": true,
-    "hidden": false
+    "hidden": false,
+    "url": "https://debasisr66.github.io/PennyExpenseManager/"
   },
   {
     "repo": "debasisr66/debasis-web",
