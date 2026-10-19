@@ -33,7 +33,7 @@ Date: 2026-10-19 · Environment: macOS, Node v25.2.1, Claude desktop browser pan
 | REQ-28 | TC-C05–C08, TC-S11, TC-W03 | ✅ |
 | REQ-29 | TC-R12–R16 | ✅ |
 | REQ-30 | TC-D03 | ✅ |
-| Live | §E smoke checks | ✅ |
+| Live | §E smoke checks, TC-M06 | ✅ |
 
 ## C. Test cases and results
 
@@ -139,7 +139,7 @@ Observations that were **not** defects: the scroll-spy highlight produced false 
 - The blocked-`sessionStorage` fallback in a real browser (covered by unit tests only).
 - The 30-minute idle lock (logic unchanged; timer not waited out).
 - Real screen reader (VoiceOver/NVDA) and a physical phone.
-- A real admin unlock and publish with the owner's real token on the deployed site (the owner must sign in again once after this release; TC-M06).
+- ~~A real admin unlock and publish on the deployed site~~ **Done (TC-M06):** commit `4729d06` "cms: update reading list", 2026-10-19 18:22 IST (11 minutes after the v1.3 merge): one file (`content/reads.json`), one line, a comment edited on an existing read; CI ran on it (admin commits use a personal token, so unlike the sync bot they do trigger CI) and passed; Pages rebuilt; the live file contains the edit.
 - The first *scheduled* health run (06:00 UTC on 2026-10-20).
 
 ---
