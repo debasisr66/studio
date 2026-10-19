@@ -14,7 +14,7 @@ Product studio hub for [@debasisr66](https://github.com/debasisr66): one site th
 - **Blog and Books:** editable in the browser through a small admin layer (⚙) that publishes straight to this repo.
 - **Stays current by itself:** a nightly sync, plus an instant sync when a product repo publishes a release.
 
-It is a plain static site: no build step, no npm, no frameworks. Hosted on GitHub Pages from `main`.
+It is a plain static site: no build step, no npm, no frameworks. Hosted on GitHub Pages from `main`. A read-only safety net (CI checks on every push and a daily health check) watches content, security settings and the sync.
 
 ## How it fits together
 
@@ -31,11 +31,13 @@ Data flows one way: product repos notify the hub, and the hub only reads them. D
 | `index.html` | Page markup and styles |
 | `js/app.js`, `js/reads-lib.js` | Site logic and admin layer; pure Reads helpers (unit-tested) |
 | `tests/` | Node unit tests (`node --test tests/*.test.js`) |
+| `scripts/validate-site.js`, `scripts/health-check.js` | CI validation and the daily health check |
 | `content/products.json` | Registry of which repos to show (edit this to add a product) |
 | `content/cache.json` | Live GitHub data, written by the sync workflow (do not edit) |
 | `content/blog.json`, `content/reads.json` | Blog and reading content, edited via the admin layer |
 | `scripts/sync-products.js` | Sync script (Node, no dependencies) |
 | `.github/workflows/sync.yml` | Nightly, on-dispatch and manual sync |
+| `.github/workflows/ci.yml`, `health.yml` | Tests and validation on every push; daily health check (read-only) |
 | `docs/` | Documentation and the notify workflow template |
 
 ## Add a product
@@ -52,7 +54,7 @@ Data flows one way: product repos notify the hub, and the hub only reads them. D
 
 - [Architecture](docs/ARCHITECTURE.md): how the hub works
 - [Learning guide](docs/LEARNING-GUIDE.md): step-by-step setup, commands, tokens and the rotation runbook
-- v1.1 set: [Impact](docs/impact.md) · [Plan](docs/plan.md) · [Design](docs/design.md) · [Tests and traceability](docs/test.md) · [Build commands](docs/build.md) · [Model use](docs/model-use.md)
+- Release set (v1.2): [Impact](docs/impact.md) · [Plan](docs/plan.md) · [Design](docs/design.md) · [Tests and traceability](docs/test.md) · [Build commands](docs/build.md) · [Model use](docs/model-use.md)
 
 ## License
 

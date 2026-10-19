@@ -148,3 +148,18 @@ test('pickAsset: no match returns null; regex characters in the pattern are lite
   assert.equal(L.pickAsset(a, 'a(p)p.zip'), null);
   assert.equal(L.pickAsset([{ name: 'x', download_url: 'u' }], '[')?.name, undefined);
 });
+
+test('formatDate: date-only strings are calendar dates, the same in every timezone', () => {
+  const { execFileSync } = require('node:child_process');
+  const probe = "console.log(require('./js/reads-lib.js').formatDate('2026-10-19'))";
+  for (const tz of ['UTC', 'America/Los_Angeles', 'Asia/Kolkata', 'Pacific/Kiritimati']) {
+    const out = execFileSync(process.execPath, ['-e', probe], { env: { ...process.env, TZ: tz }, cwd: require('node:path').resolve(__dirname, '..') }).toString().trim();
+    assert.equal(out, '19 Oct 2026', tz);
+  }
+});
+
+test('formatDate: invalid input gives an empty string; timestamps still format', () => {
+  assert.equal(L.formatDate('not a date'), '');
+  assert.equal(L.formatDate(undefined), '');
+  assert.match(L.formatDate('2026-10-19T12:00:00Z'), /^\d{1,2} Oct 2026$/);
+});

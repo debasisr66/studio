@@ -34,16 +34,16 @@ function readJson(file, fallback) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return fallback; }
 }
 
-async function fetchProduct(repo) {
-  const info = await gh(`/repos/${repo}`);
-  if (!info) throw new Error('repo not found or not public');
-  const rel = await gh(`/repos/${repo}/releases/latest`);
+/* Pure: turns GitHub API payloads into the cache shape. pushed_at is kept to the day on purpose:
+   every push to a product repo changes the exact timestamp, which used to rewrite cache.json
+   (and create a commit) several times a day. The page only ever shows the date. */
+function shapeProduct(info, rel) {
   const out = {
     description: info.description || '',
     stars: info.stargazers_count,
     language: info.language || '',
     topics: info.topics || [],
-    pushed_at: info.pushed_at,
+    pushed_at: (info.pushed_at || '').slice(0, 10),
     html_url: info.html_url,
     latest_release: null,
   };
@@ -62,11 +62,22 @@ async function fetchProduct(repo) {
   return out;
 }
 
+function hasChanged(prevProducts, nextProducts) {
+  return JSON.stringify(nextProducts) !== JSON.stringify(prevProducts);
+}
+
+async function fetchProduct(repo) {
+  const info = await gh(`/repos/${repo}`);
+  if (!info) throw new Error('repo not found or not public');
+  const rel = await gh(`/repos/${repo}/releases/latest`);
+  return shapeProduct(info, rel);
+}
+
 function setOutput(k, v) {
   if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `${k}=${v}\n`);
 }
 
-(async () => {
+async function main() {
   const registry = readJson(REGISTRY, null);
   if (!Array.isArray(registry)) {
     console.error('::error::content/products.json is missing or not an array; aborting without changes');
@@ -93,7 +104,7 @@ function setOutput(k, v) {
     }
   }
 
-  const changed = JSON.stringify(next) !== JSON.stringify(prevProducts);
+  const changed = hasChanged(prevProducts, next);
   if (!changed) {
     console.log('No changes; cache.json left untouched.');
     setOutput('changed', 'false');
@@ -112,8 +123,14 @@ function setOutput(k, v) {
   fs.writeFileSync(CACHE, text);
   console.log('Wrote content/cache.json');
   setOutput('changed', 'true');
-})().catch(e => {
-  console.error('::error::sync failed: ' + e.message);
-  setOutput('changed', 'false');
-  process.exit(1);
-});
+}
+
+module.exports = { shapeProduct, hasChanged };
+
+if (require.main === module) {
+  main().catch(e => {
+    console.error('::error::sync failed: ' + e.message);
+    setOutput('changed', 'false');
+    process.exit(1);
+  });
+}

@@ -1,4 +1,78 @@
-# Test Plan and Traceability — Studio v1.1
+# Test Plan and Traceability — Studio
+
+Releases: **v1.2 (in progress)** · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
+
+---
+
+# v1.2 — Guardrails
+
+Date: 2026-10-19 · Environment: macOS, Node v25.2.1 locally, Node 22 in CI; live checks against https://debasisr66.github.io/studio/
+
+## A. Requirements
+
+| ID | Requirement |
+|----|-------------|
+| REQ-16 | CI runs the unit tests and site validation on every push and pull request, read-only |
+| REQ-17 | The validator catches malformed JSON, unsafe URLs, duplicate repos, missing referenced files, inline scripts, a missing or loosened CSP, size-budget breaches and JS syntax errors |
+| REQ-18 | The health check detects a site outage and a cache that has drifted from the products' latest GitHub releases |
+| REQ-19 | A repeat push to a product repo on the same day does not change `cache.json` (no churn commits) |
+| REQ-20 | Calendar dates display as the same day in every timezone |
+| REQ-21 | Nothing breaks: `sync.yml` and `index.html` unchanged, sync dry run passes, live site unchanged |
+| REQ-22 | All artefacts updated and consistent |
+
+## B. Traceability matrix
+
+| Req | Test cases | Result |
+|-----|-----------|--------|
+| REQ-16 | TC-W01, TC-W02; **TC-W03** | ✅ YAML and permissions; ⏳ first run on GitHub (after merge) |
+| REQ-17 | TC-V01–V15, TC-V16 | ✅ |
+| REQ-18 | TC-H01–H05, TC-H06, TC-H07; **TC-H08** | ✅ local; ⏳ first scheduled run on GitHub (after merge) |
+| REQ-19 | TC-Y01–Y04, TC-Y05 | ✅ |
+| REQ-20 | TC-T01, TC-T02, TC-T03 | ✅ |
+| REQ-21 | TC-R06–R09 | ✅ |
+| REQ-22 | TC-D02 | ✅ |
+
+## C. Test cases and results
+
+**Unit tests: `node --test tests/*.test.js` — 45 of 45 pass** (21 reads/date/asset helpers, 15 validator, 4 sync, 5 health).
+
+| ID | What it checks | Result |
+|----|----------------|--------|
+| TC-V01–V15 | Validator unit tests (`tests/validate-site.test.js`): valid products, cache, blog, reads, index pass; each bad input is reported (bad repo, duplicate repo, `javascript:` URL, wrong types, bad release shape, bad dates, too many tags, long comment, duplicate id, loosened CSP, inline script, missing file, missing lang/title, size breach, syntax error); duplicate links and not-yet-cached products only warn | ✅ |
+| TC-V16 | Validator on the **real repo**: 0 errors, 0 warnings. On a **deliberately broken copy** (malformed `blog.json`, a `javascript:` read, an inline script): 3 errors reported, exit code 1 | ✅ |
+| TC-H01–H05 | `findDrift` (`tests/health.test.js`): matching tags and matching "no release" are clean; newer GitHub release, new release, and removed release are drift; hidden products ignored; unknown GitHub state skipped; product missing from cache is drift | ✅ |
+| TC-H06 | Health check against the live site: HEALTHY | ✅ |
+| TC-H07 | Negative runs: wrong site URL gives 7 problems, exit 1; cache altered to say v3.1 while GitHub has v3.2 gives exactly that drift, exit 1 | ✅ |
+| TC-Y01–Y04 | `shapeProduct` and `hasChanged` (`tests/sync.test.js`): field mapping; `pushed_at` stored as a date; **same-day second push is not a change**; next-day push, new star, new release, removed product are changes | ✅ |
+| TC-Y05 | Real local sync run twice: first migrates the cache format (only `synced_at` and `pushed_at` differ), second prints "No changes; cache.json left untouched." Dry run also reports no changes | ✅ |
+| TC-T01 | `formatDate('2026-10-19')` gives "19 Oct 2026" under TZ = UTC, America/Los_Angeles, Asia/Kolkata and Pacific/Kiritimati | ✅ |
+| TC-T02 | Invalid or missing input gives an empty string; full timestamps still format | ✅ |
+| TC-T03 | Before the fix, a Los Angeles viewer got "18 Oct 2026" for `2026-10-19` (demonstrated in the browser on the live site) | ✅ defect reproduced and fixed (DEF-06) |
+| TC-W01 | `ci.yml`, `health.yml` and `sync.yml` parse as valid YAML (Ruby) | ✅ |
+| TC-W02 | New workflows declare `permissions: contents: read` and use no secrets | ✅ |
+| TC-W03 | First `CI` run on GitHub after merge is green | ⏳ |
+| TC-H08 | First manual and first scheduled `Health check` run on GitHub is green | ⏳ |
+| TC-R06 | `git diff main -- .github/workflows/sync.yml` and `index.html` are empty | ✅ |
+| TC-R07 | Sync dry run passes | ✅ |
+| TC-R08 | Live site loads as before; protected content files other than `cache.json` unchanged | ✅ |
+| TC-R09 | Existing 16 v1.1 unit tests still pass | ✅ |
+| TC-D02 | Plan, impact, design, test, build, model-use, architecture, learning guide and README updated | ✅ |
+
+## D. Defects found during v1.2
+
+| ID | Defect | Found by | Fix |
+|----|--------|----------|-----|
+| DEF-06 | Date-only values (cache `pushed_at` after G4, blog dates, read dates) showed the previous day to visitors west of Greenwich | Reviewing the effect of G4 on the page, then reproduced in the browser | `formatDate` formats date-only strings in UTC |
+
+## E. Not run (stated plainly)
+
+- TC-W03 and TC-H08 need the code on `main`: GitHub runs the workflows only after merge.
+- GitHub's failure notification email was not triggered or inspected; whether it reaches the owner depends on the owner's notification settings.
+- The 60-day scheduled-workflow suspension (impact V5) cannot be tested short of waiting.
+
+---
+
+# v1.1 — HCI polish, branding, LinkedIn-style Reads (shipped)
 
 Date: 2026-10-19 · Environment: macOS, Node v25.2.1, Claude desktop browser pane (Chromium engine), served locally with `python3 -m http.server`.
 

@@ -1,0 +1,27 @@
+name: Health check
+
+# Daily, a few hours after the 03:00 UTC sync. Fails (red run, GitHub emails failed-workflow notifications)
+# when the live site is down or the cache has fallen behind the products' latest GitHub releases.
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check site and cache against GitHub
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/health-check.js
