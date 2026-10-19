@@ -10,6 +10,7 @@ Product studio hub for [@debasisr66](https://github.com/debasisr66): one site th
 
 - **Products:** a card grid built from public GitHub repos, showing description, language, stars, latest version and a download link.
 - **Updates:** a feed of the latest GitHub Releases, with notes and attached files.
+- **What's new:** the version is shown in the footer and a **What's new** button lists every release in plain language.
 - **Reads:** a curated reading list with a LinkedIn-style "Share a read…" composer (owner only), tag filters, search, and share buttons (LinkedIn, copy link, native share).
 - **Blog and Books:** editable in the browser through a small admin layer (⚙) that publishes straight to this repo.
 - **Stays current by itself:** a nightly sync, plus an instant sync when a product repo publishes a release.
@@ -28,13 +29,14 @@ Data flows one way: product repos notify the hub, and the hub only reads them. D
 
 | Path | Purpose |
 |------|---------|
-| `index.html` | Page markup and styles |
-| `js/app.js`, `js/reads-lib.js` | Site logic and admin layer; pure Reads helpers (unit-tested) |
+| `index.html`, `css/site.css` | Page markup and the stylesheet (strict CSP: no inline script or style) |
+| `js/app.js`, `js/reads-lib.js`, `js/token-store.js` | Site logic and admin layer; pure helpers (unit-tested); admin token storage |
 | `tests/` | Node unit tests (`node --test tests/*.test.js`) |
 | `scripts/validate-site.js`, `scripts/health-check.js` | CI validation and the daily health check |
 | `content/products.json` | Registry of which repos to show (edit this to add a product) |
 | `content/cache.json` | Live GitHub data, written by the sync workflow (do not edit) |
 | `content/blog.json`, `content/reads.json` | Blog and reading content, edited via the admin layer |
+| `content/changelog.json` | Release notes behind the footer version and What's new (edited by git) |
 | `scripts/sync-products.js` | Sync script (Node, no dependencies) |
 | `.github/workflows/sync.yml` | Nightly, on-dispatch and manual sync |
 | `.github/workflows/ci.yml`, `health.yml` | Tests and validation on every push; daily health check (read-only) |
@@ -54,7 +56,7 @@ Data flows one way: product repos notify the hub, and the hub only reads them. D
 
 - [Architecture](docs/ARCHITECTURE.md): how the hub works
 - [Learning guide](docs/LEARNING-GUIDE.md): step-by-step setup, commands, tokens and the rotation runbook
-- Release set (v1.2): [Impact](docs/impact.md) · [Plan](docs/plan.md) · [Design](docs/design.md) · [Tests and traceability](docs/test.md) · [Build commands](docs/build.md) · [Model use](docs/model-use.md)
+- Release set (v1.3): [Security](docs/security.md) · [Impact](docs/impact.md) · [Plan](docs/plan.md) · [Design](docs/design.md) · [Tests and traceability](docs/test.md) · [Build commands](docs/build.md) · [Model use](docs/model-use.md)
 
 ## License
 

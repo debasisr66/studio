@@ -1,6 +1,83 @@
 # Plan — Studio
 
-Status key: ✅ done · ⏳ pending · 🔒 needs owner · Releases: **v1.2 (shipped 2026-10-19, tag `v1.2`)**, v1.1 (shipped 2026-10-19, tag `v1.1`)
+Status key: ✅ done · ⏳ pending · 🔒 needs owner · Releases: **v1.3 (built and verified locally; awaiting merge approval)**, v1.2 (shipped, tag `v1.2`), v1.1 (shipped, tag `v1.1`)
+
+---
+
+# v1.3 — Safer admin session, version tracking, What's new
+
+Date: 2026-10-19 · Branch: `release/v1.3` · Rollback tag: `v1.2`
+
+## Why
+
+Improvement #2 from the v1.2 rating: the admin token lived in `localStorage` (survives indefinitely) and the CSP still needed `'unsafe-inline'` for styles. Two user-facing requests ride along: a **visible version** so users can tell what they are looking at, and a **What's new** button so they can understand what changed.
+
+## Method (agreed order)
+
+impact (done) → **plan (this document)** → design → build → test → security checks → update artefacts → owner approval → merge, deploy, tag.
+
+## Scope
+
+| # | Item |
+|---|------|
+| H1 | Admin token in `sessionStorage`; legacy `localStorage` token purged; in-memory fallback |
+| H2 | Strict CSP for styles: `css/site.css`, no inline `<style>` or `style=`; dynamic values set through script |
+| V1 | Version in the footer, from `content/changelog.json` |
+| V2 | What's new button, dialog and unseen-update dot |
+| V3 | `content/changelog.json` (backfilled for v1.0–v1.3 in plain language), validator rules, tests |
+| S1 | `docs/security.md`; all artefacts updated, including a v1.3 changelog entry |
+| H1b | Token logic extracted into `js/token-store.js` so the security-critical behavior (including blocked storage) is unit-tested; added during build |
+
+## Decisions (made without asking, easy to change)
+
+| Decision | Choice | Why |
+|----------|--------|-----|
+| Version scheme | Major.minor shown as `v1.3`, matching git tags | One number for users and for the repository |
+| Source of truth | `content/changelog.json`, newest first | One file drives the footer, the dialog and the dot; validated in CI |
+| Entry format | Title plus short plain-text bullets, no links, no markup | Safe by construction; readable by non-technical users |
+| Unseen indicator | Dot until the dialog is opened; shown for first-time visitors too | Discoverable; storage unavailable means no dot |
+| Token migration | Delete the old stored token; do not copy it into the new store | Copying would keep the weakness we are removing |
+| Editing the changelog | By git (not the admin screen) | Keeps release notes a deliberate act; avoids widening what the admin token can change |
+
+## Phases
+
+| Phase | Work | Gate | Status |
+|-------|------|------|--------|
+| 0 | Branch `release/v1.3` | Clean tree | ✅ |
+| 1 | Impact analysis | Reviewed | ✅ |
+| 2 | This plan | Reviewed | ✅ |
+| 3 | Design: What's new UX and flows, admin session, CSP before/after | Reviewed | ✅ (`design.md` §10) |
+| 4a | Baseline: copy of v1.2 for the visual comparison; changelog data; validator rules and tests (tests first) | Tests pass | ✅ 8 new validator tests; rules flagged all 5 real violations before the refactor |
+| 4b | CSP refactor: `css/site.css`, remove inline styles, script-applied dynamic styles | Computed-style diff clean; zero CSP violations | ✅ 24 cases, 0 differences; 0 violations |
+| 4c | Admin token in `sessionStorage`, legacy purge, memory fallback, unlock text | Storage tests pass | ✅ extracted to `js/token-store.js` (8 unit tests) + in-page checks |
+| 4d | What's new button, dialog, version, dot | Keyboard and screen-reader checks scripted | ✅ one accessibility defect found and fixed (DEF-07) |
+| 5 | Test: unit, visual diff, browser flows at 375/768/1280 in both themes, regression | All pass; results in `test.md` | ✅ 61 unit tests; 24-case visual matrix; regression clean |
+| 6 | Security checks: checklist in `security.md`, hostile inputs, storage, CSP, secrets scan | No open High findings | ✅ 15 checks pass; no High or Critical findings |
+| 7 | Update artefacts: plan, impact, design, test, build, model-use, security, architecture, learning guide, README, changelog | Consistent and cross-referenced | ✅ |
+| 8 | Owner approves; merge; push; CI, Pages and health green; tag `v1.3` | Live smoke checklist | ⏳ 🔒 |
+
+## Acceptance criteria
+
+- C1: After unlocking, the token exists in `sessionStorage` and **not** in `localStorage`; a token left in `localStorage` is removed on load; closing the tab forgets the token; with `sessionStorage` blocked the token works from memory and a reload locks.
+- C2: `index.html` has no inline `<style>` and no `style=` attribute; no script-generated markup contains `style=`; the CSP forbids `'unsafe-inline'` for **both** scripts and styles; zero violations in every flow.
+- C3: Computed styles of every element match v1.2 at 375, 768 and 1280 px in dark and light, except the intentionally added elements.
+- C4: The footer shows the version from the changelog; **What's new** opens a dialog with newest-first releases; the dot appears when the stored version differs and clears when the dialog opens.
+- C5: The dialog is keyboard operable, traps focus, restores focus, closes on Escape, and meets the contrast and target-size rules in `design.md`.
+- C6: A malformed or hostile changelog fails CI; hostile text renders as plain text.
+- C7: Nothing else changes: `sync.yml`, sync and health scripts, other content files, Penny and debasis-web are untouched; existing 45 tests still pass; sync dry run passes.
+- C8: Every artefact references v1.3 and agrees with the others.
+
+## Out of scope
+
+Editing release notes in the admin screen, per-user accounts, a backend, automatic version bumping, release-note links or images, analytics on who opened What's new.
+
+## Risks
+
+See `impact.md` (W1–W8). The most important: the CSS extraction (W1) is proven by a computed-style diff, and the CSP tightening (W3) is proven by zero-violation runs of every flow.
+
+## Honest limits to carry forward
+
+A token in a browser tab is still readable by script running on this origin; v1.3 shortens its life and removes the two CSP loopholes that would help an attacker, but cannot remove the risk on a static site. Pages cannot send response headers (no `frame-ancestors`, no HSTS control).
 
 ---
 

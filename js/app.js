@@ -1,6 +1,7 @@
 'use strict';
 const OWNER = 'debasisr66', HUB = 'studio', BRANCH = 'main';
 const PAT_KEY = 'studio-admin-pat';
+const SEEN_KEY = 'studio-seen-version';
 const IDLE_MS = 30 * 60 * 1000;
 const RL = window.ReadsLib;
 const LANG = {JavaScript:'#F1E05A',TypeScript:'#3178C6',Swift:'#F05138',Python:'#3572A5',Kotlin:'#A97BFF',Java:'#B07219',Go:'#00ADD8',Rust:'#DEA584',HTML:'#E34C26',CSS:'#563D7C',Dart:'#00B4AB','C#':'#178600',Ruby:'#701516',Shell:'#89E051'};
@@ -13,8 +14,20 @@ const fmtSize = n => n > 1048576 ? (n/1048576).toFixed(1)+' MB' : Math.max(1, Ma
 const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k,v) => { try { localStorage.setItem(k,v); } catch {} };
 const lsDel = k => { try { localStorage.removeItem(k); } catch {} };
+
+/* Admin token: sessionStorage (this tab only, forgotten when it closes), memory-only if the browser blocks it.
+   See js/token-store.js. Earlier versions kept the token in localStorage; it is deleted here, deliberately not migrated. */
+const tokenStore = window.TokenStore.create(() => window.sessionStorage, PAT_KEY);
+window.TokenStore.purge(() => window.localStorage, PAT_KEY);
 const hue = s => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
 const NEWTAB = '<span class="sr"> (opens in a new tab)</span>';
+
+/* The CSP forbids style attributes in markup, so the two dynamic values (avatar hue, language dot colour)
+   travel as data attributes and are applied through the CSSOM, which the CSP allows. */
+function paint(root = document) {
+  root.querySelectorAll('[data-h]').forEach(e => e.style.setProperty('--h', e.dataset.h));
+  root.querySelectorAll('[data-bg]').forEach(e => e.style.setProperty('background', e.dataset.bg));
+}
 
 /* polite announcement for screen readers and sighted users */
 let statusTimer;
@@ -45,7 +58,7 @@ function md(text) {
 }
 
 /* ---------- state ---------- */
-const state = { registry: [], cache: null, blog: {posts: []}, reads: {books: [], articles: []}, dirty: {blog:false, reads:false}, filter: {tag:'', q:''}, editing: -1 };
+const state = { changelog: null, registry: [], cache: null, blog: {posts: []}, reads: {books: [], articles: []}, dirty: {blog:false, reads:false}, filter: {tag:'', q:''}, editing: -1 };
 
 async function loadJson(path) {
   const r = await fetch(path + '?t=' + Date.now(), {cache:'no-store'});
@@ -55,16 +68,21 @@ async function loadJson(path) {
 
 async function boot() {
   $('#yr').textContent = new Date().getFullYear();
-  const [reg, cache, blog, reads] = await Promise.allSettled([
+  const [reg, cache, blog, reads, changelog] = await Promise.allSettled([
     loadJson('content/products.json'), loadJson('content/cache.json'),
-    loadJson('content/blog.json'), loadJson('content/reads.json')]);
+    loadJson('content/blog.json'), loadJson('content/reads.json'), loadJson('content/changelog.json')]);
   if (reg.status === 'fulfilled' && Array.isArray(reg.value)) state.registry = reg.value;
   if (cache.status === 'fulfilled' && cache.value && typeof cache.value.products === 'object') state.cache = cache.value;
   if (blog.status === 'fulfilled' && Array.isArray(blog.value.posts)) state.blog = blog.value;
   if (reads.status === 'fulfilled') state.reads = { books: Array.isArray(reads.value.books) ? reads.value.books : [], articles: Array.isArray(reads.value.articles) ? reads.value.articles : [] };
+  if (changelog.status === 'fulfilled' && changelog.value && Array.isArray(changelog.value.releases)) {
+    // tolerate bad entries at runtime (CI rejects them before they ship): keep only well-formed releases
+    state.changelog = changelog.value.releases.filter(r => r && typeof r.version === 'string' && typeof r.title === 'string' && Array.isArray(r.items));
+    if (!state.changelog.length) state.changelog = null;
+  }
   $('#grid').removeAttribute('aria-busy');
   renderAll();
-  if (lsGet(PAT_KEY)) enableAdmin();
+  if (tokenStore.get()) enableAdmin();
 }
 
 /* ---------- render: products, updates, blog ---------- */
@@ -85,7 +103,7 @@ function renderProducts() {
   const notice = $('#notice');
   notice.innerHTML = '';
   if (!state.cache && list.length) notice.innerHTML = '<div class="notice" role="status">Live data is unavailable right now — showing basic product info.</div>';
-  if (!list.length) { $('#grid').innerHTML = '<div class="empty" style="grid-column:1/-1">No products to show yet.</div>'; return; }
+  if (!list.length) { $('#grid').innerHTML = '<div class="empty grid-full">No products to show yet.</div>'; return; }
   $('#grid').innerHTML = list.map(p => {
     const l = p.live, lang = l && l.language;
     const site = safeUrl(p.e.url);
@@ -97,7 +115,7 @@ function renderProducts() {
       <h3>${esc(p.name)}</h3>
       <p>${esc(p.tagline)}</p>
       <div class="meta">
-        ${lang ? `<span><i class="dot" style="background:${LANG[lang] || 'var(--muted)'}"></i>${esc(lang)}</span>` : ''}
+        ${lang ? `<span><i class="dot" data-bg="${esc(LANG[lang] || 'var(--muted)')}"></i>${esc(lang)}</span>` : ''}
         ${l ? `<span><span aria-hidden="true">★</span> ${Number(l.stars) || 0}<span class="sr"> stars</span></span>` : ''}
         ${l && l.pushed_at ? `<span>Updated ${esc(fmtDate(l.pushed_at))}</span>` : ''}
       </div>
@@ -107,6 +125,7 @@ function renderProducts() {
         <a href="${esc(safeUrl(p.url))}" rel="noopener noreferrer" target="_blank" aria-label="${esc(p.name)} source code (opens in a new tab)">Source</a>
       </div></article>`;
   }).join('');
+  paint($('#grid'));
   $('#syncnote').textContent = state.cache ? 'Live from GitHub' : '';
   $('#synced').textContent = state.cache && state.cache.synced_at ? fmtDate(state.cache.synced_at) : 'unavailable';
 }
@@ -128,7 +147,7 @@ function renderUpdates() {
       <div class="row"><span class="tag ver mono">${esc(p.rel.tag)}</span><span class="when">${esc(fmtDate(p.rel.published_at))}</span></div>
       <h3>${esc(p.name)} — ${esc(p.rel.name)}</h3>
       ${notesHtml(p.rel.body)}
-      <div class="row" style="margin-top:10px">${(p.rel.assets || []).map(a => safeUrl(a.download_url) ? `<a class="tag mono" href="${esc(safeUrl(a.download_url))}" rel="noopener noreferrer">⬇ ${esc(a.name)} · ${esc(fmtSize(a.size))}</a>` : '').join('')}
+      <div class="row mt10">${(p.rel.assets || []).map(a => safeUrl(a.download_url) ? `<a class="tag mono" href="${esc(safeUrl(a.download_url))}" rel="noopener noreferrer">⬇ ${esc(a.name)} · ${esc(fmtSize(a.size))}</a>` : '').join('')}
       <a class="more" href="${esc(safeUrl(p.rel.download_url))}" rel="noopener noreferrer" target="_blank">Release notes →${NEWTAB}</a></div>
     </article>`).join('') : '<div class="empty">No releases published yet. Release notes will appear here automatically.</div>';
 }
@@ -151,7 +170,7 @@ function readCard(entry, index, preview) {
   const share = !preview && url ? RL.shareLinks(url) : null;
   const title = v.title ? esc(v.title) : '<em>Untitled</em>';
   return `<article class="item read"${preview ? ' aria-hidden="true"' : ''}>${preview ? '' : tools('article', index, 'read ' + v.title)}
-    <div class="read-head"><span class="avatar" aria-hidden="true" style="--h:${hue(dom || v.title)}">${esc((dom || v.title || '?').charAt(0))}</span>
+    <div class="read-head"><span class="avatar" aria-hidden="true" data-h="${hue(dom || v.title)}">${esc((dom || v.title || '?').charAt(0))}</span>
       <div>${url && !preview ? `<a class="read-title" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${title}${NEWTAB}</a>` : `<span class="read-title">${title}</span>`}
       <div class="when">${meta}</div></div></div>
     ${v.comment ? `<p class="read-comment">${esc(v.comment)}</p>` : ''}
@@ -179,13 +198,45 @@ function renderReads() {
   $('#articlesFeed').innerHTML = rows.length ? rows.map(x => readCard(x.e, x.i, false)).join('')
     : state.reads.articles.length ? '<div class="empty">No reads match. <button type="button" class="chip" data-filter="">Clear filters</button></div>'
     : '<div class="empty">Nothing here yet. Check back soon.</div>';
+  paint($('#articlesFeed'));
 
   const b = state.reads.books;
   $('#booksFeed').innerHTML = b.length ? b.map((x, i) => `
     <article class="item">${tools('book', i, 'book ' + (x.title || ''))}<h3>${esc(x.title)}</h3><div class="when">${esc(x.author)}${x.year ? ' · ' + esc(x.year) : ''}</div>${x.note ? `<div class="body">${esc(x.note)}</div>` : ''}</article>`).join('') : '<div class="empty">Nothing here yet.</div>';
 }
 
-function renderAll() { renderProducts(); renderUpdates(); renderBlog(); renderReads(); }
+function renderAll() { renderProducts(); renderUpdates(); renderBlog(); renderReads(); renderVersion(); }
+
+/* ---------- version + What's new ---------- */
+const storageOk = (() => { try { localStorage.setItem('__probe', '1'); localStorage.removeItem('__probe'); return true; } catch { return false; } })();
+const latestRelease = () => (state.changelog && state.changelog[0]) || null;
+const isUnseen = () => !!latestRelease() && storageOk && lsGet(SEEN_KEY) !== latestRelease().version;
+
+function renderVersion() {
+  const r = latestRelease();
+  ['#whatsNewBtn', '#versionBtn'].forEach(sel => { $(sel).hidden = !r; });
+  if (!r) return;
+  $('#versionBtn').textContent = 'Studio v' + r.version;
+  $('#versionBtn').setAttribute('aria-label', 'Studio version ' + r.version + ', open What\'s new');
+  const unseen = isUnseen();
+  $('#wnDot').hidden = !unseen;
+  $('#whatsNewBtn').setAttribute('aria-label', unseen ? "What's new, new updates available" : "What's new");
+}
+
+function openWhatsNew() {
+  const list = state.changelog; if (!list) return;
+  modal.open(`<h3 id="modalTitle" tabindex="-1">What's new in Studio</h3>
+    <ol class="releases">${list.map((r, i) => `<li class="rel">
+      <div class="row"><span class="tag ver mono">v${esc(r.version)}</span>${i === 0 ? '<span class="tag">Latest</span>' : ''}<span class="when">${esc(fmtDate(r.date))}</span></div>
+      <h4>${esc(r.title)}</h4>
+      <ul>${r.items.map(t => `<li>${esc(t)}</li>`).join('')}</ul></li>`).join('')}</ol>
+    <div class="btns"><button type="button" class="cta" id="mc">Close</button></div>`, '#modalTitle');
+  $('#mc').onclick = modal.close;
+  if (storageOk) lsSet(SEEN_KEY, list[0].version);
+  renderVersion();
+}
+$('#whatsNewBtn').onclick = openWhatsNew;
+$('#versionBtn').onclick = openWhatsNew;
 
 /* ---------- theme + nav highlight ---------- */
 function setTheme(t) {
@@ -203,7 +254,7 @@ document.querySelectorAll('section.block').forEach(s => io.observe(s));
 
 /* ---------- admin: GitHub contents API ---------- */
 const ghApi = (path, opts = {}) => fetch('https://api.github.com' + path, {...opts, headers: {
-  Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + lsGet(PAT_KEY), ...(opts.headers || {})}});
+  Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + tokenStore.get(), ...(opts.headers || {})}});
 const b64enc = s => { const b = new TextEncoder().encode(s); let bin = ''; b.forEach(x => bin += String.fromCharCode(x)); return btoa(bin); };
 const b64dec = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g, '')), c => c.charCodeAt(0)));
 
@@ -230,7 +281,7 @@ const armIdle = () => { clearTimeout(idleTimer); if (document.body.classList.con
 ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, armIdle, {passive: true}));
 
 function enableAdmin() { document.body.classList.add('admin'); updateDirty(); armIdle(); }
-function lock() { lsDel(PAT_KEY); document.body.classList.remove('admin'); clearTimeout(idleTimer); closeComposer(); }
+function lock() { tokenStore.del(); document.body.classList.remove('admin'); clearTimeout(idleTimer); closeComposer(); }
 function updateDirty() {
   const d = Object.entries(state.dirty).filter(([,v]) => v).map(([k]) => k + '.json');
   $('#dirtyinfo').innerHTML = d.length ? `<span class="dirty">Unpublished: ${d.join(', ')}</span>` : 'No pending changes';
@@ -240,10 +291,10 @@ function updateDirty() {
 /* ---------- modal: focus trap, restore focus, Escape ---------- */
 let lastFocus = null;
 const modal = {
-  open(html) {
+  open(html, focusSel) {
     lastFocus = document.activeElement;
     $('#modal').innerHTML = html; $('#modalBg').classList.add('open');
-    const f = $('#modal input,#modal textarea,#modal button'); f && f.focus();
+    const f = $(focusSel || '#modal input,#modal textarea,#modal button'); f && f.focus();
   },
   close() {
     $('#modalBg').classList.remove('open'); $('#modal').innerHTML = '';
@@ -270,7 +321,7 @@ document.addEventListener('keydown', e => {
 $('#gear').onclick = () => {
   if (document.body.classList.contains('admin')) { say('Admin mode is on. Use "Lock & sign out" at the bottom to leave it.'); return; }
   modal.open(`<h3 id="modalTitle">Admin access</h3>
-    <p style="color:var(--muted);font-size:14px;margin:0">Paste a GitHub personal access token with write access to <span class="mono">${OWNER}/${HUB}</span>. It stays in this browser only.</p>
+    <p class="muted-sm">Paste a GitHub personal access token with write access to <span class="mono">${OWNER}/${HUB}</span>. It stays in this tab only and is forgotten when you close it.</p>
     <label for="pat">Token</label><input id="pat" type="password" autocomplete="off" placeholder="github_pat_…">
     <div class="btns"><button type="button" class="cta ghost" id="mc">Cancel</button><button type="button" class="cta" id="mu">Unlock</button></div>`);
   $('#mc').onclick = modal.close;
@@ -282,7 +333,7 @@ $('#gear').onclick = () => {
       if (!r.ok) throw new Error('GitHub rejected the token (' + r.status + '). Check it has not expired.');
       const u = await r.json();
       if (u.login !== OWNER) throw new Error('This token belongs to "' + u.login + '", but admin is limited to "' + OWNER + '".');
-      lsSet(PAT_KEY, pat); modal.close(); enableAdmin(); say('Admin unlocked.');
+      tokenStore.set(pat); modal.close(); enableAdmin(); say('Admin unlocked.');
     } catch (e) { modal.err(e.message); $('#mu').disabled = false; }
   };
   $('#mu').onclick = go;
@@ -332,6 +383,7 @@ function updatePreview() {
   const v = composerValue(), n = RL.normalizeUrl(v.url);
   $('#cf-preview').innerHTML = (n || v.title) ? readCard({url: n || '', title: v.title.trim(), comment: v.comment.trim(), kind: v.kind, tags: RL.parseTags(v.tags), added: new Date().toISOString().slice(0, 10)}, -1, true)
     : '<div class="empty">Your post will appear here as you type.</div>';
+  paint($('#cf-preview'));
 }
 
 $('#composerOpen').onclick = () => openComposer(-1);
@@ -430,7 +482,7 @@ $('#publishBtn').onclick = async () => {
     catch (e) { out.push(path + ': ' + e.message); }
   }
   updateDirty();
-  modal.open('<h3 id="modalTitle">Publish result</h3><pre class="mono" style="white-space:pre-wrap;font-size:13px;color:var(--muted)">' + esc(out.join('\n')) + '</pre><p style="font-size:13px;color:var(--muted)">GitHub Pages usually reflects changes within a minute or two.</p><div class="btns"><button type="button" class="cta" id="mc">Close</button></div>');
+  modal.open('<h3 id="modalTitle">Publish result</h3><pre class="mono pre-result">' + esc(out.join('\n')) + '</pre><p class="muted-xs">GitHub Pages usually reflects changes within a minute or two.</p><div class="btns"><button type="button" class="cta" id="mc">Close</button></div>');
   $('#mc').onclick = modal.close;
 };
 window.addEventListener('beforeunload', e => { if (state.dirty.blog || state.dirty.reads) { e.preventDefault(); e.returnValue = ''; } });

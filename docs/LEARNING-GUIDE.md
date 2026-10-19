@@ -181,7 +181,7 @@ A bare tag or a pre-release will **not** show: only a published GitHub Release c
 ## Step 11 — Using the admin CMS
 
 1. Create the admin token (Step 9, name e.g. `studio-admin`).
-2. Open the site → click ⚙ → paste the token → Unlock (it is validated against `GET /user`).
+2. Open the site → click ⚙ → paste the token → Unlock (it is validated against `GET /user`). **Since v1.3 the token lives in that tab only**: it is forgotten when you close the tab, in a new tab you unlock again, and the old stored token from earlier versions was deleted, so you unlock once after upgrading.
 3. Add/edit/delete posts, articles, books. Changes stay local until **Publish changes**.
 4. Publish commits one file at a time. Wait for Pages, then refresh. **Lock & sign out** removes the token from the browser.
 
@@ -257,12 +257,34 @@ gh run list --status failure --limit 10     # what is red right now?
 | `… exceeds the …-byte budget` | A file grew a lot | Check what was added; raise the budget in `validate-site.js` only on purpose |
 | `cache says v3.1, GitHub says v3.2` | The hub missed a release | `gh workflow run sync.yml`; if it recurs, check the dispatch token (Step 9 runbook) |
 | `https://…/js/app.js returned 404` | Pages is down or a deploy is incomplete | `gh run list --limit 3`, wait for the Pages build |
+| `index.html: style= attribute found` or `generates a style attribute` | The strict CSP forbids inline styles | Use a class in `css/site.css`, or `data-*` plus `element.style.setProperty` |
+| `changelog.json[0]: items must be plain text (no markup)` | Release notes contain `<` or `>` | Rewrite as plain text |
+| Admin asks for the token again | The token lives in the tab only | Expected: unlock again after closing the tab, in a new tab, or after 30 minutes idle |
 
 **Two things that surprise people**
 1. The sync bot's commits do not start CI (GitHub does not run workflows from `GITHUB_TOKEN` pushes). The daily health check covers them.
 2. GitHub **disables scheduled workflows after 60 days without repository activity**. Check with `gh workflow list --all`; a stopped one shows `disabled_inactivity`. Re-enable with `gh workflow enable sync.yml`. A monthly `gh workflow run sync.yml` keeps everything alive.
 
 **Why the cache stopped changing all day.** The sync used to store Penny's exact last-push time, so every push rewrote `cache.json` and made a commit. It now stores the date only, so a second push on the same day changes nothing. Dates such as `2026-10-19` are shown as that calendar day in every timezone.
+
+## Step 13 — Releasing a version with release notes (v1.3 onward)
+
+Visitors see the version in the footer and a **What's new** button. Both come from `content/changelog.json`.
+
+1. Edit `content/changelog.json`: add a release **at the top**.
+   ```json
+   { "version": "1.4", "date": "2026-11-02", "title": "Short title",
+     "items": ["Plain sentence a visitor would understand.", "Another one."] }
+   ```
+   Rules (CI enforces them): version like `1.4` or `1.4.1`, newest first, no duplicates; date `YYYY-MM-DD`; title up to 80 characters; 1–6 items of up to 160 characters; **plain text only, no links or markup**.
+2. `node scripts/validate-site.js` to check it locally, then follow the release checklist in `build.md` §12.
+3. Tag with the same number: `git tag v1.4 && git push origin refs/tags/v1.4`.
+
+If you forget step 1 nothing breaks; visitors just keep seeing the previous version.
+
+**Why the strict style rules matter.** The page's CSP no longer allows any inline style. If you add a `style="…"` attribute or a `<style>` block, CI fails with a message telling you to use a class in `css/site.css`. For a value that must be computed at runtime, put it in a `data-` attribute and apply it with `element.style.setProperty(...)` (see `paint()` in `js/app.js`).
+
+**A refactor needs proof, not eyeballing.** For the v1.3 stylesheet move, a harness compared computed styles of every element against the previous release at three widths in two themes (see `build.md` §13). It reported 0 differences for the move itself, and the test was only trusted after it was shown to catch a deliberate 1 px change.
 
 ## Command cheat sheet
 
