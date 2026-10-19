@@ -1,6 +1,75 @@
 # Impact Analysis — Studio
 
-Releases: **v1.2 (shipped 2026-10-19)** · v1.1 (shipped 2026-10-19)
+Releases: **v1.3 (in progress, branch `release/v1.3`)** · v1.2 (shipped) · v1.1 (shipped)
+
+---
+
+# v1.3 — Safer admin session, version tracking, What's new
+
+Date: 2026-10-19 · Rollback tag: `v1.2` · Step 1 of 6 in the agreed order: **impact → plan → design → build → test → security checks → update**
+
+## 1. Change summary
+
+| # | Change | Type |
+|---|--------|------|
+| H1 | Admin token moves from `localStorage` to `sessionStorage`: it is forgotten when the tab closes. Any token left in `localStorage` by earlier versions is deleted on load. If the browser blocks `sessionStorage`, the token lives in memory only | Security hardening |
+| H2 | Fully strict CSP: the stylesheet moves from an inline `<style>` to `css/site.css`, every inline `style=` attribute is replaced by classes, so `style-src` no longer needs `'unsafe-inline'` | Security hardening (refactor) |
+| V1 | The current version is shown in the footer, read from one source (`content/changelog.json`) | Feature |
+| V2 | A **What's new** button (header) and the footer version open a dialog listing releases in plain language; a dot marks unseen updates | Feature |
+| V3 | `content/changelog.json` plus validator rules and unit tests | Data + guardrail |
+| S1 | New `docs/security.md` (threat model and review log); all artefacts updated | Docs |
+
+## 2. What is touched and what is not
+
+| Component | Touched? | Notes |
+|-----------|----------|-------|
+| `index.html` | **Yes** (largest change since v1.1) | CSS removed from the file, inline styles removed, What's new button, footer version |
+| `css/site.css` | New | The stylesheet, moved verbatim except for classes replacing inline styles |
+| `js/app.js` | Yes | Token store, What's new, dynamic styling through script instead of attributes |
+| `js/reads-lib.js` | Possibly | Only if a pure helper is needed (version comparison) |
+| `content/changelog.json` | New | Owner-maintained release notes |
+| `scripts/validate-site.js` + tests | Yes | New rules: strict style CSP, no inline `<style>` or `style=`, changelog schema, stylesheet in the size budget |
+| `.github/workflows/*` | **No** | CI runs the new rules automatically |
+| `scripts/sync-products.js`, `health-check.js` | No | |
+| `content/products.json`, `blog.json`, `reads.json`, `cache.json` | No | |
+| Penny and debasis-web repos, notify workflow, tokens, secrets | No | |
+
+## 3. Data and storage compatibility
+
+| Item | Before | After |
+|------|--------|-------|
+| Admin token | `localStorage['studio-admin-pat']` | `sessionStorage['studio-admin-pat']` (per tab); legacy `localStorage` copy deleted on load |
+| Last version seen | n/a | `localStorage['studio-seen-version']` (not secret; a per-viewer convenience) |
+| Theme | `localStorage['studio-theme']` | unchanged |
+| Content JSON schemas | | unchanged; `changelog.json` is new |
+
+## 4. Blast radius
+
+- **Visitors:** a new header button and a footer version; the page must look otherwise identical. The CSS refactor is the one change that can alter appearance for everyone, so it is proven by an element-by-element computed-style comparison against v1.2 at three widths in both themes (see test plan), not by eye alone.
+- **Owner:** must re-enter the admin token once after this release (the old stored token is deliberately discarded), and again in every new tab or after closing the tab. This is the intended behavior change.
+- **Other apps and pipeline:** none. Sync, health, notify, Penny and debasis-web are untouched.
+- **If the stylesheet fails to load:** the page would show unstyled content (it used to be inline). Same host and same deploy as `index.html`, so a partial deploy is the only realistic cause; the health check fetches the key files daily.
+
+## 5. Risk register (v1.3)
+
+| ID | Risk | Likelihood | Impact | Mitigation | Status |
+|----|------|-----------|--------|-----------|--------|
+| W1 | CSS extraction changes how something looks | Medium | Medium | Computed-style diff against v1.2 (3 widths × 2 themes) plus screenshots; fix until only intentional differences remain | Open until tested |
+| W2 | A dynamic value (avatar colour, language dot) breaks because inline styles are blocked | Medium | Low | Applied through script (allowed by CSP) from data attributes; checked for zero CSP violations across all flows | Open until tested |
+| W3 | Stricter CSP blocks something unexpected | Low | High | Zero-violation checks on every flow, including admin flows with a stubbed GitHub response | Open until tested |
+| W4 | Owner is surprised to be signed out | High | Low | Stated in the release notes, the unlock dialog and the learning guide | Accepted |
+| W5 | Token in a tab is still readable by script that runs on this origin | Low | High | Unchanged by design (static site, no backend). Strict CSP with no inline script or style is the mitigation; residual risk documented in `security.md` | Accepted |
+| W6 | Changelog forgotten at release time | Medium | Low | Release checklist step in `build.md`; validator checks the file's shape, not freshness | Accepted |
+| W7 | "New" dot becomes noise | Low | Low | Cleared once the dialog is opened; no dot if storage is unavailable | Mitigated by design |
+| W8 | A changelog entry carries markup or a hostile link | Low | Medium | Text only, always escaped; no links allowed in entries; validator enforces length and type | Mitigated |
+
+## 6. Rollback
+
+```bash
+git revert -m 1 <v1.3-merge-commit> && git push
+```
+
+No data migration. The v1.2 page cannot read `sessionStorage` tokens, so after a rollback the owner simply unlocks again.
 
 ---
 

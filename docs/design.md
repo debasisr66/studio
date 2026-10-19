@@ -1,6 +1,6 @@
 # Design — Studio
 
-Releases: v1.2 (operational flows, §9) · v1.1 (UI). **v1.2 changes no UI**: `index.html` is byte-identical to v1.1.
+Releases: v1.3 (What's new, admin session, strict CSP: §10) · v1.2 (operational flows: §9; no UI change) · v1.1 (UI: §1–8).
 
 UI sections, HCI best practices applied, and the flows behind the Reads feature. Diagrams are Mermaid and render on GitHub.
 
@@ -289,3 +289,121 @@ Before: the exact timestamp changed on every push, so each push produced a commi
 ### 9.5 Dates
 
 Date-only values (`2026-10-19`) are calendar dates and are formatted in UTC; full timestamps keep local-time formatting. A visitor in Los Angeles now sees "19 Oct 2026", not "18 Oct 2026".
+
+## 10. v1.3 design — What's new, admin session, strict CSP
+
+### 10.1 What's new
+
+**Purpose:** let a visitor tell which version they are looking at and understand, in plain language, what changed and when.
+
+**Placement**
+
+| Where | Element | Behavior |
+|-------|---------|----------|
+| Header, left of the theme button | **What's new** button (text on desktop; a ✦ icon with the same accessible name on phones) with a small dot when there is an update the visitor has not seen | Opens the dialog |
+| Footer | Version label `Studio v1.3`, a button | Opens the same dialog |
+| Dialog | "What's new in Studio": releases newest first; the latest carries a **Latest** badge | Close button, Escape, click outside |
+
+**Release entry:** version badge (`v1.3`), date, a short title, then 2–5 plain-text bullets. No links, no markup, no jargon ("tighter security rules" rather than "CSP"). The dialog scrolls when long; the existing dialog rules (focus trap, focus restore, Escape) apply.
+
+**States**
+
+```mermaid
+stateDiagram-v2
+  [*] --> NoData: changelog.json missing or invalid
+  [*] --> Seen: stored version equals latest
+  [*] --> Unseen: stored version differs or is missing
+  NoData --> NoData: button and version hidden, page otherwise normal
+  Unseen --> Seen: open What's new (store latest version)
+  Seen --> Unseen: a new release is published
+  Seen --> Seen: open What's new again (no change)
+```
+
+If the browser blocks `localStorage`, the visitor cannot be tracked, so no dot is shown (the dialog still works).
+
+**Flow**
+
+```mermaid
+flowchart TD
+  A[Page loads] --> B[Fetch content/changelog.json]
+  B -- fails or invalid --> C[Hide button and version]
+  B -- ok --> D[Footer shows latest version]
+  D --> E{Stored version equals latest?}
+  E -- yes --> F[Button without dot]
+  E -- no --> G[Button with dot and screen-reader text: new updates]
+  F --> H[Visitor opens What's new]
+  G --> H
+  H --> I[Dialog lists releases newest first]
+  I --> J[Store latest version, remove dot]
+  J --> K[Close: focus returns to the button]
+```
+
+**Data** (`content/changelog.json`, newest first, edited by git):
+
+```json
+{
+  "releases": [
+    { "version": "1.3", "date": "2026-10-19", "title": "Safer sign-in and What's new",
+      "items": ["See what changed: the new What's new button lists every release.", "…"] }
+  ]
+}
+```
+
+Rules enforced in CI: at least one release; `version` like `1.3` or `1.3.1`; strictly descending; `date` is `YYYY-MM-DD`; title up to 80 characters; 1–6 items, each up to 160 characters; everything is plain text (escaped when shown).
+
+**Backfilled release notes (user language)**
+
+| Version | Title | Items |
+|---------|-------|-------|
+| v1.3 | Safer sign-in and What's new | See what changed with the new What's new button · The version now shows at the bottom of every page · Admin sign-in is forgotten when the tab closes · Tighter security rules for page styling |
+| v1.2 | Reliability | Automatic checks on every change and every day to catch problems early · Dates show the right day in every timezone · Download buttons can point at the right file (Penny now downloads the app, not a document) |
+| v1.1 | Reads and a refreshed look | Share a read: a searchable reading list with tag filters, Share on LinkedIn and Copy link · Studio by Debasis Ray, learning never ends! · Easier to use: keyboard friendly, clearer colours, larger touch targets, light and dark themes · Phone fix: long release notes no longer push the page sideways and are collapsed |
+| v1.0 | Launch | Products pulled live from GitHub with release notes and downloads · Updates feed · Blog and Books |
+
+**Microcopy:** button "What's new"; dialog title "What's new in Studio"; badge "Latest"; screen-reader text "New updates available".
+
+**Accessibility:** a real `<button>` with `aria-haspopup="dialog"`; the dot is decorative and its meaning is carried by text for screen readers; the dialog is the existing `role="dialog" aria-modal` component (title as `h3`, releases as `h4` inside a list); no colour-only signal; target size at least 40 px (44 px on phones); dot colour meets 3:1 against the header.
+
+### 10.2 Admin session
+
+```mermaid
+stateDiagram-v2
+  [*] --> Locked
+  Locked --> Locked: page load removes any legacy localStorage token
+  Locked --> Unlocking: click gear
+  Unlocking --> Unlocked: token valid and login is debasisr66 (stored in sessionStorage)
+  Unlocking --> Locked: cancel or rejected
+  Unlocked --> Unlocked: reload in the same tab (token still in the tab)
+  Unlocked --> Locked: Lock and sign out
+  Unlocked --> Locked: 30 minutes without interaction
+  Unlocked --> Locked: tab or window closed
+```
+
+| Item | Behavior |
+|------|----------|
+| Where the token lives | `sessionStorage` for this tab only; never `localStorage`, a cookie, the URL or the DOM |
+| Other tabs | Not signed in; unlock again |
+| Browser blocks `sessionStorage` | Token held in memory only; a reload locks; the dialog works as normal |
+| Old stored token | Deleted silently on load. Not copied into the new store |
+| Unlock dialog text | "Paste a GitHub personal access token with write access to debasisr66/studio. It stays in this tab only and is forgotten when you close it." |
+
+Expected one-time surprise for the owner: sign in again after this release. It is stated in the release notes and the learning guide.
+
+### 10.3 Strict CSP
+
+| Directive | v1.2 | v1.3 |
+|-----------|------|------|
+| `script-src` | `'self'` | `'self'` |
+| `style-src` | `'self' 'unsafe-inline' https://fonts.googleapis.com` | `'self' https://fonts.googleapis.com` |
+| Others | unchanged | unchanged (`default-src 'none'`, `connect-src 'self' https://api.github.com`, `font-src https://fonts.gstatic.com`, `img-src 'self' data:`, `base-uri 'none'`, `form-action 'none'`) |
+
+How the page keeps working without inline styles:
+
+1. The `<style>` block moves verbatim to `css/site.css`, linked from the head.
+2. Each of the 12 inline `style=` uses becomes a class (for example `.opt` for lighter label text, `.spacer`, `.btn-sm`, `.mt10`, `.m0`, `.grid-full`, `.muted-sm`, `.pre-result`).
+3. Two values are genuinely dynamic: the avatar colour (a hue from the domain) and the language dot colour. The markup carries `data-h` and `data-bg`; after each render, a small routine applies them with `element.style.setProperty(...)`, which a strict CSP allows (it blocks style *attributes in markup*, not style changes made by script).
+4. Anything that would reintroduce `style=` or `<style>` fails CI (validator rule).
+
+### 10.4 Visual-regression approach
+
+Because the CSS file moves, the design is only accepted if v1.2 and v1.3 render identically. A test harness loads both builds in same-origin frames at 375, 768 and 1280 px, in dark and light, with identical content, and compares computed styles element by element. Only the What's new button and the footer version may differ.
