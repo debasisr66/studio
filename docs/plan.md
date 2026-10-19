@@ -27,8 +27,8 @@ Date: 2026-10-19 · Owner: Debasis Ray · Status key: ✅ done · ⏳ pending ·
 | 2. UI | Branding, HCI pass, composer, cards, filters, share, CSP; script extracted to `js/app.js` | Loads with zero console errors and zero CSP violations | ✅ |
 | 3. Verification | Browser checks at 375, 768 and desktop; XSS payloads; accessibility audit; regression on protected files | All pass (see [test.md](test.md)) | ✅ |
 | 4. Docs | impact, plan, design, test, build, model-use | Reviewed | ✅ |
-| 5. Merge and deploy | Merge `v1.1` to `main`, push, check Pages | Owner approval; Pages build success | ⏳ 🔒 |
-| 6. Live smoke test | Live URL, product cards, Penny and debasis-web links, nightly sync dry run | Checklist in [test.md](test.md) §6 | ⏳ |
+| 5. Merge and deploy | Merge `v1.1` to `main`, push, check Pages | Owner approval; Pages build success | ✅ (`c5b3d0f`) |
+| 6. Live smoke test | Live URL, product cards, Penny and debasis-web links, nightly sync dry run | Checklist in [test.md](test.md) §6 | ✅ |
 | 7. First real publish | Add one read as admin and publish | Needs owner's token | ⏳ 🔒 |
 | 8. Tag | Tag `v1.1` | After phase 7 passes | ⏳ |
 
@@ -53,9 +53,9 @@ Reading-list RSS feed; export reads as Markdown; an admin token validity check o
 
 ## Checklist for the merge step
 
-- [ ] Owner approves merge
-- [ ] `git checkout main && git pull --rebase && git merge --no-ff v1.1`
-- [ ] `git push` and confirm `gh run list` shows Pages success
-- [ ] Run the live smoke checklist
+- [x] Owner approves merge
+- [x] `git checkout main && git pull --rebase && git merge --no-ff v1.1`
+- [x] `git push` and confirm `gh run list` shows Pages success
+- [x] Run the live smoke checklist
 - [ ] Add one read with the admin token; confirm it appears after the Pages rebuild
 - [ ] `git tag v1.1 && git push origin v1.1`

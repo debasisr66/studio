@@ -154,14 +154,18 @@ DEF-01 to DEF-03 affect the **currently live** v1.0 site and are resolved once v
 
 Screen-reader testing (VoiceOver/NVDA); Lighthouse or axe automated scans; Safari, Firefox and real-device testing; failure injection for missing `reads.json`; load testing (not meaningful for a static site). Contrast and keyboard behavior were verified by measurement and scripted checks rather than assistive technology.
 
-## 6. Live smoke checklist (after merge)
+## 6. Live smoke checklist (run 2026-10-19 after merge, commit `c5b3d0f`)
 
-- [ ] https://debasisr66.github.io/studio/ loads; no console errors
-- [ ] Branding visible; Penny and Debasis Web cards present with working Open app, Release/Download and Source
-- [ ] Updates shows Penny's latest release collapsed, with working links; no horizontal scroll on a phone
-- [ ] Reads shows existing entries (or the empty state)
-- [ ] `gh workflow run sync.yml -f dry_run=true` succeeds
-- [ ] TC-M01 completed with the owner's token
+- [x] https://debasisr66.github.io/studio/ loads; no console errors; CSP present
+- [x] Pages build "pages-build-deployment" succeeded; `/`, `js/app.js`, `js/reads-lib.js`, `content/*.json` all return 200; served `app.js` is the v1.1 build
+- [x] Branding visible (title, header, hero tagline, footer)
+- [x] Penny and Debasis Web cards present with working Open app and Source; Penny shows Download (see note)
+- [x] Updates shows Penny 3.2 collapsed behind "Show release notes"; no horizontal scroll at 375 px (before: 676 px)
+- [x] Reads shows the empty state ("Nothing here yet"); composer and edit buttons hidden for visitors
+- [x] `gh workflow run sync.yml -f dry_run=true` succeeded
+- [ ] TC-M01 completed with the owner's token (pending)
+
+Note (finding, not a v1.1 defect): Penny's **Download** points at the first asset of release v3.2, `Penny-Journey-Map_v2.docx`, a document rather than the app. The card takes `assets[0]`. Options: attach the app build first, or add a registry hint to choose the asset.
 
 ## 7. How to run
 
