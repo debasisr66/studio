@@ -54,6 +54,7 @@ Data flows one way: product repos notify the hub, and the hub only reads them. D
 
 ## Docs
 
+- [Product introduction](docs/product-intro.md): what Studio is and how Penny sits in it (stability, capabilities, open limits)
 - [Architecture](docs/ARCHITECTURE.md): how the hub works
 - [Learning guide](docs/LEARNING-GUIDE.md): step-by-step setup, commands, tokens and the rotation runbook
 - Release set (v1.3): [Security](docs/security.md) · [Impact](docs/impact.md) · [Plan](docs/plan.md) · [Design](docs/design.md) · [Tests and traceability](docs/test.md) · [Build commands](docs/build.md) · [Model use](docs/model-use.md)
