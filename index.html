@@ -3,22 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Studio — Debasis Ray</title>
-<meta name="description" content="A product studio by Debasis Ray: small, focused software products, with release notes, writing and reading.">
+<title>Studio by Debasis Ray — learning never ends!</title>
+<meta name="description" content="Studio by Debasis Ray: small, focused software products with release notes, writing and a curated reading list. Learning never ends!">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236E56CF'/%3E%3Cpath d='M10 22V10h7a4 4 0 010 8h-7' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0D0D0F; --surface:#151519; --surface-2:#1C1C22; --border:#26262E;
-  --text:#EDEDF0; --muted:#8B8B97; --accent:#6E56CF; --accent-hover:#8470E0; --accent-soft:rgba(110,86,207,.14);
-  --ok:#3DD68C; --danger:#F2555A; --radius:14px;
+  --bg:#0D0D0F; --surface:#151519; --surface-2:#1C1C22; --border:#26262E; --field:#6E6E7C;
+  --text:#EDEDF0; --muted:#8B8B97; --accent:#6E56CF; --accent-hover:#8470E0; --accent-press:#5B43BB; --accent-soft:rgba(110,86,207,.14);
+  --focus:#A99BF0; --ok:#3DD68C; --danger:#F2555A; --radius:14px;
   --font:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
 }
 :root[data-theme="light"]{
-  --bg:#FAFAFB; --surface:#FFFFFF; --surface-2:#F2F2F5; --border:#E4E4EA;
-  --text:#16161A; --muted:#6B6B78; --accent:#6E56CF; --accent-hover:#5B43BB; --accent-soft:rgba(110,86,207,.10);
+  --bg:#FAFAFB; --surface:#FFFFFF; --surface-2:#F2F2F5; --border:#E4E4EA; --field:#80808E;
+  --text:#16161A; --muted:#6B6B78; --accent:#6E56CF; --accent-hover:#5B43BB; --accent-press:#5B43BB; --accent-soft:rgba(110,86,207,.10);
+  --focus:#5B43BB; --danger:#C62F3A;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:72px}
@@ -26,16 +29,22 @@ body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--font);-
 a{color:inherit}
 .wrap{max-width:1120px;margin:0 auto;padding:0 20px}
 .mono{font-family:var(--mono)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+.skip{position:absolute;left:12px;top:-60px;z-index:100;background:var(--accent);color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:600}
+.skip:focus{top:12px}
+button{font-family:inherit}
 
 /* top nav */
 header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
 header.top .wrap{display:flex;align-items:center;gap:24px;height:60px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:600;text-decoration:none;letter-spacing:-.01em}
+.brand small{font-weight:400;color:var(--muted);font-size:13px;letter-spacing:0}
 .logo{width:26px;height:26px;border-radius:7px;background:var(--accent);display:grid;place-items:center;color:#fff;font:600 13px var(--mono)}
 nav.links{display:flex;gap:4px;margin-left:auto}
-nav.links a{padding:6px 12px;border-radius:8px;text-decoration:none;color:var(--muted);font-size:14px;font-weight:500}
-nav.links a:hover,nav.links a.on{color:var(--text);background:var(--surface-2)}
-.icon-btn{background:none;border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:15px}
+nav.links a{padding:8px 12px;border-radius:8px;text-decoration:none;color:var(--muted);font-size:14px;font-weight:500}
+nav.links a:hover,nav.links a[aria-current]{color:var(--text);background:var(--surface-2)}
+.icon-btn{background:none;border:1px solid var(--border);color:var(--muted);width:40px;height:40px;border-radius:8px;cursor:pointer;font-size:15px}
 .icon-btn:hover{color:var(--text);background:var(--surface-2)}
 
 /* hero */
@@ -44,10 +53,12 @@ nav.links a:hover,nav.links a.on{color:var(--text);background:var(--surface-2)}
 .eyebrow{font:500 12px var(--mono);color:var(--accent-hover);letter-spacing:.08em;text-transform:uppercase}
 .hero h1{font-size:clamp(34px,6vw,60px);line-height:1.05;letter-spacing:-.035em;margin:14px 0 18px;max-width:14ch;font-weight:700}
 .hero p{color:var(--muted);font-size:18px;max-width:52ch;margin:0 0 28px}
-.cta{display:inline-flex;gap:8px;align-items:center;background:var(--accent);color:#fff;padding:10px 18px;border-radius:10px;text-decoration:none;font-weight:500;font-size:15px;border:0;cursor:pointer;font-family:inherit}
-.cta:hover{background:var(--accent-hover)}
-.cta.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.hero p.tagline{color:var(--accent-hover);font:500 15px var(--mono);margin:-6px 0 22px}
+.cta{display:inline-flex;gap:8px;align-items:center;justify-content:center;min-height:44px;background:var(--accent);color:#fff;padding:10px 18px;border-radius:10px;text-decoration:none;font-weight:500;font-size:15px;border:1px solid var(--accent);cursor:pointer}
+.cta:hover{background:var(--accent-press);border-color:var(--accent-press)}
+.cta.ghost{background:transparent;color:var(--text);border:1px solid var(--field)}
 .cta.ghost:hover{background:var(--surface-2)}
+.cta[disabled]{opacity:.5;cursor:not-allowed}
 
 section.block{padding:48px 0}
 .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px;gap:12px}
@@ -55,7 +66,7 @@ section.block{padding:48px 0}
 .sec-head .sub{color:var(--muted);font-size:14px}
 
 /* product grid */
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:12px;transition:border-color .15s,transform .15s}
 .card:hover{border-color:color-mix(in srgb,var(--accent) 55%,var(--border));transform:translateY(-2px)}
 .card.featured{background:linear-gradient(180deg,var(--accent-soft),var(--surface) 60%)}
@@ -65,15 +76,18 @@ section.block{padding:48px 0}
 .tag{font:500 11px var(--mono);padding:3px 8px;border-radius:999px;border:1px solid var(--border);color:var(--muted)}
 .tag.ver{color:var(--accent-hover);border-color:color-mix(in srgb,var(--accent) 40%,var(--border));background:var(--accent-soft)}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
-.meta{font-size:12.5px;color:var(--muted);display:flex;gap:14px;align-items:center}
+.meta{font-size:12.5px;color:var(--muted);display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .card .actions{display:flex;gap:8px;margin-top:4px}
-.card .actions a{flex:1;text-align:center;padding:8px 10px;border-radius:9px;font-size:13.5px;font-weight:500;text-decoration:none;border:1px solid var(--border)}
+.card .actions a{flex:1;display:flex;align-items:center;justify-content:center;min-height:40px;text-align:center;padding:8px 10px;border-radius:9px;font-size:13.5px;font-weight:500;text-decoration:none;border:1px solid var(--field)}
 .card .actions a.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-.card .actions a.primary:hover{background:var(--accent-hover)}
+.card .actions a.primary:hover{background:var(--accent-press);border-color:var(--accent-press)}
 .card .actions a:not(.primary):hover{background:var(--surface-2)}
+.skel{min-height:210px;background:linear-gradient(90deg,var(--surface) 0%,var(--surface-2) 50%,var(--surface) 100%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+@keyframes shimmer{to{background-position:-200% 0}}
 
 /* feeds */
 .feed{display:flex;flex-direction:column;gap:12px}
+.item,.card{overflow-wrap:anywhere;min-width:0}
 .item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;position:relative}
 .item h3{margin:0 0 4px;font-size:17px;letter-spacing:-.01em}
 .item .when{font:12px var(--mono);color:var(--muted)}
@@ -82,393 +96,231 @@ section.block{padding:48px 0}
 .item .body ul{margin:4px 0 8px;padding-left:20px}
 .item a.more{color:var(--accent-hover);font-size:14px;text-decoration:none}
 .item a.more:hover{text-decoration:underline}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:28px}
-.empty{border:1px dashed var(--border);border-radius:var(--radius);padding:28px;text-align:center;color:var(--muted);font-size:14.5px}
+.item .body a{color:var(--accent-hover)}
+details.notes summary{cursor:pointer;color:var(--accent-hover);font-size:14px;font-weight:500;min-height:32px;display:flex;align-items:center;margin-top:6px}
+details.notes[open] summary{margin-bottom:2px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px}
+.two.reads{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)}
+.sub-h{margin:0 0 12px;font-size:16px}
+.empty{border:1px dashed var(--field);border-radius:var(--radius);padding:28px;text-align:center;color:var(--muted);font-size:14.5px}
 .notice{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--muted);font-size:13.5px;margin-bottom:16px}
+
+/* reads: composer, cards, toolbar */
+.avatar{flex:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:#fff;font:600 16px var(--font);text-transform:uppercase;background:hsl(var(--h,260) 45% 30%)}
+.composer{display:none;margin-bottom:16px}
+body.admin .composer{display:block}
+.composer-open{width:100%;display:flex;align-items:center;gap:12px;text-align:left;background:var(--surface);border:1px solid var(--field);border-radius:999px;padding:8px 18px 8px 8px;min-height:56px;color:var(--muted);font-size:15px;cursor:pointer}
+.composer-open:hover{background:var(--surface-2)}
+.composer form{display:none;background:var(--surface);border:1px solid var(--field);border-radius:var(--radius);padding:18px}
+.composer.open form{display:block}
+.composer.open .composer-open{display:none}
+.field{margin-top:12px}
+.field:first-child{margin-top:0}
+.field label,.modal label{display:block;font-size:13px;color:var(--muted);margin:0 0 4px;font-weight:500}
+.field input,.field textarea,.field select,.modal input,.modal textarea{width:100%;min-height:44px;background:var(--bg);border:1px solid var(--field);color:var(--text);border-radius:8px;padding:9px 11px;font:inherit;font-size:15px}
+.field textarea,.modal textarea{min-height:96px;resize:vertical}
+.field input:focus-visible,.field textarea:focus-visible,.field select:focus-visible,.modal input:focus-visible,.modal textarea:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.field [aria-invalid="true"]{border-color:var(--danger)}
+.field .help{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--muted);margin-top:4px}
+.field .help .bad{color:var(--danger)}
+.field-err{color:var(--danger);font-size:13px;margin-top:4px}
+.fields-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.preview{margin-top:14px}
+.preview h4{margin:0 0 6px;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.form-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.toolbar{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.toolbar input[type=search]{width:100%;min-height:44px;background:var(--surface);border:1px solid var(--field);color:var(--text);border-radius:999px;padding:8px 16px;font:inherit;font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--surface);border:1px solid var(--field);color:var(--text);border-radius:999px;padding:5px 12px;min-height:32px;font-size:13px;cursor:pointer}
+.chip:hover{background:var(--surface-2)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.read-head{display:flex;gap:12px;align-items:flex-start}
+.read-title{font-weight:600;font-size:17px;letter-spacing:-.01em;text-decoration:none;overflow-wrap:anywhere}
+.read-title:hover{text-decoration:underline}
+.read-comment{margin:10px 0 0;font-size:15px;color:var(--text);overflow-wrap:anywhere}
+.read-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.read-tags .chip{min-height:28px;padding:2px 10px;font:500 11px var(--mono);color:var(--muted)}
+.share-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.share-row a,.share-row button{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 12px;border-radius:999px;border:1px solid var(--field);background:transparent;color:var(--text);font-size:13px;font-weight:500;text-decoration:none;cursor:pointer}
+.share-row a:hover,.share-row button:hover{background:var(--surface-2)}
+.count{font-size:13px;color:var(--muted);margin:0 0 10px}
 
 footer{border-top:1px solid var(--border);padding:28px 0 96px;color:var(--muted);font-size:13.5px}
 footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 
+/* toast / live status */
+#status{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;background:var(--text);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:500;max-width:90vw;opacity:0;pointer-events:none;transition:opacity .2s}
+#status.show{opacity:1}
+
 /* mobile bottom nav */
 nav.bottom{display:none}
 @media (max-width:860px){
-  .grid{grid-template-columns:1fr 1fr}
-  .two{grid-template-columns:1fr}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .two,.two.reads{grid-template-columns:minmax(0,1fr)}
 }
 @media (max-width:620px){
-  .grid{grid-template-columns:1fr}
+  .grid{grid-template-columns:minmax(0,1fr)}
   nav.links{display:none}
   .icon-btn{width:44px;height:44px}
   header.top .wrap{justify-content:space-between}
   .hero{padding:56px 0 32px}
+  .fields-2{grid-template-columns:1fr}
+  #status{bottom:84px}
   nav.bottom{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:20;background:var(--surface);border-top:1px solid var(--border);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
   nav.bottom a{flex:1;text-align:center;padding:10px 4px;text-decoration:none;color:var(--muted);font-size:12px;font-weight:500;border-radius:8px}
-  nav.bottom a.on{color:var(--accent-hover);background:var(--accent-soft)}
+  nav.bottom a[aria-current]{color:var(--accent-hover);background:var(--accent-soft)}
   nav.bottom a b{display:block;font-size:17px;font-weight:400;line-height:1.2}
+}
+@media (pointer:coarse){
+  .chip{min-height:44px}
+  .read-tags .chip{min-height:36px}
+  .tools button{min-height:40px;min-width:48px}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}
 }
 
 /* admin */
-#gear{position:fixed;right:18px;bottom:18px;z-index:30;opacity:.35;transition:opacity .15s;background:var(--surface);border:1px solid var(--border);color:var(--text);width:40px;height:40px;border-radius:50%;cursor:pointer;font-size:18px}
-#gear:hover,body.admin #gear{opacity:1}
-body.admin #gear{border-color:var(--accent);color:var(--accent-hover)}
+#gear{position:fixed;right:18px;bottom:18px;z-index:30;opacity:.55;transition:opacity .15s;background:var(--surface);border:1px solid var(--field);color:var(--text);width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:18px}
+#gear:hover,#gear:focus-visible,body.admin #gear{opacity:1}
+body.admin #gear{display:none}
 @media (max-width:620px){#gear{bottom:76px}}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;display:none;align-items:center;justify-content:center;padding:16px}
 .modal-bg.open{display:flex}
-.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;width:100%;max-width:480px;max-height:90vh;overflow:auto}
+.modal{background:var(--surface);border:1px solid var(--field);border-radius:var(--radius);padding:22px;width:100%;max-width:480px;max-height:90vh;overflow:auto}
 .modal h3{margin:0 0 14px}
-.modal label{display:block;font-size:12.5px;color:var(--muted);margin:12px 0 4px}
-.modal input,.modal textarea{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 11px;font:inherit;font-size:14.5px}
-.modal textarea{min-height:120px;resize:vertical}
-.modal input:focus,.modal textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.modal label{margin-top:12px}
 .modal .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
-.err{color:var(--danger);font-size:13px;margin-top:10px;white-space:pre-wrap}
+.err{color:var(--danger);font-size:13.5px;margin-top:10px;white-space:pre-wrap}
 #adminbar{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface-2);border-top:1px solid var(--accent);padding:10px 20px;display:none;align-items:center;gap:12px;flex-wrap:wrap;font-size:14px}
 body.admin #adminbar{display:flex}
 body.admin footer{padding-bottom:140px}
 @media (max-width:620px){#adminbar{bottom:60px}}
 .tools{display:none;gap:6px;position:absolute;top:12px;right:12px}
 body.admin .tools{display:flex}
-.tools button,.addbtn{background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:3px 9px;font-size:12px;cursor:pointer;font-family:inherit}
+.tools button,.addbtn{background:var(--surface-2);border:1px solid var(--field);color:var(--text);border-radius:7px;padding:4px 10px;min-height:32px;font-size:12.5px;cursor:pointer}
 .tools button:hover,.addbtn:hover{border-color:var(--accent)}
 .addbtn{display:none;margin-bottom:12px}
 body.admin .addbtn{display:inline-block}
+body.admin .read-head{padding-right:112px}
 .dirty{color:var(--accent-hover);font-weight:500}
 </style>
 </head>
-<body>
+<body id="top">
+<a class="skip" href="#main">Skip to content</a>
 
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="#top"><span class="logo">S</span> Studio</a>
-    <nav class="links" id="navlinks">
+    <a class="brand" href="#top" aria-label="Studio by Debasis Ray, back to top"><span class="logo" aria-hidden="true">S</span> Studio <small>by Debasis Ray</small></a>
+    <nav class="links" id="navlinks" aria-label="Sections">
       <a href="#products">Products</a><a href="#updates">Updates</a><a href="#blog">Blog</a><a href="#reads">Reads</a>
     </nav>
-    <button class="icon-btn" id="theme" title="Toggle theme" aria-label="Toggle theme">◐</button>
+    <button class="icon-btn" id="theme" type="button" aria-label="Switch theme"><span aria-hidden="true">◐</span></button>
   </div>
 </header>
 
-<main id="top">
+<main id="main">
   <section class="hero"><div class="wrap">
-    <div class="eyebrow">Product studio</div>
+    <div class="eyebrow">Studio by Debasis Ray</div>
     <h1>Small, focused software, shipped in the open.</h1>
+    <p class="tagline">Learning never ends!</p>
     <p>Products built and maintained by Debasis Ray. Every release, changelog and download lives here, straight from the source repositories.</p>
-    <a class="cta" href="#products">Explore products →</a>
-    <a class="cta ghost" href="https://github.com/debasisr66" rel="noopener">GitHub</a>
+    <a class="cta" href="#products">Explore products <span aria-hidden="true">→</span></a>
+    <a class="cta ghost" href="https://github.com/debasisr66" rel="noopener noreferrer">GitHub<span class="sr"> (opens in a new tab)</span></a>
   </div></section>
 
-  <section class="block" id="products"><div class="wrap">
-    <div class="sec-head"><h2>Products</h2><span class="sub" id="syncnote"></span></div>
+  <noscript><div class="wrap"><div class="notice">This site needs JavaScript to show products and reading lists. The source is at <a href="https://github.com/debasisr66/studio">github.com/debasisr66/studio</a>.</div></div></noscript>
+
+  <section class="block" id="products" aria-labelledby="h-products"><div class="wrap">
+    <div class="sec-head"><h2 id="h-products">Products</h2><span class="sub" id="syncnote"></span></div>
     <div id="notice"></div>
-    <div class="grid" id="grid"></div>
+    <div class="grid" id="grid" aria-busy="true"><div class="card skel" aria-hidden="true"></div><div class="card skel" aria-hidden="true"></div></div>
   </div></section>
 
-  <section class="block" id="updates"><div class="wrap">
-    <div class="sec-head"><h2>Updates</h2><span class="sub">Latest releases</span></div>
+  <section class="block" id="updates" aria-labelledby="h-updates"><div class="wrap">
+    <div class="sec-head"><h2 id="h-updates">Updates</h2><span class="sub">Latest releases</span></div>
     <div class="feed" id="updatesFeed"></div>
   </div></section>
 
-  <section class="block" id="blog"><div class="wrap">
-    <div class="sec-head"><h2>Blog</h2></div>
-    <button class="addbtn" id="addPost">+ New post</button>
+  <section class="block" id="blog" aria-labelledby="h-blog"><div class="wrap">
+    <div class="sec-head"><h2 id="h-blog">Blog</h2></div>
+    <button class="addbtn" id="addPost" type="button">+ New post</button>
     <div class="feed" id="blogFeed"></div>
   </div></section>
 
-  <section class="block" id="reads"><div class="wrap">
-    <div class="sec-head"><h2>Reads</h2><span class="sub">Reading list &amp; books</span></div>
-    <div class="two">
-      <div><h3 style="margin:0 0 12px;font-size:16px">Reading list</h3>
-        <button class="addbtn" id="addArticle">+ Add article</button>
-        <div class="feed" id="articlesFeed"></div></div>
-      <div><h3 style="margin:0 0 12px;font-size:16px">Books</h3>
-        <button class="addbtn" id="addBook">+ Add book</button>
-        <div class="feed" id="booksFeed"></div></div>
+  <section class="block" id="reads" aria-labelledby="h-reads"><div class="wrap">
+    <div class="sec-head"><h2 id="h-reads">Reads</h2><span class="sub">Articles, videos &amp; books worth your time</span></div>
+    <div class="two reads">
+      <div>
+        <h3 class="sub-h">Reading list</h3>
+
+        <div class="composer" id="composer">
+          <button class="composer-open" id="composerOpen" type="button" aria-expanded="false" aria-controls="composerForm">
+            <span class="avatar" aria-hidden="true">D</span><span>Share a read…</span>
+          </button>
+          <form id="composerForm" novalidate aria-labelledby="composerTitle">
+            <h4 id="composerTitle" class="sr">Share a read</h4>
+            <div class="field"><label for="cf-url">Link</label>
+              <input id="cf-url" name="url" type="text" inputmode="url" autocomplete="off" placeholder="https://…" aria-describedby="cf-url-err">
+              <div class="field-err" id="cf-url-err" role="alert"></div></div>
+            <div class="field"><label for="cf-title">Title</label>
+              <input id="cf-title" name="title" type="text" autocomplete="off" aria-describedby="cf-title-err">
+              <div class="field-err" id="cf-title-err" role="alert"></div></div>
+            <div class="field"><label for="cf-comment">Your take <span style="font-weight:400">(optional)</span></label>
+              <textarea id="cf-comment" name="comment" aria-describedby="cf-comment-help cf-comment-err" placeholder="Why is this worth reading?"></textarea>
+              <div class="help"><span id="cf-comment-err" class="field-err" role="alert" style="margin:0"></span><span id="cf-comment-help" aria-live="off"><span id="cf-count">0</span>/280</span></div></div>
+            <div class="fields-2">
+              <div class="field"><label for="cf-kind">Type</label>
+                <select id="cf-kind" name="kind"><option value="article">Article</option><option value="video">Video</option><option value="paper">Paper</option><option value="podcast">Podcast</option><option value="tool">Tool</option></select></div>
+              <div class="field"><label for="cf-tags">Tags <span style="font-weight:400">(comma separated, up to 5)</span></label>
+                <input id="cf-tags" name="tags" type="text" autocomplete="off" placeholder="ai, architecture"></div>
+            </div>
+            <div class="preview" id="cf-preview-wrap"><h4>Preview</h4><div id="cf-preview"></div></div>
+            <div class="form-btns">
+              <button type="button" class="cta ghost" id="cf-cancel">Cancel</button>
+              <button type="submit" class="cta" id="cf-submit">Post</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="toolbar" id="toolbar" hidden>
+          <input type="search" id="readSearch" aria-label="Search reads" placeholder="Search reads" autocomplete="off">
+          <div class="chips" id="tagChips" role="group" aria-label="Filter by tag"></div>
+        </div>
+        <p class="count" id="readCount" aria-live="polite"></p>
+        <div class="feed" id="articlesFeed"></div>
+      </div>
+      <div>
+        <h3 class="sub-h">Books</h3>
+        <button class="addbtn" id="addBook" type="button">+ Add book</button>
+        <div class="feed" id="booksFeed"></div>
+      </div>
     </div>
   </div></section>
 </main>
 
 <footer><div class="wrap">
-  <span>© <span id="yr"></span> Debasis Ray</span>
+  <span>© <span id="yr"></span> Studio by Debasis Ray · Learning never ends!</span>
   <span class="mono">Synced from GitHub · <span id="synced">—</span></span>
 </div></footer>
 
-<nav class="bottom" id="navbottom">
-  <a href="#products"><b>◧</b>Products</a><a href="#blog"><b>✎</b>Blog</a><a href="#reads"><b>☰</b>Reads</a>
+<nav class="bottom" id="navbottom" aria-label="Sections">
+  <a href="#products"><b aria-hidden="true">◧</b>Products</a><a href="#blog"><b aria-hidden="true">✎</b>Blog</a><a href="#reads"><b aria-hidden="true">☰</b>Reads</a>
 </nav>
 
-<button id="gear" title="Admin" aria-label="Admin">⚙</button>
-<div id="adminbar">
+<button id="gear" type="button" aria-label="Admin sign in" aria-haspopup="dialog">⚙</button>
+<div id="adminbar" role="region" aria-label="Admin controls">
   <span>Edit mode</span><span id="dirtyinfo"></span>
   <span style="flex:1"></span>
-  <button class="cta ghost" id="lockBtn" style="padding:6px 12px">Lock &amp; sign out</button>
-  <button class="cta" id="publishBtn" style="padding:6px 12px">Publish changes</button>
+  <button class="cta ghost" id="lockBtn" type="button" style="min-height:40px;padding:6px 12px">Lock &amp; sign out</button>
+  <button class="cta" id="publishBtn" type="button" style="min-height:40px;padding:6px 12px">Publish changes</button>
 </div>
 
-<div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+<div id="status" role="status" aria-live="polite"></div>
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"></div></div>
 
-<script>
-'use strict';
-const OWNER = 'debasisr66', HUB = 'studio', BRANCH = 'main';
-const PAT_KEY = 'studio-admin-pat';
-const LANG = {JavaScript:'#F1E05A',TypeScript:'#3178C6',Swift:'#F05138',Python:'#3572A5',Kotlin:'#A97BFF',Java:'#B07219',Go:'#00ADD8',Rust:'#DEA584',HTML:'#E34C26',CSS:'#563D7C',Dart:'#00B4AB','C#':'#178600',Ruby:'#701516',Shell:'#89E051'};
-
-const $ = s => document.querySelector(s);
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const safeUrl = u => { try { const x = new URL(u, location.href); return /^https?:$/.test(x.protocol) ? x.href : ''; } catch { return ''; } };
-const fmtDate = d => { const t = new Date(d); return isNaN(t) ? '' : t.toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}); };
-const fmtSize = n => n > 1048576 ? (n/1048576).toFixed(1)+' MB' : Math.max(1, Math.round(n/1024))+' KB';
-const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
-const lsSet = (k,v) => { try { localStorage.setItem(k,v); } catch {} };
-const lsDel = k => { try { localStorage.removeItem(k); } catch {} };
-
-/* very small, safe markdown subset: paragraphs, "-"/"*" bullets, headings as bold, **bold**, `code` */
-function md(text) {
-  const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code class="mono">$1</code>');
-  let html = '', list = false;
-  for (const raw of String(text || '').split(/\r?\n/)) {
-    const line = raw.trim();
-    const li = line.match(/^[-*]\s+(.*)/);
-    if (li) { if (!list) { html += '<ul>'; list = true; } html += '<li>'+inline(li[1])+'</li>'; continue; }
-    if (list) { html += '</ul>'; list = false; }
-    if (!line) continue;
-    const h = line.match(/^#{1,6}\s+(.*)/);
-    html += h ? '<p><strong>'+inline(h[1])+'</strong></p>' : '<p>'+inline(line)+'</p>';
-  }
-  return html + (list ? '</ul>' : '');
-}
-
-/* ---------- state ---------- */
-const state = { registry: [], cache: null, blog: {posts: []}, reads: {books: [], articles: []}, dirty: {blog:false, reads:false} };
-
-async function loadJson(path) {
-  const r = await fetch(path + '?t=' + Date.now(), {cache:'no-store'});
-  if (!r.ok) throw new Error(path + ' ' + r.status);
-  return r.json();
-}
-
-async function boot() {
-  $('#yr').textContent = new Date().getFullYear();
-  const [reg, cache, blog, reads] = await Promise.allSettled([
-    loadJson('content/products.json'), loadJson('content/cache.json'),
-    loadJson('content/blog.json'), loadJson('content/reads.json')]);
-  if (reg.status === 'fulfilled' && Array.isArray(reg.value)) state.registry = reg.value;
-  if (cache.status === 'fulfilled' && cache.value && typeof cache.value.products === 'object') state.cache = cache.value;
-  if (blog.status === 'fulfilled' && Array.isArray(blog.value.posts)) state.blog = blog.value;
-  if (reads.status === 'fulfilled') state.reads = { books: reads.value.books || [], articles: reads.value.articles || [] };
-  renderAll();
-  if (lsGet(PAT_KEY)) enableAdmin(true);
-}
-
-/* ---------- render ---------- */
-function productView(e) {
-  const live = state.cache && state.cache.products[e.repo];
-  const name = e.name || e.repo.split('/')[1];
-  return {
-    e, live, name,
-    tagline: e.tagline || (live && live.description) || '',
-    url: (live && live.html_url) || 'https://github.com/' + e.repo,
-    rel: live && live.latest_release,
-  };
-}
-
-function renderProducts() {
-  const list = state.registry.filter(p => p && p.repo && !p.hidden).map(productView)
-    .sort((a,b) => (b.e.featured?1:0) - (a.e.featured?1:0));
-  const notice = $('#notice');
-  notice.innerHTML = '';
-  if (!state.cache && list.length) notice.innerHTML = '<div class="notice">Live data is unavailable right now — showing basic product info.</div>';
-  if (!list.length) { $('#grid').innerHTML = '<div class="empty" style="grid-column:1/-1">No products to show yet.</div>'; return; }
-  $('#grid').innerHTML = list.map(p => {
-    const l = p.live, lang = l && l.language;
-    const site = safeUrl(p.e.url);
-    const hasAsset = !!(p.rel && p.rel.assets && p.rel.assets[0]);
-    const dl = p.rel && safeUrl(hasAsset ? p.rel.assets[0].download_url : p.rel.download_url);
-    return `<article class="card${p.e.featured ? ' featured' : ''}">
-      <div class="row">${p.e.category ? `<span class="tag">${esc(p.e.category)}</span>` : ''}${p.rel ? `<span class="tag ver mono">${esc(p.rel.tag)}</span>` : ''}</div>
-      <h3>${esc(p.name)}</h3>
-      <p>${esc(p.tagline)}</p>
-      <div class="meta">
-        ${lang ? `<span><i class="dot" style="background:${LANG[lang] || 'var(--muted)'}"></i>${esc(lang)}</span>` : ''}
-        ${l ? `<span>★ ${Number(l.stars) || 0}</span>` : ''}
-        ${l && l.pushed_at ? `<span>Updated ${esc(fmtDate(l.pushed_at))}</span>` : ''}
-      </div>
-      <div class="actions">
-        ${site ? `<a class="primary" href="${esc(site)}" rel="noopener">Open app</a>` : ''}
-        ${dl ? `<a class="${site ? '' : 'primary'}" href="${esc(dl)}" rel="noopener">${hasAsset ? 'Download' : 'Release'}</a>` : ''}
-        <a href="${esc(safeUrl(p.url))}" rel="noopener">Source</a>
-      </div></article>`;
-  }).join('');
-  $('#syncnote').textContent = state.cache ? 'Live from GitHub' : '';
-  $('#synced').textContent = state.cache && state.cache.synced_at ? fmtDate(state.cache.synced_at) : 'unavailable';
-}
-
-function renderUpdates() {
-  const items = state.registry.filter(p => p && !p.hidden).map(productView).filter(p => p.rel)
-    .sort((a,b) => new Date(b.rel.published_at) - new Date(a.rel.published_at));
-  $('#updatesFeed').innerHTML = items.length ? items.map(p => `
-    <div class="item">
-      <div class="row"><span class="tag ver mono">${esc(p.rel.tag)}</span><span class="when">${esc(fmtDate(p.rel.published_at))}</span></div>
-      <h3>${esc(p.name)} — ${esc(p.rel.name)}</h3>
-      <div class="body">${md(p.rel.body)}</div>
-      <div class="row" style="margin-top:10px">${(p.rel.assets || []).map(a => safeUrl(a.download_url) ? `<a class="tag mono" href="${esc(safeUrl(a.download_url))}" rel="noopener">⬇ ${esc(a.name)} · ${esc(fmtSize(a.size))}</a>` : '').join('')}
-      <a class="more" href="${esc(safeUrl(p.rel.download_url))}" rel="noopener">Release notes →</a></div>
-    </div>`).join('') : '<div class="empty">No releases published yet. Release notes will appear here automatically.</div>';
-}
-
-const tools = (kind, i) => `<span class="tools"><button data-edit="${kind}:${i}">Edit</button><button data-del="${kind}:${i}">Delete</button></span>`;
-
-function renderBlog() {
-  const posts = [...state.blog.posts].sort((a,b) => String(b.date).localeCompare(String(a.date)));
-  $('#blogFeed').innerHTML = posts.length ? posts.map(p => {
-    const i = state.blog.posts.indexOf(p), link = safeUrl(p.link);
-    return `<div class="item">${tools('post', i)}<div class="when">${esc(fmtDate(p.date))}</div><h3>${esc(p.title)}</h3>
-      <div class="body">${md(p.body)}${link ? `<a class="more" href="${esc(link)}" rel="noopener">Read more →</a>` : ''}</div></div>`;
-  }).join('') : '<div class="empty">No posts yet.</div>';
-}
-
-function renderReads() {
-  const a = state.reads.articles, b = state.reads.books;
-  $('#articlesFeed').innerHTML = a.length ? a.map((x, i) => {
-    const u = safeUrl(x.url);
-    return `<div class="item">${tools('article', i)}<h3>${u ? `<a href="${esc(u)}" rel="noopener">${esc(x.title)}</a>` : esc(x.title)}</h3>${x.note ? `<div class="body">${esc(x.note)}</div>` : ''}</div>`;
-  }).join('') : '<div class="empty">Nothing here yet.</div>';
-  $('#booksFeed').innerHTML = b.length ? b.map((x, i) => `
-    <div class="item">${tools('book', i)}<h3>${esc(x.title)}</h3><div class="when">${esc(x.author)}${x.year ? ' · ' + esc(x.year) : ''}</div>${x.note ? `<div class="body">${esc(x.note)}</div>` : ''}</div>`).join('') : '<div class="empty">Nothing here yet.</div>';
-}
-
-function renderAll() { renderProducts(); renderUpdates(); renderBlog(); renderReads(); }
-
-/* ---------- nav highlight, theme ---------- */
-const setTheme = t => { document.documentElement.dataset.theme = t; lsSet('studio-theme', t); };
-setTheme(lsGet('studio-theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
-$('#theme').onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
-const io = new IntersectionObserver(es => es.forEach(e => {
-  if (e.isIntersecting) document.querySelectorAll('nav a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id));
-}), {rootMargin:'-40% 0px -55% 0px'});
-document.querySelectorAll('section.block').forEach(s => io.observe(s));
-
-/* ---------- admin: GitHub contents API ---------- */
-const ghApi = (path, opts = {}) => fetch('https://api.github.com' + path, {...opts, headers: {
-  Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + lsGet(PAT_KEY), ...(opts.headers || {})}});
-const b64enc = s => { const b = new TextEncoder().encode(s); let bin = ''; b.forEach(x => bin += String.fromCharCode(x)); return btoa(bin); };
-const b64dec = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g, '')), c => c.charCodeAt(0)));
-
-/* GET current sha -> validate -> skip if unchanged -> PUT with sha. One file per commit. */
-async function publishFile(path, obj, message) {
-  let text;
-  try { text = JSON.stringify(JSON.parse(JSON.stringify(obj)), null, 2) + '\n'; }
-  catch (e) { throw new Error('Refusing to publish ' + path + ': invalid JSON (' + e.message + ')'); }
-  const cur = await ghApi(`/repos/${OWNER}/${HUB}/contents/${path}?ref=${BRANCH}`);
-  let sha;
-  if (cur.status === 200) {
-    const j = await cur.json(); sha = j.sha;
-    if (b64dec(j.content) === text) return 'unchanged';
-  } else if (cur.status !== 404) throw new Error('Could not read ' + path + ' (' + cur.status + ')');
-  const put = await ghApi(`/repos/${OWNER}/${HUB}/contents/${path}`, {
-    method: 'PUT', body: JSON.stringify({message, content: b64enc(text), branch: BRANCH, ...(sha ? {sha} : {})})});
-  if (!put.ok) { const t = await put.text(); throw new Error('Publish of ' + path + ' failed (' + put.status + '): ' + t.slice(0, 200)); }
-  return 'committed';
-}
-
-function enableAdmin(silent) {
-  document.body.classList.add('admin');
-  updateDirty();
-}
-function lock() { lsDel(PAT_KEY); document.body.classList.remove('admin'); }
-function updateDirty() {
-  const d = Object.entries(state.dirty).filter(([,v]) => v).map(([k]) => k + '.json');
-  $('#dirtyinfo').innerHTML = d.length ? `<span class="dirty">Unpublished: ${d.join(', ')}</span>` : 'No pending changes';
-  $('#publishBtn').disabled = !d.length;
-  $('#publishBtn').style.opacity = d.length ? 1 : .5;
-}
-
-/* ---------- modal helpers ---------- */
-const modal = {
-  open(html) { $('#modal').innerHTML = html; $('#modalBg').classList.add('open'); const f = $('#modal input,#modal textarea'); f && f.focus(); },
-  close() { $('#modalBg').classList.remove('open'); $('#modal').innerHTML = ''; },
-  err(m) { let e = $('#modal .err'); if (!e) { e = document.createElement('div'); e.className = 'err'; $('#modal').appendChild(e); } e.textContent = m; },
-};
-$('#modalBg').addEventListener('mousedown', e => { if (e.target.id === 'modalBg') modal.close(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') modal.close(); });
-
-$('#gear').onclick = () => {
-  if (document.body.classList.contains('admin')) return;
-  modal.open(`<h3>Admin access</h3>
-    <p style="color:var(--muted);font-size:14px;margin:0">Paste a GitHub personal access token with write access to <span class="mono">${OWNER}/${HUB}</span>. It stays in this browser only.</p>
-    <label for="pat">Token</label><input id="pat" type="password" autocomplete="off" placeholder="github_pat_…">
-    <div class="btns"><button class="cta ghost" id="mc">Cancel</button><button class="cta" id="mu">Unlock</button></div>`);
-  $('#mc').onclick = modal.close;
-  const go = async () => {
-    const pat = $('#pat').value.trim(); if (!pat) return;
-    $('#mu').disabled = true;
-    try {
-      const r = await fetch('https://api.github.com/user', {headers: {Authorization: 'Bearer ' + pat, Accept: 'application/vnd.github+json'}});
-      if (!r.ok) throw new Error('GitHub rejected the token (' + r.status + ')');
-      const u = await r.json();
-      if (u.login !== OWNER) throw new Error('Token belongs to "' + u.login + '", expected "' + OWNER + '"');
-      lsSet(PAT_KEY, pat); modal.close(); enableAdmin();
-    } catch (e) { modal.err(e.message); $('#mu').disabled = false; }
-  };
-  $('#mu').onclick = go;
-  $('#pat').onkeydown = e => { if (e.key === 'Enter') go(); };
-};
-$('#lockBtn').onclick = () => {
-  if ((state.dirty.blog || state.dirty.reads) && !confirm('You have unpublished changes. Sign out anyway?')) return;
-  lock();
-};
-
-/* generic editor */
-const SCHEMAS = {
-  post: {title:'Blog post', fields:[['title','Title','input',1],['date','Date (YYYY-MM-DD)','input',1],['body','Body (supports - bullets, **bold**)','textarea',1],['link','Link (optional)','input']], list:()=>state.blog.posts, file:'blog', make:()=>({id:Date.now(), date:new Date().toISOString().slice(0,10), title:'', body:'', link:''})},
-  article: {title:'Article', fields:[['title','Title','input',1],['url','URL','input',1],['note','Note','textarea']], list:()=>state.reads.articles, file:'reads', make:()=>({title:'', url:'', note:''})},
-  book: {title:'Book', fields:[['title','Title','input',1],['author','Author','input',1],['year','Year','input'],['note','Note','textarea']], list:()=>state.reads.books, file:'reads', make:()=>({title:'', author:'', year:'', note:''})},
-};
-function editItem(kind, idx) {
-  const s = SCHEMAS[kind], list = s.list(), isNew = idx < 0, item = isNew ? s.make() : {...list[idx]};
-  modal.open(`<h3>${isNew ? 'Add' : 'Edit'} ${s.title.toLowerCase()}</h3>` + s.fields.map(([k,l,t]) =>
-    `<label>${esc(l)}</label>${t === 'textarea' ? `<textarea data-k="${k}">${esc(item[k])}</textarea>` : `<input data-k="${k}" value="${esc(item[k])}">`}`).join('') +
-    `<div class="btns"><button class="cta ghost" id="mc">Cancel</button><button class="cta" id="ms">Save</button></div>`);
-  $('#mc').onclick = modal.close;
-  $('#ms').onclick = () => {
-    for (const [k,,,req] of s.fields) {
-      const v = $(`#modal [data-k="${k}"]`).value.trim();
-      if (req && !v) return modal.err('Please fill in: ' + s.fields.find(f => f[0] === k)[1]);
-      item[k] = v;
-    }
-    if (kind === 'post' && !/^\d{4}-\d{2}-\d{2}$/.test(item.date)) return modal.err('Date must be YYYY-MM-DD');
-    if ((kind === 'article' || (kind === 'post' && item.link)) && !safeUrl(kind === 'post' ? item.link : item.url)) return modal.err('URL must start with http(s)://');
-    if (kind === 'book') item.year = item.year && /^\d+$/.test(item.year) ? Number(item.year) : item.year;
-    if (isNew) list.push(item); else list[idx] = item;
-    state.dirty[s.file] = true; updateDirty(); renderAll(); modal.close();
-  };
-}
-$('#addPost').onclick = () => editItem('post', -1);
-$('#addArticle').onclick = () => editItem('article', -1);
-$('#addBook').onclick = () => editItem('book', -1);
-document.addEventListener('click', e => {
-  const ed = e.target.closest('[data-edit]'), del = e.target.closest('[data-del]');
-  if (ed) { const [k,i] = ed.dataset.edit.split(':'); editItem(k, +i); }
-  if (del) {
-    const [k,i] = del.dataset.del.split(':'), s = SCHEMAS[k];
-    if (confirm('Delete this ' + s.title.toLowerCase() + '? (Takes effect when you publish.)')) { s.list().splice(+i, 1); state.dirty[s.file] = true; updateDirty(); renderAll(); }
-  }
-});
-
-$('#publishBtn').onclick = async () => {
-  const files = [['blog', 'content/blog.json', () => ({posts: state.blog.posts}), 'blog'], ['reads', 'content/reads.json', () => ({books: state.reads.books, articles: state.reads.articles}), 'reading list']];
-  const todo = files.filter(f => state.dirty[f[0]]); if (!todo.length) return;
-  $('#publishBtn').disabled = true;
-  const out = [];
-  for (const [key, path, get, label] of todo) {   // one file per commit; a failure leaves the others untouched
-    try { const r = await publishFile(path, get(), `cms: update ${label}`); state.dirty[key] = false; out.push(path + ': ' + r); }
-    catch (e) { out.push(path + ': ' + e.message); }
-  }
-  updateDirty();
-  modal.open('<h3>Publish result</h3><pre class="mono" style="white-space:pre-wrap;font-size:13px;color:var(--muted)">' + esc(out.join('\n')) + '</pre><p style="font-size:13px;color:var(--muted)">GitHub Pages usually reflects changes within a minute or two.</p><div class="btns"><button class="cta" id="mc">Close</button></div>');
-  $('#mc').onclick = modal.close;
-};
-window.addEventListener('beforeunload', e => { if (state.dirty.blog || state.dirty.reads) { e.preventDefault(); e.returnValue = ''; } });
-
-boot();
-</script>
+<script src="js/reads-lib.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
