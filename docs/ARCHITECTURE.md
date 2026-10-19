@@ -37,13 +37,19 @@ Key property: **data flows one way**. Product repos notify the hub; the hub only
 
 | Path | Role | Written by |
 |------|------|-----------|
-| `index.html` | Entire site: HTML, CSS, JS, admin layer | Developer |
+| `index.html` | Page markup and styles (strict CSP, no inline script) | Developer |
+| `js/app.js`, `js/reads-lib.js` | Site logic and admin layer; pure, unit-tested helpers (URLs, validation, filters, dates, asset choice) | Developer |
 | `content/products.json` | Registry: which repos to show, with overrides | Owner (edit + commit) |
 | `content/cache.json` | Live GitHub data (description, stars, language, latest release) | `sync.yml` (bot) |
 | `content/blog.json` | Blog posts | Admin CMS |
 | `content/reads.json` | Reading list articles + books | Admin CMS |
-| `scripts/sync-products.js` | Fetches and validates product data | Developer |
+| `scripts/sync-products.js` | Fetches and validates product data (logic exported for tests) | Developer |
+| `scripts/validate-site.js` | CI: schema, URL-safety, CSP, size and syntax checks | Developer |
+| `scripts/health-check.js` | Daily: live site answers and cache matches GitHub releases | Developer |
 | `.github/workflows/sync.yml` | Runs the sync | Developer |
+| `.github/workflows/ci.yml` | Tests and validation on push and pull request (read-only) | Developer |
+| `.github/workflows/health.yml` | Daily health check (read-only) | Developer |
+| `tests/*.test.js` | Node unit tests, no dependencies | Developer |
 | `docs/notify-studio.yml` | Template for product repos | Developer |
 | `docs/ARCHITECTURE.md`, `docs/LEARNING-GUIDE.md` | This documentation | Developer |
 
@@ -62,7 +68,7 @@ Key property: **data flows one way**. Product repos notify the hub; the hub only
 | `url` | no | Live site; card shows **Open app** plus **Source** |
 | `download_asset` | no | Wildcard (`*`) choosing which release file the **Download** button uses, e.g. `PennyExpenseManager-*.zip`. No match shows **Release** (the release page) instead of a wrong file. Omitted = first attached file |
 
-**Cache** (`content/cache.json`): `{ synced_at, products: { "<repo>": { description, stars, language, topics, pushed_at, html_url, latest_release } } }`. `latest_release` is `null` when the repo has no GitHub Release; otherwise `{ tag, name, body, published_at, download_url, assets[{name, download_url, size}] }`.
+**Cache** (`content/cache.json`): `{ synced_at, products: { "<repo>": { description, stars, language, topics, pushed_at, html_url, latest_release } } }`. `pushed_at` is a **date** (`2026-10-19`), not a timestamp, so repeated pushes on one day do not rewrite the file. `latest_release` is `null` when the repo has no GitHub Release; otherwise `{ tag, name, body, published_at, download_url, assets[{name, download_url, size}] }`.
 
 **Blog**: `{ posts: [{ id, date, title, body, link }] }` · **Reads**: `{ books: [{ title, author, year, note }], articles: [{ title, url, note }] }`.
 
@@ -117,3 +123,22 @@ Triggers: nightly cron `0 3 * * *`, `repository_dispatch` type `product-updated`
 - **debasis-web:** has no notify workflow (that repo is left untouched), so its updates arrive via the nightly sync.
 - **Bot commits:** the nightly sync commits to `main`, so local clones must `git pull --rebase` before pushing.
 - **Client-side admin:** the PAT sits in browser storage. Use a dedicated fine-grained token, and lock out on shared machines.
+
+## 9. Guardrails (v1.2)
+
+A read-only safety net that adds no site feature.
+
+| Guardrail | Runs | Checks | On failure |
+|-----------|------|--------|------------|
+| CI (`ci.yml`) | Every push to `main`, every pull request, manually | `node --test tests/*.test.js` and `node scripts/validate-site.js` | Red run; GitHub's failed-workflow notification |
+| Validator (`validate-site.js`) | Inside CI; runnable locally | Content schema, http(s)-only URLs, duplicate repos and ids, `index.html` has lang, title, viewport and a strict CSP, no inline script, referenced files exist, size budgets (`index.html` 60 KB, each JS file 80 KB / 20 KB, total 150 KB), JS syntax | Exit 1 |
+| Health check (`health.yml`) | Daily 06:00 UTC (three hours after the sync), manually | Live site and its JSON files answer; every visible product's latest GitHub release equals the cache | Exit 1 |
+
+Both workflows declare `permissions: contents: read` and use only the automatic `GITHUB_TOKEN`.
+
+Limits worth knowing:
+
+- Pushes made by the sync bot do not trigger CI (GitHub suppresses workflows for `GITHUB_TOKEN` pushes). The daily health check covers cache commits.
+- CI does not block merging: branch protection is not enabled. It alerts; it does not gate.
+- An expiring dispatch token is invisible to the hub (the nightly sync still refreshes data). Keep the calendar reminder.
+- GitHub disables scheduled workflows after 60 days with no repository activity. Run `gh workflow run sync.yml` and `gh workflow run health.yml` at least monthly, or any commit resets the clock. See [impact.md](impact.md) risk V5.

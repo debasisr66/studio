@@ -1,12 +1,12 @@
 {
-  "synced_at": "2026-10-19T07:56:16.074Z",
+  "synced_at": "2026-10-19T11:20:24.061Z",
   "products": {
     "debasisr66/PennyExpenseManager": {
       "description": "This is a Penny Expense Manager product (ChatGPT)",
       "stars": 1,
       "language": "JavaScript",
       "topics": [],
-      "pushed_at": "2026-10-19T07:56:02Z",
+      "pushed_at": "2026-10-19",
       "html_url": "https://github.com/debasisr66/PennyExpenseManager",
       "latest_release": {
         "tag": "v3.2",
@@ -58,7 +58,7 @@
       "stars": 1,
       "language": "HTML",
       "topics": [],
-      "pushed_at": "2026-10-13T12:14:27Z",
+      "pushed_at": "2026-10-13",
       "html_url": "https://github.com/debasisr66/debasis-web",
       "latest_release": null
     }

@@ -1,0 +1,29 @@
+name: CI
+
+# Read-only safety net: unit tests + content/site validation on every push and pull request.
+# Note: pushes made by the sync bot (GITHUB_TOKEN) do not trigger workflows; the daily health check covers those.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Unit tests
+        run: node --test tests/*.test.js
+
+      - name: Validate content and site
+        run: node scripts/validate-site.js

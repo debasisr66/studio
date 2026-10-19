@@ -1,4 +1,6 @@
-# Design — Studio v1.1
+# Design — Studio
+
+Releases: v1.2 (operational flows, §9) · v1.1 (UI). **v1.2 changes no UI**: `index.html` is byte-identical to v1.1.
 
 UI sections, HCI best practices applied, and the flows behind the Reads feature. Diagrams are Mermaid and render on GitHub.
 
@@ -206,3 +208,84 @@ Plain, specific, and actionable:
 ```
 
 Old entries `{ "title", "url", "note" }` remain valid and are shown as before.
+
+## 9. Operational flows (v1.2)
+
+How the safety net works. Nothing here is visible to visitors.
+
+### 9.1 What runs when
+
+```mermaid
+flowchart TD
+  subgraph Triggers
+    A[Admin publishes a read] --> P[Push to main]
+    B[Developer pushes or opens a PR] --> P
+    C[Penny release or README push] --> D[repository_dispatch]
+    E[Nightly 03:00 UTC] --> S
+    F[Daily 06:00 UTC] --> H
+  end
+  P --> CI[CI: unit tests + validate-site]
+  D --> S[Sync: refresh cache.json]
+  S -- changed --> K[Bot commit to main]
+  S -- no change --> N[Nothing committed]
+  H[Health check: site answers, cache equals GitHub releases]
+  CI -- fail --> R[Red run, GitHub failed-workflow email]
+  H -- fail --> R
+```
+
+The sync bot's own commit does not start CI (GitHub does not run workflows for `GITHUB_TOKEN` pushes), which is why the daily health check exists.
+
+### 9.2 Validator decision flow
+
+```mermaid
+flowchart TD
+  A[validate-site.js] --> B[Parse each content file]
+  B -- malformed --> X[Error]
+  B --> C[Schema, URL-safety and duplicate checks]
+  C -- violation --> X
+  C --> D[index.html: lang, title, CSP present and strict, no inline script, referenced files exist]
+  D -- violation --> X
+  D --> E[Size budgets and JS syntax]
+  E -- violation --> X
+  E --> F{Any errors?}
+  F -- no --> G[Exit 0: warnings only]
+  F -- yes --> H[Exit 1]
+```
+
+Errors fail the run; warnings (a repeated link, a product not cached yet) are printed but never fail it.
+
+### 9.3 Health check
+
+```mermaid
+flowchart TD
+  A[health-check.js] --> B[Fetch live pages and JSON]
+  B -- non-200 or bad JSON --> X[Problem]
+  B --> C[For each visible product: GitHub latest release tag]
+  C -- API call failed --> N[Note only, not a problem]
+  C --> D{Cached tag equals GitHub tag?}
+  D -- no --> X
+  D -- yes --> OK[Healthy]
+  X --> R[Exit 1]
+  OK --> Z[Exit 0]
+```
+
+### 9.4 Why the cache no longer churns
+
+```mermaid
+sequenceDiagram
+  participant P as Penny repo
+  participant S as Sync
+  participant C as cache.json
+  P->>S: push at 07:52 (dispatch)
+  S->>C: pushed_at stored as 2026-10-19 (changed: commit)
+  P->>S: push at 07:54, same day
+  S->>S: pushed_at still 2026-10-19: no change, no commit
+  P->>S: push next day
+  S->>C: pushed_at 2026-10-20: commit
+```
+
+Before: the exact timestamp changed on every push, so each push produced a commit (three within five minutes on 2026-10-19). The page only ever showed the date.
+
+### 9.5 Dates
+
+Date-only values (`2026-10-19`) are calendar dates and are formatted in UTC; full timestamps keep local-time formatting. A visitor in Los Angeles now sees "19 Oct 2026", not "18 Oct 2026".

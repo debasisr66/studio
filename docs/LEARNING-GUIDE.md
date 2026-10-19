@@ -225,6 +225,45 @@ git checkout <sha> -- content/cache.json && git commit -m "Restore cache.json fr
 
 **Admin forgot to lock a shared machine:** clear site data for `debasisr66.github.io`, then revoke the admin token.
 
+## Step 12 — Guardrails: tests, validation, CI and health checks (v1.2)
+
+What they are for: catching a broken content file, a loosened security setting or a stalled sync before a visitor does.
+
+**Run the same checks as CI, locally**
+```bash
+node --test tests/*.test.js          # unit tests
+node scripts/validate-site.js        # content + site shell; prints OK or the exact problems
+GH_TOKEN=$(gh auth token) node scripts/health-check.js    # live site + cache versus GitHub releases
+```
+
+**On GitHub**
+```bash
+gh workflow run ci.yml               # CI also runs by itself on every push and pull request
+gh workflow run health.yml           # also runs daily at 06:00 UTC
+gh run list --workflow ci.yml --limit 3
+gh run list --status failure --limit 10     # what is red right now?
+```
+
+**Make failures reach you.** GitHub → Settings → Notifications → **Actions** → "Send notifications for failed workflows only" (email and/or web). If you skip this, a red run only shows in the Actions tab.
+
+**Reading a failure**
+
+| Message | Meaning | Fix |
+|---------|---------|-----|
+| `reads.json articles[3]: url must be a safe http(s) address` | A read has a bad or unsafe link | Edit it in admin (⚙ → Edit) and publish |
+| `blog.json: … is not valid JSON` | A content file was hand-edited badly | `git revert` that commit |
+| `index.html: inline <script> found` | A script was put back into the page | Move it into `js/` (the CSP blocks inline scripts) |
+| `index.html: CSP script-src must not allow 'unsafe-inline'` | CSP was loosened | Restore the strict policy |
+| `… exceeds the …-byte budget` | A file grew a lot | Check what was added; raise the budget in `validate-site.js` only on purpose |
+| `cache says v3.1, GitHub says v3.2` | The hub missed a release | `gh workflow run sync.yml`; if it recurs, check the dispatch token (Step 9 runbook) |
+| `https://…/js/app.js returned 404` | Pages is down or a deploy is incomplete | `gh run list --limit 3`, wait for the Pages build |
+
+**Two things that surprise people**
+1. The sync bot's commits do not start CI (GitHub does not run workflows from `GITHUB_TOKEN` pushes). The daily health check covers them.
+2. GitHub **disables scheduled workflows after 60 days without repository activity**. Check with `gh workflow list --all`; a stopped one shows `disabled_inactivity`. Re-enable with `gh workflow enable sync.yml`. A monthly `gh workflow run sync.yml` keeps everything alive.
+
+**Why the cache stopped changing all day.** The sync used to store Penny's exact last-push time, so every push rewrote `cache.json` and made a commit. It now stores the date only, so a second push on the same day changes nothing. Dates such as `2026-10-19` are shown as that calendar day in every timezone.
+
 ## Command cheat sheet
 
 ```bash
@@ -251,6 +290,11 @@ gh release create vX.Y --repo debasisr66/<repo> --title "…" --notes "…"
 gh release list --repo debasisr66/<repo>
 gh secret set STUDIO_DISPATCH_TOKEN --repo debasisr66/<repo>
 gh secret list --repo debasisr66/<repo>
+
+# guardrails
+node --test tests/*.test.js && node scripts/validate-site.js
+gh run list --status failure --limit 10
+gh workflow list --all
 
 # local
 GH_TOKEN=$(gh auth token) node scripts/sync-products.js

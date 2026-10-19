@@ -1,6 +1,80 @@
-# Impact Analysis — Studio v1.1
+# Impact Analysis — Studio
 
-Date: 2026-10-19 · Branch: `v1.1` · Rollback tag: `v1.0`
+Releases: **v1.2 (in progress, branch `release/v1.2`)** · v1.1 (shipped 2026-10-19)
+
+---
+
+# v1.2 — Guardrails
+
+Date: 2026-10-19 · Rollback tag: `v1.1`
+
+## 1. Change summary
+
+| # | Change | Type |
+|---|--------|------|
+| G1 | `ci.yml`: unit tests + site validation on every push and pull request (read-only) | New workflow |
+| G2 | `scripts/validate-site.js`: schema, URL-safety, CSP, inline-script, referenced-file, size-budget and JS-syntax checks | New script |
+| G3 | `health.yml` + `scripts/health-check.js`: daily check that the live site answers and the cache matches each product's latest GitHub release | New workflow + script |
+| G4 | `scripts/sync-products.js`: logic split into testable functions; `pushed_at` stored as a date, which ends the repeated cache commits | Refactor + fix |
+| G5 | `formatDate` moved into `js/reads-lib.js` and used by the page: date-only values are shown as the same calendar day in every timezone (needed by G4; also fixes blog and read dates for visitors west of Greenwich) | Fix |
+| G6 | Artefacts updated | Docs |
+
+Since the v1.1 tag, `main` also carries the already-live `download_asset` registry option (choose the release file behind the Download button).
+
+## 2. What is touched and what is not
+
+| Component | Touched? | Notes |
+|-----------|----------|-------|
+| `index.html` | **No** | Byte-identical to v1.1 |
+| `js/app.js` | One line | `fmtDate` now points at `RL.formatDate` |
+| `js/reads-lib.js` | Additive | New `formatDate` |
+| `scripts/sync-products.js` | Yes | Refactor + `pushed_at` to day; same outputs otherwise (verified by two real local runs: first migrates, second is a no-op) |
+| `scripts/validate-site.js`, `scripts/health-check.js` | New | Read-only |
+| `.github/workflows/ci.yml`, `health.yml` | New | `permissions: contents: read`, no secrets |
+| `.github/workflows/sync.yml` | **No** | Verified by diff |
+| `content/cache.json` | One-time | `pushed_at` changes from timestamp to date (`2026-10-19T07:56:02Z` → `2026-10-19`) |
+| `content/products.json`, `blog.json`, `reads.json` | No | |
+| Penny and debasis-web repos, notify workflow | No | |
+| Tokens and secrets | No | The new workflows use only the automatic read-only `GITHUB_TOKEN` |
+
+## 3. Data compatibility
+
+- Page code (v1.1) formats `pushed_at` as a date, so a date-only value renders correctly even without G5; G5 only removes a one-day shift for western timezones.
+- Rolling back to v1.1 against the new cache format is safe for the same reason. Rolling forward again needs no migration.
+
+## 4. Blast radius
+
+- **Visitors:** pages look the same. The only visible effect is that dates stay correct in every timezone.
+- **Operations:** the new workflows can only turn a run red and send GitHub's failed-workflow notification. They never write to the repository, never gate a merge (branch protection is not enabled), and cannot block publishing.
+- **Sync pipeline:** unchanged trigger, schedule and permissions; commits become less frequent.
+- **Cost:** a few seconds of runner time per push and per day, free on a public repository.
+
+## 5. Risk register (v1.2)
+
+| ID | Risk | Likelihood | Impact | Mitigation | Status |
+|----|------|-----------|--------|-----------|--------|
+| V1 | CI red on day one from a validator bug | Low | Low (alert only) | Ran on the real repo, on fixtures, and on a deliberately broken copy | Mitigated |
+| V2 | Health check false alarm just after a release | Low | Low | Runs 3 hours after the nightly sync; dispatch normally syncs within minutes | Accepted |
+| V3 | Failure emails switched off in the owner's GitHub account | Medium | Medium | Learning guide shows how to enable "failed workflows only"; `gh run list --status failure` as a fallback | Open (owner action) |
+| V4 | Refactor changes sync behavior | Low | High | 4 unit tests; two real runs and a dry run compared | Mitigated |
+| V5 | **GitHub disables scheduled workflows after 60 days with no repository activity** | Medium | High (nightly sync and daily health check both stop, quietly) | Not solved by v1.2. Interim: run `gh workflow run sync.yml` and `gh workflow run health.yml` monthly, or any commit resets the clock. A keep-alive is a candidate for a later release | **Open, documented** |
+| V6 | CI does not run for the sync bot's commits (GitHub does not trigger workflows from `GITHUB_TOKEN` pushes) | Certain | Low | Daily health check covers cache commits | Accepted |
+| V7 | An expiring dispatch token cannot be seen from the hub | Medium | Low (nightly sync still updates) | Calendar reminder (learning guide, Step 9) | Accepted |
+
+## 6. Rollback
+
+```bash
+git revert -m 1 <v1.2-merge-commit> && git push     # removes workflows, scripts and the refactor
+gh workflow disable "Health check"                  # optional: stop the daily run immediately
+```
+
+No data migration to undo: a v1.1 page reads the new cache correctly.
+
+---
+
+# v1.1 — HCI polish, branding, LinkedIn-style Reads (shipped)
+
+Date: 2026-10-19 · Branch: `v1.1` (merged) · Rollback tag: `v1.0`
 
 ## 1. Change summary
 

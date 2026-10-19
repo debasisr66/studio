@@ -1,5 +1,7 @@
 # Build and Publish — Command Reference
 
+Current release line: **v1.2** (branch `release/v1.2` until merged). Branch names must differ from tag names: a branch called `v1.1` and a tag `v1.1` made `git push origin v1.1` ambiguous (fix: `git push origin refs/tags/v1.1`).
+
 Reference only. There is no build step: the repository is the site. Pages serves `main`, root `/`. Run from `/Users/debasisray/CoworkProjects/studio-site`.
 
 ## 1. Before you start
@@ -14,13 +16,15 @@ gh auth status
 
 ```bash
 git tag v1.0 && git push origin v1.0        # rollback point (done once per release)
-git checkout -b v1.1
+git checkout -b release/v1.2               # never reuse a tag name for a branch
 ```
 
 ## 3. Test locally
 
 ```bash
-node --test tests/*.test.js                  # unit tests (16)
+node --test tests/*.test.js                  # unit tests (45)
+node scripts/validate-site.js                # content + site checks (same as CI)
+GH_TOKEN=$(gh auth token) node scripts/health-check.js   # live site + cache vs GitHub releases
 node --check js/app.js                       # syntax check
 python3 -m http.server 8765                  # then open http://localhost:8765/
 pkill -f "http.server 8765"                  # stop it
@@ -113,3 +117,29 @@ Token scopes and the rotation runbook are in [LEARNING-GUIDE.md](LEARNING-GUIDE.
 2. Open the site, click ⚙, paste the token, Unlock.
 3. Reads → **Share a read…** → fill in → **Post** → **Publish changes**.
 4. Wait 1–2 minutes for Pages, then refresh. **Lock & sign out** when done (it also locks itself after 30 minutes idle).
+
+## 11. Guardrails (v1.2)
+
+```bash
+# run exactly what CI runs
+node --test tests/*.test.js && node scripts/validate-site.js
+
+# run the workflows on GitHub by hand and read the result
+gh workflow run ci.yml
+gh workflow run health.yml
+gh run list --workflow ci.yml --limit 3
+gh run list --workflow health.yml --limit 3
+gh run view <run-id> --log
+
+# anything failing right now?
+gh run list --status failure --limit 10
+
+# keep scheduled workflows alive (GitHub disables them after 60 days without repository activity)
+gh workflow run sync.yml && gh workflow run health.yml
+gh workflow list --all                      # a disabled workflow shows as "disabled_inactivity"
+gh workflow enable sync.yml                 # re-enable if needed
+```
+
+Failure emails: GitHub → Settings → Notifications → **Actions** → enable "Send notifications for failed workflows only" (email and/or web). Without it, red runs are only visible in the Actions tab and with `gh run list --status failure`.
+
+Merge steps for a release: see §5–7. Tag with the full ref if a branch of the same name exists: `git push origin refs/tags/v1.2`.

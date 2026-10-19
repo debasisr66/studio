@@ -131,7 +131,17 @@
     return list.filter(function (a) { return re.test(a.name); })[0] || null;
   }
 
-  return { KINDS: KINDS, pickAsset: pickAsset, LIMITS: LIMITS, normalizeUrl: normalizeUrl, domainOf: domainOf, isDuplicate: isDuplicate,
+  /* '19 Oct 2026'. Date-only strings (2026-10-19) are calendar dates, so they are formatted in UTC;
+     parsing them as local time would show the previous day to visitors west of Greenwich. */
+  function formatDate(d) {
+    var t = new Date(d);
+    if (isNaN(t)) return '';
+    var o = { day: 'numeric', month: 'short', year: 'numeric' };
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(d))) o.timeZone = 'UTC';
+    return t.toLocaleDateString('en-GB', o);
+  }
+
+  return { KINDS: KINDS, pickAsset: pickAsset, formatDate: formatDate, LIMITS: LIMITS, normalizeUrl: normalizeUrl, domainOf: domainOf, isDuplicate: isDuplicate,
     parseTags: parseTags, validateEntry: validateEntry, shareLinks: shareLinks, entryView: entryView,
     filterReads: filterReads, allTags: allTags };
 });
