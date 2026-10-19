@@ -2,6 +2,18 @@
   "books": [],
   "articles": [
     {
+      "id": 1792410227740,
+      "added": "2026-10-19",
+      "url": "https://code.claude.com/docs/en/plugins/mods/overview",
+      "title": "Claude Code Mods - A hook, a control handle to verification and workflow!",
+      "comment": "Add panes, commands, and tool call rules to Claude Code with a mod. See what a mod can do, how to make or install one, and where mods run.\nA mod is a plugin that changes how Claude Code looks and behaves. It’s made of JavaScript or TypeScript event handlers:",
+      "kind": "article",
+      "tags": [
+        "ai",
+        "claudecode"
+      ]
+    },
+    {
       "id": 1792407518753,
       "added": "2026-10-19",
       "url": "https://claude.com/blog/the-ai-native-sdlc-playbook",
