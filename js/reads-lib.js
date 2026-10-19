@@ -120,7 +120,18 @@
     return Object.keys(count).sort(function (a, b) { return count[b] - count[a] || (a < b ? -1 : 1); });
   }
 
-  return { KINDS: KINDS, LIMITS: LIMITS, normalizeUrl: normalizeUrl, domainOf: domainOf, isDuplicate: isDuplicate,
+  /* Chooses the release file for a card's Download button (used by the products grid, not Reads).
+     pattern: optional wildcard such as "PennyExpenseManager-*.zip" ('*' = any characters, case-insensitive).
+     No pattern -> first asset (previous behavior). Pattern with no match -> null, so the card falls back
+     to the release page instead of offering a wrong file. */
+  function pickAsset(assets, pattern) {
+    var list = Array.isArray(assets) ? assets.filter(function (a) { return a && a.name && a.download_url; }) : [];
+    if (typeof pattern !== 'string' || !pattern.trim()) return list[0] || null;
+    var re = new RegExp('^' + pattern.trim().replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$', 'i');
+    return list.filter(function (a) { return re.test(a.name); })[0] || null;
+  }
+
+  return { KINDS: KINDS, pickAsset: pickAsset, LIMITS: LIMITS, normalizeUrl: normalizeUrl, domainOf: domainOf, isDuplicate: isDuplicate,
     parseTags: parseTags, validateEntry: validateEntry, shareLinks: shareLinks, entryView: entryView,
     filterReads: filterReads, allTags: allTags };
 });

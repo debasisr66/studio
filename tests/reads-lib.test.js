@@ -120,3 +120,31 @@ test('allTags: unique, sorted by frequency then name', () => {
   const list = [{ tags: ['b', 'a'] }, { tags: ['a'] }, {}];
   assert.deepEqual(L.allTags(list), ['a', 'b']);
 });
+
+test('pickAsset: no pattern keeps first-asset behavior', () => {
+  const a = [{ name: 'doc.docx', download_url: 'u1' }, { name: 'app.zip', download_url: 'u2' }];
+  assert.equal(L.pickAsset(a).name, 'doc.docx');
+  assert.equal(L.pickAsset(a, '').name, 'doc.docx');
+  assert.equal(L.pickAsset([]), null);
+  assert.equal(L.pickAsset(undefined, '*.zip'), null);
+});
+
+test('pickAsset: wildcard match, case-insensitive, first match wins', () => {
+  const a = [
+    { name: 'Notes.md', download_url: 'u0' },
+    { name: 'PennyExpenseManager-v3.2.zip.sha256', download_url: 'u1' },
+    { name: 'PennyExpenseManager-v3.2.zip', download_url: 'u2' },
+    { name: 'Other.zip', download_url: 'u3' },
+  ];
+  assert.equal(L.pickAsset(a, 'PennyExpenseManager-*.zip').download_url, 'u2');   // not the .sha256
+  assert.equal(L.pickAsset(a, 'pennyexpensemanager-*.ZIP').download_url, 'u2');
+  assert.equal(L.pickAsset(a, '*.zip').download_url, 'u2');
+});
+
+test('pickAsset: no match returns null; regex characters in the pattern are literal', () => {
+  const a = [{ name: 'app.zip', download_url: 'u1' }, { name: 'appXzip', download_url: 'u2' }];
+  assert.equal(L.pickAsset(a, '*.ipa'), null);
+  assert.equal(L.pickAsset(a, 'app.zip').download_url, 'u1');       // '.' is literal, so appXzip is not matched first
+  assert.equal(L.pickAsset(a, 'a(p)p.zip'), null);
+  assert.equal(L.pickAsset([{ name: 'x', download_url: 'u' }], '[')?.name, undefined);
+});

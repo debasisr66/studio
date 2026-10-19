@@ -59,7 +59,8 @@ Key property: **data flows one way**. Product repos notify the hub; the hub only
 | `category` | no | Tag on the card (e.g. Productivity, Information) |
 | `featured` | no | Sorted first, highlighted card |
 | `hidden` | no | Excluded from site and sync |
-| `url` | no | Live site; card shows **Visit site** plus **Source** |
+| `url` | no | Live site; card shows **Open app** plus **Source** |
+| `download_asset` | no | Wildcard (`*`) choosing which release file the **Download** button uses, e.g. `PennyExpenseManager-*.zip`. No match shows **Release** (the release page) instead of a wrong file. Omitted = first attached file |
 
 **Cache** (`content/cache.json`): `{ synced_at, products: { "<repo>": { description, stars, language, topics, pushed_at, html_url, latest_release } } }`. `latest_release` is `null` when the repo has no GitHub Release; otherwise `{ tag, name, body, published_at, download_url, assets[{name, download_url, size}] }`.
 

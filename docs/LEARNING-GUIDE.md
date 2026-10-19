@@ -101,7 +101,7 @@ curl -s -o /dev/null -w "%{http_code}\n" https://debasisr66.github.io/studio/
 
 ## Step 7 — Add another product
 
-1. Add an entry to `content/products.json`. For a site-style product add `"url": "https://…"` and a `category`.
+1. Add an entry to `content/products.json`. For a site-style product add `"url": "https://…"` and a `category`. To control the Download button add `"download_asset": "MyApp-*.zip"` (wildcard on the release file name).
 2. Refresh the cache and publish:
    ```bash
    GH_TOKEN=$(gh auth token) node scripts/sync-products.js

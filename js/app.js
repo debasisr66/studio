@@ -89,8 +89,9 @@ function renderProducts() {
   $('#grid').innerHTML = list.map(p => {
     const l = p.live, lang = l && l.language;
     const site = safeUrl(p.e.url);
-    const hasAsset = !!(p.rel && p.rel.assets && p.rel.assets[0]);
-    const dl = p.rel && safeUrl(hasAsset ? p.rel.assets[0].download_url : p.rel.download_url);
+    const asset = p.rel ? RL.pickAsset(p.rel.assets, p.e.download_asset) : null;   // registry "download_asset" wildcard picks the app build
+    const hasAsset = !!asset;
+    const dl = p.rel && safeUrl(hasAsset ? asset.download_url : p.rel.download_url);
     return `<article class="card${p.e.featured ? ' featured' : ''}">
       <div class="row">${p.e.category ? `<span class="tag">${esc(p.e.category)}</span>` : ''}${p.rel ? `<span class="tag ver mono">${esc(p.rel.tag)}</span>` : ''}</div>
       <h3>${esc(p.name)}</h3>
