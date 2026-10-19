@@ -15,7 +15,7 @@ const isStr = v => typeof v === 'string';
 const httpUrl = u => { try { const x = new URL(u); return x.protocol === 'http:' || x.protocol === 'https:'; } catch { return false; } };
 
 // size budgets in bytes: generous versus today's sizes, tight enough to catch accidental bloat
-const BUDGETS = { 'index.html': 60 * 1024, 'js/app.js': 80 * 1024, 'js/reads-lib.js': 20 * 1024, total: 150 * 1024 };
+const BUDGETS = { 'index.html': 60 * 1024, 'css/site.css': 30 * 1024, 'js/app.js': 80 * 1024, 'js/reads-lib.js': 20 * 1024, 'js/token-store.js': 10 * 1024, total: 150 * 1024 };
 
 function validateProducts(list) {
   if (!Array.isArray(list)) return ['products.json: must be an array'];
@@ -104,12 +104,63 @@ function validateIndex(html, exists) {
     const script = (csp[1].match(/script-src([^;]*)/) || [, ''])[1];
     if (/unsafe-inline|unsafe-eval/.test(script)) errors.push("index.html: CSP script-src must not allow 'unsafe-inline' or 'unsafe-eval'");
   }
+  if (csp) {
+    const style = (csp[1].match(/style-src([^;]*)/) || [, ''])[1];
+    if (/unsafe-inline|unsafe-eval/.test(style)) errors.push("index.html: CSP style-src must not allow 'unsafe-inline' or 'unsafe-eval'");
+  }
   if (/<script(?![^>]*\bsrc=)[^>]*>/i.test(html)) errors.push('index.html: inline <script> found (the CSP forbids it); move it to js/');
+  if (/<style[\s>]/i.test(html)) errors.push('index.html: inline <style> block found (the CSP forbids it); move it to css/site.css');
+  if (/<[a-z][^>]*\sstyle\s*=/i.test(html)) errors.push('index.html: style= attribute found (the CSP forbids it); use a class');
   for (const m of html.matchAll(/<(?:script|link)\b[^>]*\b(?:src|href)="([^"#?]+)"/gi)) {
     const ref = m[1];
     if (/^(https?:|data:|\/\/)/i.test(ref) || ref.startsWith('#')) continue;
     if (!exists(ref)) errors.push(`index.html: references ${ref}, which does not exist`);
   }
+  return errors;
+}
+
+/* JS that builds markup must not emit style attributes (blocked by the CSP); use classes, or element.style.setProperty. */
+function checkNoInlineStyles(sources) {
+  const errors = [];
+  for (const [f, src] of Object.entries(sources)) {
+    if (/\sstyle\s*=\s*\\?["']/i.test(src) || /setAttribute\(\s*['"]style['"]/.test(src))
+      errors.push(`${f}: generates a style attribute (the CSP forbids it); use a class or element.style.setProperty`);
+  }
+  return errors;
+}
+
+const VERSION_RE = /^\d+\.\d+(\.\d+)?$/;
+const vparts = v => v.split('.').map(Number);
+function vcompare(a, b) {
+  const x = vparts(a), y = vparts(b);
+  for (let i = 0; i < 3; i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; }
+  return 0;
+}
+const plainText = t => isStr(t) && !/[<>]/.test(t);
+
+function validateChangelog(c) {
+  if (!isObj(c) || !Array.isArray(c.releases) || !c.releases.length) return ['changelog.json: needs a non-empty releases array'];
+  const errors = [];
+  c.releases.forEach((r, i) => {
+    const at = `changelog.json[${i}]`;
+    if (!isObj(r)) return errors.push(`${at}: must be an object`);
+    if (!isStr(r.version) || !VERSION_RE.test(r.version)) errors.push(`${at}: version must look like 1.3 or 1.3.1`);
+    else if (i > 0 && isObj(c.releases[i - 1]) && isStr(c.releases[i - 1].version) && VERSION_RE.test(c.releases[i - 1].version)) {
+      const d = vcompare(c.releases[i - 1].version, r.version);
+      if (d === 0) errors.push(`${at}: duplicate version ${r.version}`);
+      else if (d < 0) errors.push(`${at}: versions must be in descending order (newest first)`);
+    }
+    if (!DATE_RE.test(String(r.date))) errors.push(`${at}: date must be YYYY-MM-DD`);
+    if (!isStr(r.title) || !r.title.trim() || r.title.length > 80) errors.push(`${at}: title is required (up to 80 characters)`);
+    else if (!plainText(r.title)) errors.push(`${at}: title must be plain text (no markup)`);
+    if (!Array.isArray(r.items) || r.items.length < 1 || r.items.length > 6) errors.push(`${at}: items must be a list of 1 to 6 entries`);
+    else r.items.forEach((t, j) => {
+      if (!isStr(t) || !t.trim() || t.length > 160) errors.push(`${at}: items[${j}] must be text up to 160 characters`);
+      else if (!plainText(t)) errors.push(`${at}: items[${j}] must be plain text (no markup)`);
+      else if (/https?:\/\/|www\./i.test(t)) errors.push(`${at}: items[${j}] must not contain links`);
+    });
+    if (isStr(r.title) && /https?:\/\/|www\./i.test(r.title)) errors.push(`${at}: title must not contain links`);
+  });
   return errors;
 }
 
@@ -146,17 +197,23 @@ function run() {
   const reads = json('content/reads.json');
   if (reads !== undefined) { const r = validateReads(reads); errors.push(...r.errors); warnings.push(...r.warnings); }
 
+  const changelog = json('content/changelog.json');
+  if (changelog !== undefined) errors.push(...validateChangelog(changelog));
+
   const html = read('index.html');
   errors.push(...validateIndex(html, ref => fs.existsSync(path.join(ROOT, ref))));
 
-  const files = ['index.html', ...fs.readdirSync(path.join(ROOT, 'js')).filter(f => f.endsWith('.js')).map(f => 'js/' + f)];
+  const dirFiles = (dir, ext) => fs.existsSync(path.join(ROOT, dir)) ? fs.readdirSync(path.join(ROOT, dir)).filter(f => f.endsWith(ext)).map(f => dir + '/' + f) : [];
+  const files = ['index.html', ...dirFiles('css', '.css'), ...dirFiles('js', '.js')];
   const sizes = Object.fromEntries(files.map(f => [f, Buffer.byteLength(read(f))]));
   errors.push(...checkSizes(sizes));
-  errors.push(...checkSyntax(Object.fromEntries(files.filter(f => f.endsWith('.js')).map(f => [f, read(f)]))));
+  const jsSources = Object.fromEntries(files.filter(f => f.endsWith('.js')).map(f => [f, read(f)]));
+  errors.push(...checkSyntax(jsSources));
+  errors.push(...checkNoInlineStyles(jsSources));
   return { errors, warnings, sizes };
 }
 
-module.exports = { validateProducts, validateCache, validateBlog, validateReads, validateIndex, checkSizes, checkSyntax, BUDGETS };
+module.exports = { validateProducts, validateCache, validateBlog, validateReads, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
 
 if (require.main === module) {
   const { errors, warnings, sizes } = run();

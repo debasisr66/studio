@@ -1,6 +1,6 @@
 # Plan — Studio
 
-Status key: ✅ done · ⏳ pending · 🔒 needs owner · Releases: **v1.3 (in progress)**, v1.2 (shipped, tag `v1.2`), v1.1 (shipped, tag `v1.1`)
+Status key: ✅ done · ⏳ pending · 🔒 needs owner · Releases: **v1.3 (built and verified locally; awaiting merge approval)**, v1.2 (shipped, tag `v1.2`), v1.1 (shipped, tag `v1.1`)
 
 ---
 
@@ -26,6 +26,7 @@ impact (done) → **plan (this document)** → design → build → test → sec
 | V2 | What's new button, dialog and unseen-update dot |
 | V3 | `content/changelog.json` (backfilled for v1.0–v1.3 in plain language), validator rules, tests |
 | S1 | `docs/security.md`; all artefacts updated, including a v1.3 changelog entry |
+| H1b | Token logic extracted into `js/token-store.js` so the security-critical behavior (including blocked storage) is unit-tested; added during build |
 
 ## Decisions (made without asking, easy to change)
 
@@ -46,13 +47,13 @@ impact (done) → **plan (this document)** → design → build → test → sec
 | 1 | Impact analysis | Reviewed | ✅ |
 | 2 | This plan | Reviewed | ✅ |
 | 3 | Design: What's new UX and flows, admin session, CSP before/after | Reviewed | ✅ (`design.md` §10) |
-| 4a | Baseline: copy of v1.2 for the visual comparison; changelog data; validator rules and tests (tests first) | Tests pass | ⏳ |
-| 4b | CSP refactor: `css/site.css`, remove inline styles, script-applied dynamic styles | Computed-style diff clean; zero CSP violations | ⏳ |
-| 4c | Admin token in `sessionStorage`, legacy purge, memory fallback, unlock text | Storage tests pass | ⏳ |
-| 4d | What's new button, dialog, version, dot | Keyboard and screen-reader checks scripted | ⏳ |
-| 5 | Test: unit, visual diff, browser flows at 375/768/1280 in both themes, regression | All pass; results in `test.md` | ⏳ |
-| 6 | Security checks: checklist in `security.md`, hostile inputs, storage, CSP, secrets scan | No open High findings | ⏳ |
-| 7 | Update artefacts: plan, impact, design, test, build, model-use, security, architecture, learning guide, README, changelog | Consistent and cross-referenced | ⏳ |
+| 4a | Baseline: copy of v1.2 for the visual comparison; changelog data; validator rules and tests (tests first) | Tests pass | ✅ 8 new validator tests; rules flagged all 5 real violations before the refactor |
+| 4b | CSP refactor: `css/site.css`, remove inline styles, script-applied dynamic styles | Computed-style diff clean; zero CSP violations | ✅ 24 cases, 0 differences; 0 violations |
+| 4c | Admin token in `sessionStorage`, legacy purge, memory fallback, unlock text | Storage tests pass | ✅ extracted to `js/token-store.js` (8 unit tests) + in-page checks |
+| 4d | What's new button, dialog, version, dot | Keyboard and screen-reader checks scripted | ✅ one accessibility defect found and fixed (DEF-07) |
+| 5 | Test: unit, visual diff, browser flows at 375/768/1280 in both themes, regression | All pass; results in `test.md` | ✅ 61 unit tests; 24-case visual matrix; regression clean |
+| 6 | Security checks: checklist in `security.md`, hostile inputs, storage, CSP, secrets scan | No open High findings | ✅ 15 checks pass; no High or Critical findings |
+| 7 | Update artefacts: plan, impact, design, test, build, model-use, security, architecture, learning guide, README, changelog | Consistent and cross-referenced | ✅ |
 | 8 | Owner approves; merge; push; CI, Pages and health green; tag `v1.3` | Live smoke checklist | ⏳ 🔒 |
 
 ## Acceptance criteria

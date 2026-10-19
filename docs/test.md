@@ -1,10 +1,135 @@
 # Test Plan and Traceability — Studio
 
-Releases: **v1.2 (shipped 2026-10-19)** · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
+Releases: **v1.3 (built and verified locally; awaiting merge approval)** · v1.2 (shipped) · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
 
 ---
 
-# v1.2 — Guardrails
+# v1.3 — Safer admin session, version tracking, What's new
+
+Date: 2026-10-19 · Environment: macOS, Node v25.2.1, Claude desktop browser pane (Chromium engine), local static server; no real token used anywhere (a clearly fake test token and a stubbed GitHub API stand in)
+
+## A. Requirements
+
+| ID | Requirement |
+|----|-------------|
+| REQ-23 | Admin token lives only in `sessionStorage` (this tab); never in `localStorage`, cookies, URL or DOM; a token left by earlier versions is deleted; blocked storage falls back to memory |
+| REQ-24 | CSP forbids `'unsafe-inline'` for scripts **and** styles; no inline script, `<style>` or `style=`; zero violations in every flow |
+| REQ-25 | The page looks the same as v1.2 except for the intentional additions |
+| REQ-26 | The current version is visible and comes from one source |
+| REQ-27 | What's new: opens a dialog listing releases newest first; a dot marks unseen updates; keyboard and screen-reader friendly |
+| REQ-28 | The changelog is validated in CI; hostile or missing content is harmless |
+| REQ-29 | Nothing else breaks (sync, health, other content, Penny, debasis-web) |
+| REQ-30 | All artefacts updated, including `security.md` |
+
+## B. Traceability matrix
+
+| Req | Test cases | Result |
+|-----|-----------|--------|
+| REQ-23 | TC-K01–K13 | ✅ (in-page blocked-storage path is unit-tested only) |
+| REQ-24 | TC-C01–C04, C09, TC-S09, TC-S10, TC-S12 | ✅ |
+| REQ-25 | TC-V01–V03 | ✅ |
+| REQ-26 | TC-C05, TC-W01, TC-W04 | ✅ |
+| REQ-27 | TC-W01, W02, W04, W05 | ✅ |
+| REQ-28 | TC-C05–C08, TC-S11, TC-W03 | ✅ |
+| REQ-29 | TC-R12–R16 | ✅ |
+| REQ-30 | TC-D03 | ✅ |
+
+## C. Test cases and results
+
+**Unit tests: `node --test tests/*.test.js` — 61 of 61 pass** (21 reads/date/asset, 23 validator, 4 sync, 5 health, 8 token store).
+
+### Admin token (REQ-23)
+
+| ID | What it checks | Result |
+|----|----------------|--------|
+| TC-K01–K08 | `tests/token-store.test.js`: token goes only into the given storage and reads back; the capability probe cleans up; `del` clears storage and memory; blocked storage and failing writes fall back to memory, persisting nothing; a new store over the same storage (reload) sees the token, over a fresh storage (new tab) does not; `purge` removes a legacy token, reports it, tolerates blocked storage and never touches other keys | ✅ |
+| TC-K09 | Real page: a planted `localStorage` token is deleted on load, not copied to `sessionStorage`, admin stays locked, other keys (theme) untouched | ✅ |
+| TC-K10 | Stubbed `/user` returning another login: error shown ("belongs to someone-else…"), nothing stored, admin stays off | ✅ |
+| TC-K11 | Valid unlock: token in `sessionStorage` only; not in any `localStorage` value, the DOM, cookies or the URL; dialog closed; composer visible; zero CSP violations | ✅ |
+| TC-K12 | Publish with the stubbed API: `GET` (with `?ref=main`) then one `PUT` with the file's SHA and branch; the Bearer header is the session token; identical content gives "unchanged" with no `PUT` | ✅ |
+| TC-K13 | Reload in the same tab stays unlocked; **Lock** clears `sessionStorage`, hides the composer, restores the gear | ✅ |
+
+### Validator and strict CSP (REQ-24, REQ-28)
+
+| ID | What it checks | Result |
+|----|----------------|--------|
+| TC-C01 | CSP with `'unsafe-inline'` in `style-src` is rejected; a strict one passes | ✅ |
+| TC-C02 | Inline `<style>` and `style=` attributes in HTML are rejected (including upper-case and single-quoted) | ✅ |
+| TC-C03 | A linked stylesheet that exists passes; a missing one is reported | ✅ |
+| TC-C04 | JS that builds a style attribute (template, `setAttribute`, escaped quote) is rejected; `element.style.setProperty` is allowed | ✅ |
+| TC-C05 | Valid newest-first changelog (including `1.1.1`) passes | ✅ |
+| TC-C06 | Missing or empty releases, bad version, bad date, wrong order and duplicates are reported | ✅ |
+| TC-C07 | Title and item limits and types; markup and links in text are rejected | ✅ |
+| TC-C08 | The stylesheet is inside the size budget | ✅ |
+| TC-C09 | Validator on the real repo **before** the refactor: 5 errors (no changelog, `unsafe-inline` styles, inline `<style>`, `style=`, JS style attribute). After: 0 errors, 0 warnings | ✅ |
+
+### Visual regression (REQ-25)
+
+Method: a harness loads the frozen v1.2 build and the new build in same-origin frames with identical content, at 375, 768 and 1280 px in dark and light, in four states (visitor view, admin with composer and preview, admin dialog, release notes expanded), and compares computed styles and sizes element by element. The scroll-spy highlight (`aria-current`) is normalised first because it depends on timing.
+
+| ID | What it checks | Result |
+|----|----------------|--------|
+| TC-V01 | **The harness can fail**: a deliberate 1 px padding change and a colour change are reported (23 differences); an injected `<style>` is correctly blocked by the new CSP | ✅ |
+| TC-V02 | After the CSS extraction, before the new UI: 24 cases, **0 differences** | ✅ |
+| TC-V03 | Final build: 24 cases; all 180 differences fall in the header container, the footer, and the paragraph in the admin dialog (reworded text); no other region changed | ✅ |
+
+### What's new and version (REQ-26, REQ-27)
+
+| ID | What it checks | Result |
+|----|----------------|--------|
+| TC-W01 | Real click on the header button opens "What's new in Studio": four releases, newest first, **Latest** badge on v1.3; focus lands on the title; list scrolled to the top | ✅ |
+| TC-W02 | Dot shown when the stored version differs; opening the dialog stores `1.3`, clears the dot and resets the accessible name | ✅ |
+| TC-W03 | Missing changelog: button and version hidden, page otherwise renders | ✅ |
+| TC-W04 | Footer shows "Studio v1.3" as a button named "Studio version 1.3, open What's new"; header button is 44 × 44 px on a phone; no horizontal scroll at 375 px | ✅ |
+| TC-W05 | Escape closes the dialog and focus returns to the header button | ✅ |
+
+### Security (REQ-24, REQ-28) — see [security.md](security.md)
+
+| ID | What it checks | Result |
+|----|----------------|--------|
+| TC-S09 | Fresh tab, clean console: zero CSP violations across load, What's new, release notes expanded, admin dialog, composer with live preview, re-render, theme toggle | ✅ |
+| TC-S10 | Dynamic values work under the strict CSP: every avatar with hue data is painted; language dots are painted | ✅ |
+| TC-S11 | Hostile changelog (markup in title and items, `javascript:` text, bad version and date): no `img`, `script`, `strong` or `a` created; `window.__pwn` unset; no violations | ✅ |
+| TC-S12 | No `eval`, `new Function`, `document.write` in the JS; no new third-party host; no new dependency; no token-like strings in the repo | ✅ |
+
+### Regression (REQ-29)
+
+| ID | What it checks | Result |
+|----|----------------|--------|
+| TC-R12 | `git diff main` empty for `.github/`, `sync-products.js`, `health-check.js`, products, blog, reads, cache and the notify template | ✅ |
+| TC-R13 | Sync dry run: both products fetched, "No changes" | ✅ |
+| TC-R14 | Health check against the live site: HEALTHY | ✅ |
+| TC-R15 | All earlier unit tests still pass (45 → 61 total) | ✅ |
+| TC-R16 | Visitor-facing content, Reads, release notes and share buttons render identically (covered by TC-V02/V03) | ✅ |
+
+### Documentation
+
+| ID | What it checks | Result |
+|----|----------------|--------|
+| TC-D03 | Plan, impact, design, test, build, model-use, security, architecture, learning guide, README and changelog updated | ✅ |
+
+## D. Defects found during v1.3
+
+| ID | Defect | Found by | Fix |
+|----|--------|----------|-----|
+| DEF-07 | The header What's new button had **no accessible name on phones**: its text is hidden there, the icon is decorative, and the screen-reader span was empty until an update existed | Reading the browser's accessibility tree after building the button | Explicit `aria-label`, switched to "What's new, new updates available" when there is news |
+| DEF-08 | Footer on a phone split the date across two lines once the version was added | Screenshot | "Synced from GitHub · date" kept together; version label on its own |
+| DEF-09 | The first design focused the dialog's Close button, which would open a long list scrolled to the bottom | Design review | Dialog opens focused on its title (`tabindex="-1"`) |
+
+Observations that were **not** defects: the scroll-spy highlight produced false differences in the first comparison run (normalised, then 0 differences); one CSP console line in an old tab came from the harness's own deliberate injection (fresh tab: clean).
+
+## E. Not run (stated plainly)
+
+- The blocked-`sessionStorage` fallback in a real browser (covered by unit tests only).
+- The 30-minute idle lock (logic unchanged; timer not waited out).
+- Real screen reader (VoiceOver/NVDA) and a physical phone.
+- A real admin unlock and publish with the owner's real token after deploy: needed once, because the owner must sign in again after this release.
+- First CI run on `release/v1.3` and the live smoke checklist: after merge.
+
+---
+
+# v1.2 — Guardrails (shipped)
+
 
 Date: 2026-10-19 · Environment: macOS, Node v25.2.1 locally, Node 22 in CI; live checks against https://debasisr66.github.io/studio/
 

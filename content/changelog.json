@@ -1,0 +1,46 @@
+{
+  "releases": [
+    {
+      "version": "1.3",
+      "date": "2026-10-19",
+      "title": "Safer sign-in and What's new",
+      "items": [
+        "See what changed with the new What's new button.",
+        "The version now shows at the bottom of every page.",
+        "Admin sign-in is forgotten when the tab closes.",
+        "Tighter security rules for page styling."
+      ]
+    },
+    {
+      "version": "1.2",
+      "date": "2026-10-19",
+      "title": "Reliability",
+      "items": [
+        "Automatic checks on every change and every day to catch problems early.",
+        "Dates show the right day in every timezone.",
+        "Download buttons can point at the right file (Penny now downloads the app, not a document)."
+      ]
+    },
+    {
+      "version": "1.1",
+      "date": "2026-10-19",
+      "title": "Reads and a refreshed look",
+      "items": [
+        "Share a read: a searchable reading list with tag filters, Share on LinkedIn and Copy link.",
+        "Studio by Debasis Ray, learning never ends!",
+        "Easier to use: keyboard friendly, clearer colours, larger touch targets, light and dark themes.",
+        "Phone fix: long release notes no longer push the page sideways and are collapsed."
+      ]
+    },
+    {
+      "version": "1.0",
+      "date": "2026-10-13",
+      "title": "Launch",
+      "items": [
+        "Products pulled live from GitHub with release notes and downloads.",
+        "Updates feed of the latest releases.",
+        "Blog and Books."
+      ]
+    }
+  ]
+}

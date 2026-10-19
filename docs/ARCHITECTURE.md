@@ -37,14 +37,17 @@ Key property: **data flows one way**. Product repos notify the hub; the hub only
 
 | Path | Role | Written by |
 |------|------|-----------|
-| `index.html` | Page markup and styles (strict CSP, no inline script) | Developer |
+| `index.html` | Page markup only (strict CSP: no inline script, no inline style) | Developer |
+| `css/site.css` | The stylesheet | Developer |
 | `js/app.js`, `js/reads-lib.js` | Site logic and admin layer; pure, unit-tested helpers (URLs, validation, filters, dates, asset choice) | Developer |
+| `js/token-store.js` | Where the admin token lives (`sessionStorage`, memory fallback, legacy purge); unit-tested | Developer |
+| `content/changelog.json` | Release notes shown by **What's new** and the footer version; newest first | Owner (git) |
 | `content/products.json` | Registry: which repos to show, with overrides | Owner (edit + commit) |
 | `content/cache.json` | Live GitHub data (description, stars, language, latest release) | `sync.yml` (bot) |
 | `content/blog.json` | Blog posts | Admin CMS |
 | `content/reads.json` | Reading list articles + books | Admin CMS |
 | `scripts/sync-products.js` | Fetches and validates product data (logic exported for tests) | Developer |
-| `scripts/validate-site.js` | CI: schema, URL-safety, CSP, size and syntax checks | Developer |
+| `scripts/validate-site.js` | CI: schema, URL-safety, CSP (scripts and styles), no inline styles, changelog, size and syntax checks | Developer |
 | `scripts/health-check.js` | Daily: live site answers and cache matches GitHub releases | Developer |
 | `.github/workflows/sync.yml` | Runs the sync | Developer |
 | `.github/workflows/ci.yml` | Tests and validation on push and pull request (read-only) | Developer |
@@ -95,10 +98,10 @@ Triggers: nightly cron `0 3 * * *`, `repository_dispatch` type `product-updated`
 ## 6. Admin CMS
 
 1. ⚙ opens a modal. The token is checked against `GET https://api.github.com/user`, and the login must equal `debasisr66`.
-2. The token is stored in `localStorage('studio-admin-pat')` only. It is never committed or logged.
+2. The token is stored in `sessionStorage('studio-admin-pat')` only: this tab, forgotten when it closes; if the browser blocks that, in memory only. It is never in `localStorage`, cookies, the URL or the DOM, and never committed or logged. A token that an earlier version left in `localStorage` is deleted on load.
 3. Edits (add/edit/delete for posts, articles, books) change an in-memory draft. The admin bar shows what is unpublished.
 4. **Publish** does, per changed file: `GET` current SHA → validate JSON → skip if content is identical → `PUT` with the SHA. **One file per commit**, so a failure leaves the other file untouched. Errors are shown in a dialog, and the draft is kept.
-5. Lock & sign out removes the token from `localStorage`.
+5. Lock & sign out removes the token; so do closing the tab and 30 minutes without interaction.
 
 ## 7. Safety rules → where enforced
 
@@ -112,7 +115,7 @@ Triggers: nightly cron `0 3 * * *`, `repository_dispatch` type `product-updated`
 | Failure isolation, rate-limit guard, atomic cache | `scripts/sync-products.js` |
 | Scoped dispatch token | Fine-grained PAT limited to `debasisr66/studio` |
 | Fallback rendering | `renderProducts()` and `boot()` |
-| Admin token never committed | Only `localStorage`, key `studio-admin-pat` |
+| Admin token never committed | Only `sessionStorage`, key `studio-admin-pat` (`js/token-store.js`) |
 | History is the backup | Every cache commit is revertible; no squashing |
 
 ## 8. Known limits and tradeoffs
@@ -122,7 +125,7 @@ Triggers: nightly cron `0 3 * * *`, `repository_dispatch` type `product-updated`
 - **Dispatch token breadth:** GitHub's dispatch API requires **Contents: Read and write** (not "Actions"). The token is scoped to the hub repo only and stored only as a secret in product repos.
 - **debasis-web:** has no notify workflow (that repo is left untouched), so its updates arrive via the nightly sync.
 - **Bot commits:** the nightly sync commits to `main`, so local clones must `git pull --rebase` before pushing.
-- **Client-side admin:** the PAT sits in browser storage. Use a dedicated fine-grained token, and lock out on shared machines.
+- **Client-side admin:** the token sits in the browser tab's storage while unlocked. It is limited to one tab and dies with it, and the strict CSP removes the usual ways to run attacker script, but a static site cannot hide a token from its own page. Use a dedicated fine-grained token and lock out on shared machines. See [security.md](security.md).
 
 ## 9. Guardrails (v1.2)
 
@@ -142,3 +145,13 @@ Limits worth knowing:
 - CI does not block merging: branch protection is not enabled. It alerts; it does not gate.
 - An expiring dispatch token is invisible to the hub (the nightly sync still refreshes data). Keep the calendar reminder.
 - GitHub disables scheduled workflows after 60 days with no repository activity. Run `gh workflow run sync.yml` and `gh workflow run health.yml` at least monthly, or any commit resets the clock. See [impact.md](impact.md) risk V5.
+
+## 10. Version and What's new (v1.3)
+
+`content/changelog.json` is the single source for the version a visitor sees. The footer shows `Studio v<latest>`; the header **What's new** button and the footer version open a dialog listing every release, newest first. A dot marks an update the visitor has not opened yet (`localStorage['studio-seen-version']`, not secret; no dot if storage is blocked). Entries are plain text only (no markup or links), enforced in CI. If the file is missing or invalid the button and version are hidden and nothing else is affected.
+
+## 11. Content-Security-Policy (strict, v1.3)
+
+`default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'none'; form-action 'none'`
+
+No `'unsafe-inline'` or `'unsafe-eval'` anywhere. To make that possible, the stylesheet is `css/site.css`, no markup or script emits `style=`, and the two dynamic values (avatar hue, language dot colour) travel as `data-*` attributes and are applied with `element.style.setProperty`, which the CSP allows. CI rejects any regression. Limits of a static host are in [security.md](security.md) (no `frame-ancestors`, no HSTS control).

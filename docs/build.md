@@ -1,6 +1,6 @@
 # Build and Publish — Command Reference
 
-Current release line: **v1.2** (merged; tagged `v1.2`). Branch names must differ from tag names: a branch called `v1.1` and a tag `v1.1` made `git push origin v1.1` ambiguous (fix: `git push origin refs/tags/v1.1`).
+Current release line: **v1.3** (branch `release/v1.3` until merged); v1.2 is tagged. Branch names must differ from tag names: a branch called `v1.1` and a tag `v1.1` made `git push origin v1.1` ambiguous (fix: `git push origin refs/tags/v1.1`).
 
 Reference only. There is no build step: the repository is the site. Pages serves `main`, root `/`. Run from `/Users/debasisray/CoworkProjects/studio-site`.
 
@@ -16,7 +16,7 @@ gh auth status
 
 ```bash
 git tag v1.0 && git push origin v1.0        # rollback point (done once per release)
-git checkout -b release/v1.2               # never reuse a tag name for a branch
+git checkout -b release/v1.3               # never reuse a tag name for a branch
 ```
 
 ## 3. Test locally
@@ -143,3 +143,31 @@ gh workflow enable sync.yml                 # re-enable if needed
 Failure emails: GitHub → Settings → Notifications → **Actions** → enable "Send notifications for failed workflows only" (email and/or web). Without it, red runs are only visible in the Actions tab and with `gh run list --status failure`.
 
 Merge steps for a release: see §5–7. Tag with the full ref if a branch of the same name exists: `git push origin refs/tags/v1.2`.
+
+## 12. Release checklist (v1.3 onward)
+
+1. Branch `release/vX.Y` from an up-to-date `main`.
+2. Write or update impact → plan → design before building.
+3. Build test-first; keep `node --test tests/*.test.js` and `node scripts/validate-site.js` green.
+4. **Add the release to `content/changelog.json`** (newest first; plain text; 1–6 items; no links or markup). CI rejects a malformed file. This is what the footer version and the What's new button show.
+5. Run the checks in `test.md`, including the security checklist in `security.md`.
+6. Update every artefact (plan, impact, design, test, build, model-use, security, architecture, learning guide, README).
+7. Ask for approval, merge with `--no-ff`, push, confirm CI, Pages and a manual health run are green.
+8. Tag with the version in the changelog, using the full ref: `git push origin refs/tags/vX.Y`.
+
+## 13. Visual comparison against a previous release (optional harness)
+
+Used in v1.3 to prove a refactor changed nothing. It lives outside the repo (scratch area), not in version control:
+
+```bash
+mkdir -p /tmp/vr/base && git archive v1.2 | tar -x -C /tmp/vr/base     # frozen previous release
+mkdir -p /tmp/vr/new  && cp -R index.html css js content /tmp/vr/new/   # current tree
+cp -R content /tmp/vr/base/content                                       # same data in both
+# serve /tmp/vr, load both in same-origin frames at 375/768/1280 px (dark, light), compare computed styles per element
+```
+
+Normalise the scroll-spy `aria-current` attribute before comparing (it depends on timing), and prove the harness can fail with a deliberate change made through script (a style element is blocked by the strict CSP).
+
+## 14. Admin session notes (v1.3)
+
+The admin token now lives in the tab only: unlock again after closing the tab, in a new tab, or after 30 minutes idle. After upgrading from v1.2 the old stored token is deleted, so unlock once.

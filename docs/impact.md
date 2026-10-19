@@ -1,6 +1,6 @@
 # Impact Analysis — Studio
 
-Releases: **v1.3 (in progress, branch `release/v1.3`)** · v1.2 (shipped) · v1.1 (shipped)
+Releases: **v1.3 (built and verified locally, branch `release/v1.3`)** · v1.2 (shipped) · v1.1 (shipped)
 
 ---
 
@@ -26,7 +26,8 @@ Date: 2026-10-19 · Rollback tag: `v1.2` · Step 1 of 6 in the agreed order: **i
 | `index.html` | **Yes** (largest change since v1.1) | CSS removed from the file, inline styles removed, What's new button, footer version |
 | `css/site.css` | New | The stylesheet, moved verbatim except for classes replacing inline styles |
 | `js/app.js` | Yes | Token store, What's new, dynamic styling through script instead of attributes |
-| `js/reads-lib.js` | Possibly | Only if a pure helper is needed (version comparison) |
+| `js/reads-lib.js` | No | Unchanged in v1.3 |
+| `js/token-store.js` | New | Admin token storage, extracted so it can be unit-tested |
 | `content/changelog.json` | New | Owner-maintained release notes |
 | `scripts/validate-site.js` + tests | Yes | New rules: strict style CSP, no inline `<style>` or `style=`, changelog schema, stylesheet in the size budget |
 | `.github/workflows/*` | **No** | CI runs the new rules automatically |
@@ -54,14 +55,15 @@ Date: 2026-10-19 · Rollback tag: `v1.2` · Step 1 of 6 in the agreed order: **i
 
 | ID | Risk | Likelihood | Impact | Mitigation | Status |
 |----|------|-----------|--------|-----------|--------|
-| W1 | CSS extraction changes how something looks | Medium | Medium | Computed-style diff against v1.2 (3 widths × 2 themes) plus screenshots; fix until only intentional differences remain | Open until tested |
-| W2 | A dynamic value (avatar colour, language dot) breaks because inline styles are blocked | Medium | Low | Applied through script (allowed by CSP) from data attributes; checked for zero CSP violations across all flows | Open until tested |
-| W3 | Stricter CSP blocks something unexpected | Low | High | Zero-violation checks on every flow, including admin flows with a stubbed GitHub response | Open until tested |
+| W1 | CSS extraction changes how something looks | Medium | Medium | Computed-style diff against v1.2 (3 widths × 2 themes × 4 states) | **Closed**: 0 differences after the extraction; final differences only in header, footer and one dialog paragraph (test.md TC-V02, V03) |
+| W2 | A dynamic value (avatar colour, language dot) breaks because inline styles are blocked | Medium | Low | Applied through script (allowed by CSP) from data attributes | **Closed**: all painted, no violations (TC-S10) |
+| W3 | Stricter CSP blocks something unexpected | Low | High | Zero-violation checks on every flow, including admin flows with a stubbed GitHub response | **Closed** (TC-S09, TC-K11) |
 | W4 | Owner is surprised to be signed out | High | Low | Stated in the release notes, the unlock dialog and the learning guide | Accepted |
 | W5 | Token in a tab is still readable by script that runs on this origin | Low | High | Unchanged by design (static site, no backend). Strict CSP with no inline script or style is the mitigation; residual risk documented in `security.md` | Accepted |
 | W6 | Changelog forgotten at release time | Medium | Low | Release checklist step in `build.md`; validator checks the file's shape, not freshness | Accepted |
 | W7 | "New" dot becomes noise | Low | Low | Cleared once the dialog is opened; no dot if storage is unavailable | Mitigated by design |
-| W8 | A changelog entry carries markup or a hostile link | Low | Medium | Text only, always escaped; no links allowed in entries; validator enforces length and type | Mitigated |
+| W8 | A changelog entry carries markup or a hostile link | Low | Medium | Text only, always escaped; no links allowed in entries; validator enforces length and type | Mitigated and tested (TC-S11) |
+| W9 | A new accessibility gap in the added controls | Medium | Medium | Read the browser's accessibility tree for every new control | Found and fixed one (DEF-07: unnamed header button on phones) |
 
 ## 6. Rollback
 

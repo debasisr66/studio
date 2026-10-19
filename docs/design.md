@@ -301,8 +301,10 @@ Date-only values (`2026-10-19`) are calendar dates and are formatted in UTC; ful
 | Where | Element | Behavior |
 |-------|---------|----------|
 | Header, left of the theme button | **What's new** button (text on desktop; a ✦ icon with the same accessible name on phones) with a small dot when there is an update the visitor has not seen | Opens the dialog |
-| Footer | Version label `Studio v1.3`, a button | Opens the same dialog |
+| Footer | Version label `Studio v1.3`, a button; "Synced from GitHub · date" stays together so it never splits across lines on a phone | Opens the same dialog |
 | Dialog | "What's new in Studio": releases newest first; the latest carries a **Latest** badge | Close button, Escape, click outside |
+
+**Focus on open:** the dialog title takes focus (not the Close button at the bottom), so a long list opens at the top; closing returns focus to whichever button opened it.
 
 **Release entry:** version badge (`v1.3`), date, a short title, then 2–5 plain-text bullets. No links, no markup, no jargon ("tighter security rules" rather than "CSP"). The dialog scrolls when long; the existing dialog rules (focus trap, focus restore, Escape) apply.
 
@@ -362,7 +364,7 @@ Rules enforced in CI: at least one release; `version` like `1.3` or `1.3.1`; str
 
 **Microcopy:** button "What's new"; dialog title "What's new in Studio"; badge "Latest"; screen-reader text "New updates available".
 
-**Accessibility:** a real `<button>` with `aria-haspopup="dialog"`; the dot is decorative and its meaning is carried by text for screen readers; the dialog is the existing `role="dialog" aria-modal` component (title as `h3`, releases as `h4` inside a list); no colour-only signal; target size at least 40 px (44 px on phones); dot colour meets 3:1 against the header.
+**Accessibility:** a real `<button>` with `aria-haspopup="dialog"` and an explicit `aria-label` ("What's new", or "What's new, new updates available" when there is news), because on phones the visible text is hidden and the icon is decorative (an unnamed button was found and fixed during testing); the dot is decorative; the dialog is the existing `role="dialog" aria-modal` component (title as `h3`, releases as `h4` inside a list); no colour-only signal; target size at least 40 px (44 px on phones); dot colour meets 3:1 against the header.
 
 ### 10.2 Admin session
 
@@ -404,6 +406,10 @@ How the page keeps working without inline styles:
 3. Two values are genuinely dynamic: the avatar colour (a hue from the domain) and the language dot colour. The markup carries `data-h` and `data-bg`; after each render, a small routine applies them with `element.style.setProperty(...)`, which a strict CSP allows (it blocks style *attributes in markup*, not style changes made by script).
 4. Anything that would reintroduce `style=` or `<style>` fails CI (validator rule).
 
-### 10.4 Visual-regression approach
+### 10.4 Token module
+
+The token logic lives in `js/token-store.js` (no DOM access, unit-tested): `create(getStorage, key)` returns `get`, `set`, `del` over the given storage with an in-memory fallback; `purge(getStorage, key)` deletes a legacy token. The page passes `sessionStorage` to `create` and `localStorage` to `purge`.
+
+### 10.5 Visual-regression approach
 
 Because the CSS file moves, the design is only accepted if v1.2 and v1.3 render identically. A test harness loads both builds in same-origin frames at 375, 768 and 1280 px, in dark and light, with identical content, and compares computed styles element by element. Only the What's new button and the footer version may differ.
