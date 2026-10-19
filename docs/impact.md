@@ -1,6 +1,6 @@
 # Impact Analysis — Studio
 
-Releases: **v1.2 (in progress, branch `release/v1.2`)** · v1.1 (shipped 2026-10-19)
+Releases: **v1.2 (shipped 2026-10-19)** · v1.1 (shipped 2026-10-19)
 
 ---
 

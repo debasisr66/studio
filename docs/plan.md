@@ -1,12 +1,12 @@
 # Plan — Studio
 
-Status key: ✅ done · ⏳ pending · 🔒 needs owner · Releases: **v1.2 (built and verified locally; awaiting merge approval)**, v1.1 (shipped 2026-10-19, tag `v1.1`)
+Status key: ✅ done · ⏳ pending · 🔒 needs owner · Releases: **v1.2 (shipped 2026-10-19, tag `v1.2`)**, v1.1 (shipped 2026-10-19, tag `v1.1`)
 
 ---
 
 # v1.2 — Guardrails (no new features)
 
-Date: 2026-10-19 · Branch: `release/v1.2` · Rollback tag: `v1.1`
+Date: 2026-10-19 · Branch: `release/v1.2` (merged) · Rollback tag: `v1.1`
 
 ## Why
 
@@ -46,8 +46,8 @@ New site features, UI changes, changes to Penny or debasis-web, replacing tokens
 | 4 | `scripts/health-check.js` | Passes against the live site | ✅ 5 tests; healthy live; wrong URL and stale cache both fail |
 | 5 | `.github/workflows/ci.yml` and `health.yml` | YAML valid; trigger manually after merge | ✅ YAML valid, read-only; ⏳ first GitHub runs after merge |
 | 6 | Update all artefacts (G5) | Traceability matrix extended | ✅ |
-| 7 | Verify locally, show diff summary, **owner approves merge** | Protected paths diff reviewed | ⏳ 🔒 |
-| 8 | Merge, push, confirm CI and health runs are green, tag `v1.2` | Live smoke checklist | ⏳ |
+| 7 | Verify locally, show diff summary, **owner approves merge** | Protected paths diff reviewed | ✅ approved |
+| 8 | Merge, push, confirm CI and health runs are green, tag `v1.2` | Live smoke checklist | ✅ merge `a7e81db`; CI, Pages, health and sync dry run green |
 
 ## Acceptance criteria
 

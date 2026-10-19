@@ -1,6 +1,6 @@
 # Test Plan and Traceability — Studio
 
-Releases: **v1.2 (in progress)** · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
+Releases: **v1.2 (shipped 2026-10-19)** · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
 
 ---
 
@@ -24,12 +24,12 @@ Date: 2026-10-19 · Environment: macOS, Node v25.2.1 locally, Node 22 in CI; liv
 
 | Req | Test cases | Result |
 |-----|-----------|--------|
-| REQ-16 | TC-W01, TC-W02; **TC-W03** | ✅ YAML and permissions; ⏳ first run on GitHub (after merge) |
+| REQ-16 | TC-W01, TC-W02, TC-W03 | ✅ |
 | REQ-17 | TC-V01–V15, TC-V16 | ✅ |
-| REQ-18 | TC-H01–H05, TC-H06, TC-H07; **TC-H08** | ✅ local; ⏳ first scheduled run on GitHub (after merge) |
+| REQ-18 | TC-H01–H05, TC-H06, TC-H07, TC-H08 | ✅ (first scheduled run still to come) |
 | REQ-19 | TC-Y01–Y04, TC-Y05 | ✅ |
 | REQ-20 | TC-T01, TC-T02, TC-T03 | ✅ |
-| REQ-21 | TC-R06–R09 | ✅ |
+| REQ-21 | TC-R06–R11 | ✅ |
 | REQ-22 | TC-D02 | ✅ |
 
 ## C. Test cases and results
@@ -50,8 +50,10 @@ Date: 2026-10-19 · Environment: macOS, Node v25.2.1 locally, Node 22 in CI; liv
 | TC-T03 | Before the fix, a Los Angeles viewer got "18 Oct 2026" for `2026-10-19` (demonstrated in the browser on the live site) | ✅ defect reproduced and fixed (DEF-06) |
 | TC-W01 | `ci.yml`, `health.yml` and `sync.yml` parse as valid YAML (Ruby) | ✅ |
 | TC-W02 | New workflows declare `permissions: contents: read` and use no secrets | ✅ |
-| TC-W03 | First `CI` run on GitHub after merge is green | ⏳ |
-| TC-H08 | First manual and first scheduled `Health check` run on GitHub is green | ⏳ |
+| TC-W03 | First `CI` run on GitHub after merge is green | ✅ run 39244948456 (push of the merge commit `a7e81db`), 8 s |
+| TC-H08 | First manual and first scheduled `Health check` run on GitHub is green | ✅ manual run 39245250409 (11 s); ⏳ first scheduled run is 06:00 UTC tomorrow |
+| TC-R10 | Refactored sync script run on GitHub as a dry run: both products fetched, "No changes" | ✅ run 39245371872 |
+| TC-R11 | Live site after deploy: Pages build green; `cache.json` serves date-only `pushed_at`; `reads-lib.js` serves `formatDate`; page 200 | ✅ |
 | TC-R06 | `git diff main -- .github/workflows/sync.yml` and `index.html` are empty | ✅ |
 | TC-R07 | Sync dry run passes | ✅ |
 | TC-R08 | Live site loads as before; protected content files other than `cache.json` unchanged | ✅ |
@@ -66,7 +68,7 @@ Date: 2026-10-19 · Environment: macOS, Node v25.2.1 locally, Node 22 in CI; liv
 
 ## E. Not run (stated plainly)
 
-- TC-W03 and TC-H08 need the code on `main`: GitHub runs the workflows only after merge.
+- The first *scheduled* health run (06:00 UTC 2026-10-20) has not happened yet; only the manual run is recorded.
 - GitHub's failure notification email was not triggered or inspected; whether it reaches the owner depends on the owner's notification settings.
 - The 60-day scheduled-workflow suspension (impact V5) cannot be tested short of waiting.
 
