@@ -1,6 +1,6 @@
 # Test Plan and Traceability — Studio
 
-Releases: **v1.3 (built and verified locally; awaiting merge approval)** · v1.2 (shipped) · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
+Releases: **v1.3 (shipped 2026-10-19)** · v1.2 (shipped) · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
 
 ---
 
@@ -33,6 +33,7 @@ Date: 2026-10-19 · Environment: macOS, Node v25.2.1, Claude desktop browser pan
 | REQ-28 | TC-C05–C08, TC-S11, TC-W03 | ✅ |
 | REQ-29 | TC-R12–R16 | ✅ |
 | REQ-30 | TC-D03 | ✅ |
+| Live | §E smoke checks | ✅ |
 
 ## C. Test cases and results
 
@@ -118,13 +119,28 @@ Method: a harness loads the frozen v1.2 build and the new build in same-origin f
 
 Observations that were **not** defects: the scroll-spy highlight produced false differences in the first comparison run (normalised, then 0 differences); one CSP console line in an old tab came from the harness's own deliberate injection (fresh tab: clean).
 
-## E. Not run (stated plainly)
+## E. Live smoke test (after merge `6c6052d`, 2026-10-19)
+
+| Check | Result |
+|-------|--------|
+| CI on the merge commit | ✅ success |
+| Pages build and deployment | ✅ success |
+| Manual `Health check` run (39254212379) | ✅ success |
+| Sync dry run on GitHub (39254217135) | ✅ success |
+| `/`, `css/site.css`, `js/app.js`, `js/token-store.js`, `js/reads-lib.js`, `content/changelog.json`, `content/cache.json` | ✅ all 200; served page links `css/site.css`, has no `<style>`, CSP `style-src 'self' https://fonts.googleapis.com` |
+| Fresh tab (clean storage and console): footer "Studio v1.3"; What's new button named "What's new, new updates available"; dialog opens on its title with four releases, dot clears, `1.3` stored | ✅ |
+| Penny card: Open app / Download / Source, Download is `PennyExpenseManager-v3.2.zip`; Debasis Web: Open app / Source | ✅ |
+| Reads render; composer and edit buttons hidden from a visitor; no token-like keys in storage | ✅ |
+| All `target=_blank` links carry `noopener noreferrer`; no `<style>` blocks; no horizontal scroll; console clean | ✅ |
+| The 4 elements with a `style` attribute are avatars and language dots coloured at runtime through the CSSOM (allowed by the CSP), not markup | ✅ explained |
+
+## F. Not run (stated plainly)
 
 - The blocked-`sessionStorage` fallback in a real browser (covered by unit tests only).
 - The 30-minute idle lock (logic unchanged; timer not waited out).
 - Real screen reader (VoiceOver/NVDA) and a physical phone.
-- A real admin unlock and publish with the owner's real token after deploy: needed once, because the owner must sign in again after this release.
-- First CI run on `release/v1.3` and the live smoke checklist: after merge.
+- A real admin unlock and publish with the owner's real token on the deployed site (the owner must sign in again once after this release; TC-M06).
+- The first *scheduled* health run (06:00 UTC on 2026-10-20).
 
 ---
 

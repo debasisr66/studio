@@ -1,12 +1,12 @@
 # Plan — Studio
 
-Status key: ✅ done · ⏳ pending · 🔒 needs owner · Releases: **v1.3 (built and verified locally; awaiting merge approval)**, v1.2 (shipped, tag `v1.2`), v1.1 (shipped, tag `v1.1`)
+Status key: ✅ done · ⏳ pending · 🔒 needs owner · Releases: **v1.3 (shipped 2026-10-19, tag `v1.3`)**, v1.2 (shipped, tag `v1.2`), v1.1 (shipped, tag `v1.1`)
 
 ---
 
 # v1.3 — Safer admin session, version tracking, What's new
 
-Date: 2026-10-19 · Branch: `release/v1.3` · Rollback tag: `v1.2`
+Date: 2026-10-19 · Branch: `release/v1.3` (merged) · Rollback tag: `v1.2`
 
 ## Why
 
@@ -54,7 +54,7 @@ impact (done) → **plan (this document)** → design → build → test → sec
 | 5 | Test: unit, visual diff, browser flows at 375/768/1280 in both themes, regression | All pass; results in `test.md` | ✅ 61 unit tests; 24-case visual matrix; regression clean |
 | 6 | Security checks: checklist in `security.md`, hostile inputs, storage, CSP, secrets scan | No open High findings | ✅ 15 checks pass; no High or Critical findings |
 | 7 | Update artefacts: plan, impact, design, test, build, model-use, security, architecture, learning guide, README, changelog | Consistent and cross-referenced | ✅ |
-| 8 | Owner approves; merge; push; CI, Pages and health green; tag `v1.3` | Live smoke checklist | ⏳ 🔒 |
+| 8 | Owner approves; merge; push; CI, Pages and health green; tag `v1.3` | Live smoke checklist | ✅ merge `6c6052d`; CI, Pages, health, sync dry run and live smoke test green |
 
 ## Acceptance criteria
 

@@ -1,6 +1,6 @@
 # Security — Studio
 
-Threat model, control inventory and review log. Living document: updated every release. Last review: **v1.3, 2026-10-19**.
+Threat model, control inventory and review log. Living document: updated every release. Last review: **v1.3, 2026-10-19** (shipped; live smoke test also clean: strict CSP served, console empty, no token in storage for a visitor).
 
 This is a design-and-test review of a small static site, with evidence from the test runs in [test.md](test.md). It is not a penetration test and not a certification.
 

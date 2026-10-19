@@ -1,6 +1,6 @@
 # Impact Analysis — Studio
 
-Releases: **v1.3 (built and verified locally, branch `release/v1.3`)** · v1.2 (shipped) · v1.1 (shipped)
+Releases: **v1.3 (shipped 2026-10-19)** · v1.2 (shipped) · v1.1 (shipped)
 
 ---
 
