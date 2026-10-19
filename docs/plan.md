@@ -29,8 +29,8 @@ Date: 2026-10-19 · Owner: Debasis Ray · Status key: ✅ done · ⏳ pending ·
 | 4. Docs | impact, plan, design, test, build, model-use | Reviewed | ✅ |
 | 5. Merge and deploy | Merge `v1.1` to `main`, push, check Pages | Owner approval; Pages build success | ✅ (`c5b3d0f`) |
 | 6. Live smoke test | Live URL, product cards, Penny and debasis-web links, nightly sync dry run | Checklist in [test.md](test.md) §6 | ✅ |
-| 7. First real publish | Add one read as admin and publish | Needs owner's token | ⏳ 🔒 |
-| 8. Tag | Tag `v1.1` | After phase 7 passes | ⏳ |
+| 7. First real publish | Add one read as admin and publish | Needs owner's token | ✅ (`9acca43`) |
+| 8. Tag | Tag `v1.1` | After phase 7 passes | ✅ |
 
 ## Acceptance criteria
 
@@ -57,5 +57,5 @@ Reading-list RSS feed; export reads as Markdown; an admin token validity check o
 - [x] `git checkout main && git pull --rebase && git merge --no-ff v1.1`
 - [x] `git push` and confirm `gh run list` shows Pages success
 - [x] Run the live smoke checklist
-- [ ] Add one read with the admin token; confirm it appears after the Pages rebuild
-- [ ] `git tag v1.1 && git push origin v1.1`
+- [x] Add one read with the admin token; confirm it appears after the Pages rebuild
+- [x] `git tag v1.1 && git push origin v1.1`

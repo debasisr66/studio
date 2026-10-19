@@ -35,7 +35,7 @@ Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
 | REQ-05 | TC-U14, U15, TC-B06 | ✅ |
 | REQ-06 | TC-U12, TC-B09 | ✅ (LinkedIn URL and copy verified; see §5 for what was not run) |
 | REQ-07 | TC-B10 | ✅ |
-| REQ-08 | TC-R05; **TC-M01** | ✅ code unchanged; ⏳🔒 live publish |
+| REQ-08 | TC-R05; **TC-M01** | ✅ code unchanged; ✅ live publish |
 | REQ-09 | TC-U13, TC-B07, TC-R01 | ✅ |
 | REQ-10 | TC-R02, R03, R04 | ✅ |
 | REQ-11 | TC-S01–S08, TC-U02, U03 | ✅ |
@@ -145,7 +145,7 @@ DEF-01 to DEF-03 affect the **currently live** v1.0 site and are resolved once v
 
 | ID | Test | Status |
 |----|------|--------|
-| TC-M01 | Unlock admin with a real token, post a read, Publish, confirm one commit to `content/reads.json` and the read appears after the Pages rebuild | ⏳🔒 |
+| TC-M01 | Unlock admin with a real token, post a read, Publish, confirm one commit to `content/reads.json` and the read appears after the Pages rebuild | ✅ 2026-10-19: commit `9acca43` "cms: update reading list" (one file, one commit); live file matches; a token-free browser shows the card with LinkedIn and Copy link, no composer, no edit buttons, no console errors |
 | TC-M02 | Idle auto-lock after 30 minutes (timer logic reviewed; not waited out) | ⏳ |
 | TC-M03 | Native share sheet on a phone | ⏳ |
 | TC-M04 | Click **Share on LinkedIn** and confirm LinkedIn's dialog pre-fills the article | ⏳ (the browser pane blocks script-initiated new tabs) |
@@ -163,7 +163,7 @@ Screen-reader testing (VoiceOver/NVDA); Lighthouse or axe automated scans; Safar
 - [x] Updates shows Penny 3.2 collapsed behind "Show release notes"; no horizontal scroll at 375 px (before: 676 px)
 - [x] Reads shows the empty state ("Nothing here yet"); composer and edit buttons hidden for visitors
 - [x] `gh workflow run sync.yml -f dry_run=true` succeeded
-- [ ] TC-M01 completed with the owner's token (pending)
+- [x] TC-M01 completed with the owner's token (2026-10-19)
 
 Note (finding, not a v1.1 defect): Penny's **Download** points at the first asset of release v3.2, `Penny-Journey-Map_v2.docx`, a document rather than the app. The card takes `assets[0]`. Options: attach the app build first, or add a registry hint to choose the asset.
 

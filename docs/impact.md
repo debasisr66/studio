@@ -58,7 +58,7 @@ Date: 2026-10-19 · Branch: `v1.1` · Rollback tag: `v1.0`
 | R6 | Third-party leakage of reading habits | Low | Medium | No metadata service, no third-party favicons; LinkedIn is contacted only when the visitor clicks Share | Mitigated by design |
 | R7 | Layout regressions on small screens | Medium | Medium | Checked at 375, 768 and desktop; an existing overflow defect was found and fixed | Mitigated |
 | R8 | Merge conflict with the nightly sync bot | Medium | Low | `git pull --rebase` before push; the bot only touches `cache.json` | Accepted |
-| R9 | Admin publish path not exercised end to end | Medium | Medium | The code path is unchanged from v1.0; needs one real publish with the owner's token after deploy | **Open** (see `test.md` TC-M01) |
+| R9 | Admin publish path not exercised end to end | Medium | Medium | The code path is unchanged from v1.0; exercised live with the owner's token on 2026-10-19 (`9acca43`) | Closed (see `test.md` TC-M01) |
 | R10 | Google Fonts remains a third-party request | Low | Low | Existing behavior; no new third parties added | Accepted |
 
 ## 6. Rollback
