@@ -177,4 +177,4 @@ No `'unsafe-inline'` or `'unsafe-eval'` anywhere. To make that possible, the sty
 
 **Scheduled work.** GitHub starts scheduled runs hours late (the 03:00 UTC sync has run between 07:26 and 08:24 UTC), so the health check runs at 12:00 UTC. A weekly keep-alive adds one empty commit to `main` only after 30 days without a commit, so GitHub does not disable the scheduled workflows after 60 days of inactivity. The health check also fails if any workflow is not active.
 
-**Supply chain.** `actions/checkout` and `actions/setup-node` are pinned by commit hash (v4.4.0); Dependabot proposes updates weekly; CI rejects unpinned actions, missing permissions blocks and `contents: write` outside the sync and keep-alive workflows.
+**Supply chain.** `actions/checkout` and `actions/setup-node` are pinned by commit hash (currently checkout v7.0.1 and setup-node v7.1.0, after Dependabot's first two proposals were merged on 2026-10-20); Dependabot proposes updates weekly; CI rejects unpinned actions, missing permissions blocks and `contents: write` outside the sync and keep-alive workflows.

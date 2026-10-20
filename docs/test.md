@@ -166,8 +166,9 @@ See [security.md](security.md) (v1.4 review log): 18 checks, no open High or Cri
 | TC-H13 | Health check run on GitHub against the v1.4 site: HEALTHY (covers the new files and workflow states) | ✅ run 39384909054 |
 | (sync) | Sync dry run on GitHub with the pinned checkout: both products fetched, "No changes" | ✅ run 39384913785 (X6 closed) |
 | TC-A10 | Keep-alive: dry run says "no heartbeat needed"; **forced run under the final configuration made exactly one empty commit as `github-actions[bot]` (`c580840`, zero files changed)**, run green | ✅ |
+| TC-M07 | **The owner's real profile photo** (two commits at 13:05 IST: `cms: update profile photo`, then `cms: show profile photo`): 512 × 512 JPEG of 68 KB; signature valid; **no Exif, GPS, XMP or any APP1 segment in the file**; CI validator passes; live page shows it (512 px source at 72 px, circular, alt text, versioned URL `?v=<timestamp>`, monogram hidden), only the site's own host contacted, console clean, no admin controls for a visitor | ✅ (the one thing only the owner could test; real-photo metadata removal confirmed) |
 | TC-M08 | **The owner's own admin-screen publish after the final ruleset configuration**: commit `a1210fa` "cms: update reading list" (12:53 IST, one file, a third read added) was accepted straight onto `main`; CI ran green on it; the validator passes with the new read | ✅ real-world proof of the admin path under the history ruleset |
-| TC-W16 | Dependabot opened PRs #2 and #3 at once (setup-node 7.1.0, checkout 7.0.1), keeping hash pins with the version in the comment; CI passed on both; the real sync, keep-alive and health workflows ran **green in dry-run mode on both branches** | ✅ (left open for the owner: major version jumps) |
+| TC-W16 | Dependabot opened PRs #2 and #3 at once (setup-node 7.1.0, checkout 7.0.1), keeping hash pins with the version in the comment; CI passed on both; the real sync, keep-alive and health workflows ran **green in dry-run mode on both branches**. **Both merged on 2026-10-20** (one at a time; CI green on `main` after each and after the combination); sync dry run, keep-alive dry run and health then ran green on `main` with the new versions (runs 39389286571, 39389292024, 39389297028) | ✅ |
 
 ### Branch protection experiment (REQ-41)
 
@@ -187,13 +188,13 @@ Carried out live on 2026-10-20 with immediate rollback available. Run IDs and me
 
 ## G. Still pending or not run (stated plainly)
 
+*Closed since the first write-up: the owner's real photo (TC-M07) and the Dependabot pull requests (TC-W16).*
+
 | ID | Item | Why |
 |----|------|-----|
-| TC-M07 | Owner uploads a real photo through the OS file picker, publishes, and checks the live page | Needs the owner and a real photo |
-| (not run) | EXIF **orientation** of a real phone photo (the code asks the browser to apply it, but only synthetic images were used) | Needs a real rotated photo |
+| (not run) | EXIF **orientation** of a *rotated* phone photo (the code asks the browser to apply it; the owner's real photo displays correctly, but it is not known whether it needed rotating, and only synthetic images tested rotation logic) | Needs a deliberately rotated photo |
 | (not run) | First **scheduled** 12:00 UTC health run and the first Monday keep-alive; the 60-day lapse itself | Time |
 | (not run) | Blocked-`sessionStorage` fallback in a browser; real screen reader and phone | Environment |
-| (open) | Dependabot PRs #2 and #3 not merged | Owner's decision |
 
 ---
 
