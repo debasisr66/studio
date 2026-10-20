@@ -1,6 +1,18 @@
 {
   "releases": [
     {
+      "version": "1.4",
+      "date": "2026-10-20",
+      "title": "Logo, profile photo and a more private page",
+      "items": [
+        "Studio has its own logo, shown in the header and the browser tab.",
+        "A profile photo can now appear at the top of the page.",
+        "Fonts now load from Studio itself, so no third party sees your visit.",
+        "The header now fits at every window width; it overflowed slightly between phone and tablet sizes.",
+        "More safeguards behind the scenes: a protected main branch, pinned automation and a keep-alive for the nightly updates."
+      ]
+    },
+    {
       "version": "1.3",
       "date": "2026-10-19",
       "title": "Safer sign-in and What's new",

@@ -27,6 +27,13 @@ function findDrift(registry, cache, latestByRepo) {
   return out;
 }
 
+/* GitHub switches scheduled workflows off (state "disabled_inactivity") after 60 days without repository activity. Name any that are not active. */
+function findInactiveWorkflows(workflows) {
+  return (Array.isArray(workflows) ? workflows : [])
+    .filter(w => w && typeof w.name === 'string' && typeof w.state === 'string' && w.state !== 'active')
+    .map(w => `workflow "${w.name}" is ${w.state}, so it will not run (re-enable: gh workflow enable "${w.name}")`);
+}
+
 async function latestTag(repo) {
   const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'studio-health' };
   if (TOKEN) headers.Authorization = 'Bearer ' + TOKEN;
@@ -40,7 +47,7 @@ async function main() {
   const problems = [], notes = [];
 
   // 1. site is up and serves its key files
-  for (const p of ['/', '/js/app.js', '/js/reads-lib.js', '/content/products.json', '/content/cache.json', '/content/reads.json', '/content/blog.json']) {
+  for (const p of ['/', '/css/site.css', '/assets/logo.svg', '/fonts/inter-latin.woff2', '/fonts/jetbrains-mono-latin.woff2', '/js/app.js', '/js/reads-lib.js', '/js/token-store.js', '/js/image-lib.js', '/content/products.json', '/content/cache.json', '/content/reads.json', '/content/blog.json', '/content/changelog.json', '/content/profile.json']) {
     try {
       const r = await fetch(SITE + p, { redirect: 'follow' });
       if (!r.ok) problems.push(`${SITE}${p} returned ${r.status}`);
@@ -58,6 +65,16 @@ async function main() {
   }
   problems.push(...findDrift(registry, cache, latest));
 
+  // 3. every workflow is still enabled (scheduled ones are switched off after 60 inactive days)
+  try {
+    const repo = process.env.GITHUB_REPOSITORY || 'debasisr66/studio';
+    const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'studio-health' };
+    if (TOKEN) headers.Authorization = 'Bearer ' + TOKEN;
+    const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows`, { headers });
+    if (res.ok) problems.push(...findInactiveWorkflows((await res.json()).workflows));
+    else notes.push(`could not read workflow states: GitHub API ${res.status}`);
+  } catch (e) { notes.push('could not read workflow states: ' + e.message); }
+
   notes.forEach(n => console.log('note  ' + n));
   problems.forEach(p => console.log('ERROR ' + p));
   console.log(problems.length ? `\nUNHEALTHY: ${problems.length} problem(s)` : '\nHEALTHY: site answers and the cache matches GitHub releases');
@@ -66,6 +83,6 @@ async function main() {
   process.exit(problems.length ? 1 : 0);
 }
 
-module.exports = { findDrift };
+module.exports = { findDrift, findInactiveWorkflows };
 
 if (require.main === module) main().catch(e => { console.error('::error::health check crashed: ' + e.message); process.exit(1); });

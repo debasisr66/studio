@@ -1,23 +1,25 @@
 name: Health check
 
-# Daily, a few hours after the 03:00 UTC sync. Fails (red run, GitHub emails failed-workflow notifications)
-# when the live site is down or the cache has fallen behind the products' latest GitHub releases.
+# Daily at 12:00 UTC. GitHub starts scheduled runs hours late (the 03:00 UTC sync has run between 07:26 and 08:24 UTC), so 12:00 is
+# comfortably after it. Fails (red run, GitHub emails failed-workflow notifications) when the live site is down, the cache has fallen
+# behind the products' latest GitHub releases, or any workflow has been disabled.
 on:
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '0 12 * * *'
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read      # lets the check see whether any workflow has been switched off
 
 jobs:
   health:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
 

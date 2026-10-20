@@ -284,3 +284,37 @@ test('profile manifest: a photo that does not exist is an error; a file with no 
   assert.deepEqual(r.errors, []);
   assert.equal(r.warnings.length, 1);
 });
+
+// ---- v1.4: workflow hygiene ----
+const SHA = 'a'.repeat(40);
+const wf = (uses, perms = 'permissions:\n  contents: read\n') => `name: X\non: push\n${perms}jobs:\n  j:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: ${uses}\n`;
+
+test('workflows: actions pinned by 40-character hash pass; tags and branches are rejected', () => {
+  assert.deepEqual(V.checkWorkflows({ '.github/workflows/ci.yml': wf(`actions/checkout@${SHA} # v4.4.0`) }), []);
+  assert.ok(V.checkWorkflows({ '.github/workflows/ci.yml': wf('actions/checkout@v4') }).some(e => /pinned/i.test(e)));
+  assert.ok(V.checkWorkflows({ '.github/workflows/ci.yml': wf('actions/checkout@main') }).some(e => /pinned/i.test(e)));
+  assert.ok(V.checkWorkflows({ '.github/workflows/ci.yml': wf('actions/checkout@' + 'a'.repeat(39)) }).some(e => /pinned/i.test(e)));
+  assert.deepEqual(V.checkWorkflows({ '.github/workflows/ci.yml': wf('./local-action') }), [], 'local actions are in this repo already');
+});
+
+test('workflows: every workflow declares top-level permissions', () => {
+  const none = 'name: X\non: push\njobs:\n  j:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hi\n';
+  assert.ok(V.checkWorkflows({ '.github/workflows/ci.yml': none }).some(e => /permissions/i.test(e)));
+});
+
+test('workflows: contents: write is allowed only in the sync and keep-alive workflows', () => {
+  const w = wf(`actions/checkout@${SHA}`, 'permissions:\n  contents: write\n');
+  assert.ok(V.checkWorkflows({ '.github/workflows/ci.yml': w }).some(e => /write/.test(e)));
+  assert.ok(V.checkWorkflows({ '.github/workflows/health.yml': w }).some(e => /write/.test(e)));
+  assert.deepEqual(V.checkWorkflows({ '.github/workflows/sync.yml': w }), []);
+  assert.deepEqual(V.checkWorkflows({ '.github/workflows/keepalive.yml': w }), []);
+  const wa = wf(`actions/checkout@${SHA}`, 'permissions: write-all\n');
+  assert.ok(V.checkWorkflows({ '.github/workflows/sync.yml': wa }).some(e => /write-all/.test(e)));
+});
+
+test('workflows: actions: read is fine; any other write scope is rejected', () => {
+  const ok = wf(`actions/checkout@${SHA}`, 'permissions:\n  contents: read\n  actions: read\n');
+  assert.deepEqual(V.checkWorkflows({ '.github/workflows/health.yml': ok }), []);
+  const bad = wf(`actions/checkout@${SHA}`, 'permissions:\n  contents: read\n  packages: write\n');
+  assert.ok(V.checkWorkflows({ '.github/workflows/health.yml': bad }).some(e => /packages: write/.test(e)));
+});

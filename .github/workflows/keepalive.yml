@@ -1,0 +1,53 @@
+name: Keep-alive
+
+# GitHub switches scheduled workflows off in a public repository after 60 days without repository activity. This weekly check adds
+# ONE empty commit to main only when main has had no commit for 30 days (half the limit); otherwise it does nothing.
+# It is the only workflow besides the sync allowed to commit (contents: write), and it never touches any file.
+on:
+  schedule:
+    - cron: '17 9 * * 1'          # Mondays, off the top of the hour (GitHub runs it later anyway)
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Make the heartbeat commit even if main is recent'
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Report what would happen; do not commit'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: keepalive
+  cancel-in-progress: false
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+
+      - name: Decide
+        id: decide
+        env:
+          FORCE: ${{ inputs.force || 'false' }}
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+        run: node scripts/keepalive.js
+
+      - name: Add the heartbeat commit
+        if: steps.decide.outputs.heartbeat == 'true'
+        env:
+          MESSAGE: ${{ steps.decide.outputs.message }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "$MESSAGE"
+          git push

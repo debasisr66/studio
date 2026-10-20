@@ -275,6 +275,29 @@ function validateProfileManifest(m, exists) {
   return { errors, warnings };
 }
 
+/* Workflow hygiene: actions pinned by commit hash, permissions always declared, write access only where a bot must commit. */
+const WRITE_ALLOWED = ['sync.yml', 'keepalive.yml'];
+function checkWorkflows(sources) {
+  const errors = [];
+  for (const [file, text] of Object.entries(sources)) {
+    const base = path.posix.basename(file);
+    for (const m of text.matchAll(/^\s*-?\s*uses:\s*([^\s#]+)/gm)) {
+      const ref = m[1];
+      if (ref.startsWith('./')) continue;
+      const at = ref.split('@')[1];
+      if (!at || !/^[0-9a-f]{40}$/.test(at)) errors.push(`${file}: ${ref} is not pinned by a 40-character commit hash`);
+    }
+    if (!/^permissions\s*:/m.test(text)) { errors.push(`${file}: no top-level permissions block (declare the minimum)`); continue; }
+    if (/^permissions\s*:\s*write-all/m.test(text)) errors.push(`${file}: permissions: write-all is not allowed`);
+    const block = (text.match(/^permissions\s*:\s*\n((?:[ \t]+[^\n]*\n?)*)/m) || [, ''])[1];
+    for (const m of block.matchAll(/^[ \t]+([a-z-]+)\s*:\s*write\b/gm)) {
+      if (m[1] === 'contents' && WRITE_ALLOWED.includes(base)) continue;
+      errors.push(`${file}: ${m[1]}: write is not allowed here${m[1] === 'contents' ? ' (only ' + WRITE_ALLOWED.join(' and ') + ' may commit)' : ''}`);
+    }
+  }
+  return errors;
+}
+
 function checkSizes(sizes) {
   const errors = [];
   let total = 0;
@@ -325,6 +348,9 @@ function run() {
   const profile = json('content/profile.json');
   if (profile !== undefined) { const r = validateProfileManifest(profile, p => fs.existsSync(path.join(ROOT, p))); errors.push(...r.errors); warnings.push(...r.warnings); }
   if (fs.existsSync(path.join(ROOT, 'content/profile.jpg'))) errors.push(...validateProfileImage(fs.readFileSync(path.join(ROOT, 'content/profile.jpg'))));
+  const wfDir = path.join(ROOT, '.github/workflows');
+  const wfSources = fs.existsSync(wfDir) ? Object.fromEntries(fs.readdirSync(wfDir).filter(f => /\.ya?ml$/.test(f)).map(f => ['.github/workflows/' + f, read('.github/workflows/' + f)])) : {};
+  errors.push(...checkWorkflows(wfSources));
   const svgSources = Object.fromEntries(dirFiles('assets', '.svg').map(f => [f, read(f)]));
   errors.push(...checkSvg(svgSources));
   const fontFiles = dirFiles('fonts', '.woff2');
@@ -336,7 +362,7 @@ function run() {
   return { errors, warnings, sizes };
 }
 
-module.exports = { validateProfileManifest, validateProfileImage, checkSvg, checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
+module.exports = { checkWorkflows, validateProfileManifest, validateProfileImage, checkSvg, checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
 
 if (require.main === module) {
   const { errors, warnings, sizes } = run();

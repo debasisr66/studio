@@ -29,3 +29,21 @@ test('findDrift: hidden products are ignored; repos with unknown GitHub state ar
 test('findDrift: a visible product missing from the cache entirely is drift', () => {
   assert.equal(H.findDrift([{ repo: 'o/new' }], { products: {} }, { 'o/new': null }).length, 1);
 });
+
+// ---- v1.4: disabled workflows ----
+test('findInactiveWorkflows: all active is clean', () => {
+  assert.deepEqual(H.findInactiveWorkflows([{ name: 'CI', state: 'active' }, { name: 'Sync product cache', state: 'active' }]), []);
+});
+
+test('findInactiveWorkflows: names every workflow that is not active, with its state', () => {
+  const p = H.findInactiveWorkflows([{ name: 'CI', state: 'active' }, { name: 'Sync product cache', state: 'disabled_inactivity' }, { name: 'Health check', state: 'disabled_manually' }]);
+  assert.equal(p.length, 2);
+  assert.match(p[0], /Sync product cache.*disabled_inactivity/);
+  assert.match(p[1], /Health check.*disabled_manually/);
+});
+
+test('findInactiveWorkflows: tolerates missing or odd input', () => {
+  assert.deepEqual(H.findInactiveWorkflows(undefined), []);
+  assert.deepEqual(H.findInactiveWorkflows([]), []);
+  assert.deepEqual(H.findInactiveWorkflows([null, {}, { name: 'X' }]), []);
+});
