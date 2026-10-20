@@ -9,6 +9,30 @@
   ],
   "articles": [
     {
+      "id": 1792481723533,
+      "added": "2026-10-20",
+      "url": "https://code.claude.com/docs/en/mcp-quickstart",
+      "title": "Connect to MCP servers - Claude",
+      "comment": "Add an MCP server to Claude Code, verify the connection, and find the configuration on disk.\n\nThe Model Context Protocol (MCP) lets Claude Code use tools beyond its built-in set, such as searching an issue tracker, querying a database, or controlling a web browser.",
+      "kind": "article",
+      "tags": [
+        "ai",
+        "claude"
+      ]
+    },
+    {
+      "id": 1792481607255,
+      "added": "2026-10-20",
+      "url": "https://sukurcf.github.io/resources/cheatsheets/github-copilot-cheatsheet.html",
+      "title": "Copilot Cheatsheet",
+      "comment": "Everything in one place, got it from someone, handy.",
+      "kind": "article",
+      "tags": [
+        "ai",
+        "copilot"
+      ]
+    },
+    {
       "id": 1792477883409,
       "added": "2026-10-20",
       "url": "https://www.youtube.com/watch?v=qGS9Ghnq1RU",
