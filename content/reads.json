@@ -2,6 +2,19 @@
   "books": [],
   "articles": [
     {
+      "id": 1792477883409,
+      "added": "2026-10-20",
+      "url": "https://www.youtube.com/watch?v=qGS9Ghnq1RU",
+      "title": "GPT Realtime 2 - Voice Agent (Soham Ray)",
+      "comment": "How Voice agents are getting better by the day ... and about Tau2",
+      "kind": "article",
+      "tags": [
+        "ai",
+        "voice",
+        "agentic"
+      ]
+    },
+    {
       "id": 1792410227740,
       "added": "2026-10-19",
       "url": "https://code.claude.com/docs/en/plugins/mods/overview",
@@ -18,7 +31,7 @@
       "added": "2026-10-19",
       "url": "https://claude.com/blog/the-ai-native-sdlc-playbook",
       "title": "AI Native SDLC - Claude Blog",
-      "comment": "The new norms of AI SDLC, how one would adopt, blend with various harness etc.. The SDLC norms are changing fast, need to create a fail proof method",
+      "comment": "The new norms of AI SDLC, how one would adopt, blend with various harness etc. The SDLC norms are changing fast, need to create a fail proof method",
       "kind": "article",
       "tags": [
         "ai",
