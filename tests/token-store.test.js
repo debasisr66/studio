@@ -67,3 +67,52 @@ test('purge never touches other keys', () => {
   assert.equal(s.getItem('studio-theme'), 'dark');
   assert.equal(s.getItem('studio-seen-version'), '1.2');
 });
+
+// ---- idle lock (v1.4): previously the only untested part of the admin session code ----
+
+function fakeTimers() {
+  let now = 0, id = 0; const pending = new Map();
+  return {
+    set: (fn, ms) => { id += 1; pending.set(id, { fn, at: now + ms }); return id; },
+    clear: h => { pending.delete(h); },
+    advance(ms) { now += ms; for (const [h, t] of [...pending]) if (t.at <= now) { pending.delete(h); t.fn(); } },
+    count: () => pending.size,
+  };
+}
+
+test('idle lock: fires once after the idle time, then is no longer armed', () => {
+  const tm = fakeTimers(); let fired = 0;
+  const lock = T.createIdleLock(1000, () => { fired += 1; }, tm);
+  assert.equal(lock.isArmed(), false);
+  lock.arm(); assert.equal(lock.isArmed(), true);
+  tm.advance(999); assert.equal(fired, 0);
+  tm.advance(1); assert.equal(fired, 1);
+  assert.equal(lock.isArmed(), false);
+  tm.advance(10_000); assert.equal(fired, 1);
+});
+
+test('idle lock: activity (arming again) restarts the countdown, and never leaves two timers', () => {
+  const tm = fakeTimers(); let fired = 0;
+  const lock = T.createIdleLock(1000, () => { fired += 1; }, tm);
+  lock.arm(); tm.advance(900);
+  lock.arm(); tm.advance(900);          // 1800 ms since start but only 900 since last activity
+  assert.equal(fired, 0);
+  assert.equal(tm.count(), 1);
+  tm.advance(100); assert.equal(fired, 1);
+});
+
+test('idle lock: disarm cancels, and is safe to call when not armed', () => {
+  const tm = fakeTimers(); let fired = 0;
+  const lock = T.createIdleLock(1000, () => { fired += 1; }, tm);
+  lock.disarm();
+  lock.arm(); lock.disarm();
+  tm.advance(5000);
+  assert.equal(fired, 0);
+  assert.equal(lock.isArmed(), false);
+});
+
+test('idle lock: works with the real timers by default', () => {
+  const lock = T.createIdleLock(60_000, () => {});
+  lock.arm(); assert.equal(lock.isArmed(), true);
+  lock.disarm(); assert.equal(lock.isArmed(), false);
+});

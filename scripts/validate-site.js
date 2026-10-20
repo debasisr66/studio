@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const RL = require('../js/reads-lib.js');
+const IL = require('../js/image-lib.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const REPO_RE = /^[\w.-]+\/[\w.-]+$/;
@@ -15,7 +16,7 @@ const isStr = v => typeof v === 'string';
 const httpUrl = u => { try { const x = new URL(u); return x.protocol === 'http:' || x.protocol === 'https:'; } catch { return false; } };
 
 // size budgets in bytes: generous versus today's sizes, tight enough to catch accidental bloat
-const BUDGETS = { 'index.html': 60 * 1024, 'css/site.css': 30 * 1024, 'js/app.js': 80 * 1024, 'js/reads-lib.js': 20 * 1024, 'js/token-store.js': 10 * 1024, total: 150 * 1024 };
+const BUDGETS = { 'index.html': 60 * 1024, 'css/site.css': 30 * 1024, 'js/app.js': 80 * 1024, 'js/reads-lib.js': 20 * 1024, 'js/token-store.js': 10 * 1024, 'js/image-lib.js': 10 * 1024, total: 150 * 1024 };
 
 function validateProducts(list) {
   if (!Array.isArray(list)) return ['products.json: must be an array'];
@@ -233,6 +234,47 @@ function checkCssSanity(sources) {
   return errors;
 }
 
+/* SVG files can carry script and external loads. Allow plain shapes only (the xmlns declaration URLs are namespaces, not loads). */
+const SVG_BUDGET = 30 * 1024;
+function checkSvg(sources) {
+  const errors = [];
+  for (const [file, svg] of Object.entries(sources)) {
+    if (svg.length > SVG_BUDGET) errors.push(`${file}: ${svg.length} bytes exceeds the ${SVG_BUDGET}-byte SVG size budget`);
+    if (/<script/i.test(svg)) errors.push(`${file}: contains a <script> element`);
+    if (/\son[a-z]+\s*=/i.test(svg)) errors.push(`${file}: contains an event-handler attribute`);
+    if (/<foreignObject/i.test(svg)) errors.push(`${file}: contains <foreignObject>`);
+    if (/javascript:/i.test(svg)) errors.push(`${file}: contains a javascript: URL`);
+    if (/(?:xlink:)?href\s*=\s*["']\s*(?:https?:)?\/\//i.test(svg) || /url\(\s*["']?\s*(?:https?:)?\/\//i.test(svg))
+      errors.push(`${file}: references an external resource`);
+  }
+  return errors;
+}
+
+/* content/profile.jpg is written by the admin screen. Whatever lands there must really be a small, square-ish JPEG. */
+const PROFILE_MAX_BYTES = 200 * 1024, PROFILE_MAX_SIDE = 1024;
+function validateProfileImage(buf) {
+  const errors = [];
+  const info = IL.jpegInfo(buf);
+  if (!info.ok) return ['content/profile.jpg: is not a valid JPEG (the file must begin with the JPEG signature and have a readable frame header)'];
+  if (buf.length > PROFILE_MAX_BYTES) errors.push(`content/profile.jpg: ${buf.length} bytes exceeds the ${PROFILE_MAX_BYTES}-byte (200 KB) budget`);
+  if (info.width > PROFILE_MAX_SIDE || info.height > PROFILE_MAX_SIDE) errors.push(`content/profile.jpg: ${info.width}x${info.height} is larger than ${PROFILE_MAX_SIDE}x${PROFILE_MAX_SIDE} pixels`);
+  if (info.width < IL.LIMITS.minSide || info.height < IL.LIMITS.minSide) errors.push(`content/profile.jpg: ${info.width}x${info.height} is too small (at least ${IL.LIMITS.minSide} pixels on each side)`);
+  return errors;
+}
+
+/* content/profile.json says whether a photo is shown and carries the version used to bust caches. The path is restricted so
+   the manifest can never point the page at another site. */
+function validateProfileManifest(m, exists) {
+  const errors = [], warnings = [];
+  if (!isObj(m) || !('photo' in m) || !('updated' in m)) return { errors: ['content/profile.json: needs "photo" and "updated" (both may be null)'], warnings };
+  if (m.photo !== null && !(isStr(m.photo) && /^content\/[A-Za-z0-9._-]+\.jpg$/.test(m.photo) && !m.photo.includes('..'))) errors.push('content/profile.json: photo must be null or a path like content/profile.jpg');
+  if (m.photo === null && m.updated !== null) errors.push('content/profile.json: updated must be null when there is no photo');
+  if (m.photo !== null && !(isStr(m.updated) && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(m.updated))) errors.push('content/profile.json: updated must be an ISO timestamp (UTC) when a photo is set');
+  if (isStr(m.photo) && errors.length === 0 && !exists(m.photo)) errors.push(`content/profile.json: photo points to ${m.photo}, which does not exist`);
+  if (m.photo === null && exists('content/profile.jpg')) warnings.push('content/profile.jpg exists but profile.json does not show it (publish again to include it)');
+  return { errors, warnings };
+}
+
 function checkSizes(sizes) {
   const errors = [];
   let total = 0;
@@ -280,6 +322,11 @@ function run() {
   errors.push(...checkCss(cssSources, p => fs.existsSync(path.join(ROOT, p))));
   errors.push(...checkFontCoverage(cssSources));
   errors.push(...checkCssSanity(cssSources));
+  const profile = json('content/profile.json');
+  if (profile !== undefined) { const r = validateProfileManifest(profile, p => fs.existsSync(path.join(ROOT, p))); errors.push(...r.errors); warnings.push(...r.warnings); }
+  if (fs.existsSync(path.join(ROOT, 'content/profile.jpg'))) errors.push(...validateProfileImage(fs.readFileSync(path.join(ROOT, 'content/profile.jpg'))));
+  const svgSources = Object.fromEntries(dirFiles('assets', '.svg').map(f => [f, read(f)]));
+  errors.push(...checkSvg(svgSources));
   const fontFiles = dirFiles('fonts', '.woff2');
   const fontSizes = Object.fromEntries(fontFiles.map(f => [f, fs.statSync(path.join(ROOT, f)).size]));
   errors.push(...checkFonts(fontSizes, dirFiles('fonts', '.txt')));
@@ -289,7 +336,7 @@ function run() {
   return { errors, warnings, sizes };
 }
 
-module.exports = { checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
+module.exports = { validateProfileManifest, validateProfileImage, checkSvg, checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
 
 if (require.main === module) {
   const { errors, warnings, sizes } = run();

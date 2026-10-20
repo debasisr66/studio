@@ -7,7 +7,7 @@
 <meta name="description" content="Studio by Debasis Ray: small, focused software products with release notes, writing and a curated reading list. Learning never ends!">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%236E56CF'/%3E%3Cpath d='M10 22V10h7a4 4 0 010 8h-7' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
 <link rel="preload" href="fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/site.css">
 </head>
@@ -16,7 +16,7 @@
 
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="#top" aria-label="Studio by Debasis Ray, back to top"><span class="logo" aria-hidden="true">S</span> Studio <small>by Debasis Ray</small></a>
+    <a class="brand" href="#top" aria-label="Studio by Debasis Ray, back to top"><img class="logo" src="assets/logo.svg" alt="" width="28" height="28"> Studio <small>by Debasis Ray</small></a>
     <nav class="links" id="navlinks" aria-label="Sections">
       <a href="#products">Products</a><a href="#updates">Updates</a><a href="#blog">Blog</a><a href="#reads">Reads</a>
     </nav>
@@ -29,7 +29,17 @@
 
 <main id="main">
   <section class="hero"><div class="wrap">
-    <div class="eyebrow">Studio by Debasis Ray</div>
+    <div class="who">
+      <div class="photo">
+        <img id="profileImg" class="photo-img" alt="Debasis Ray" width="96" height="96" hidden>
+        <span class="photo-mono" id="profileMono" aria-hidden="true">D</span>
+      </div>
+      <div class="who-text">
+        <div class="eyebrow">Studio by Debasis Ray</div>
+        <button class="addbtn" id="changePhoto" type="button" aria-label="Change profile photo">Change photo</button>
+      </div>
+      <input type="file" id="photoFile" accept="image/png,image/jpeg,image/webp" hidden>
+    </div>
     <h1>Small, focused software, shipped in the open.</h1>
     <p class="tagline">Learning never ends!</p>
     <p>Products built and maintained by Debasis Ray. Every release, changelog and download lives here, straight from the source repositories.</p>
@@ -129,6 +139,7 @@
 
 <script src="js/reads-lib.js"></script>
 <script src="js/token-store.js"></script>
+<script src="js/image-lib.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

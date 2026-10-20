@@ -32,7 +32,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--b
 header.top .wrap{display:flex;align-items:center;gap:24px;height:60px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:600;text-decoration:none;letter-spacing:-.01em}
 .brand small{font-weight:400;color:var(--muted);font-size:13px;letter-spacing:0}
-.logo{width:26px;height:26px;border-radius:7px;background:var(--accent);display:grid;place-items:center;color:#fff;font:600 13px var(--mono)}
+.logo{width:28px;height:28px;border-radius:7px;display:block}
 nav.links{display:flex;gap:4px;margin-left:auto}
 nav.links a{padding:8px 12px;border-radius:8px;text-decoration:none;color:var(--muted);font-size:14px;font-weight:500}
 nav.links a:hover,nav.links a[aria-current]{color:var(--text);background:var(--surface-2)}
@@ -230,3 +230,24 @@ body.admin .read-head{padding-right:112px}
   .whatsnew{width:44px;height:44px;padding:0;justify-content:center}
   .wn-dot{position:absolute;top:8px;right:8px}
 }
+
+/* profile photo (v1.4) */
+.who{display:flex;align-items:center;gap:16px;margin-bottom:6px}
+.photo{position:relative;width:96px;height:96px;flex:none}
+.photo-img,.photo-mono{width:96px;height:96px;border-radius:50%}
+.photo-img{object-fit:cover;border:2px solid var(--border);background:var(--surface-2)}
+.photo-img[hidden],.photo-mono[hidden]{display:none}
+.photo-mono{display:grid;place-items:center;color:#fff;font:600 40px var(--font);background:hsl(260 45% 30%)}
+.who-text{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.who-text .addbtn{margin:0}
+.photo-preview{display:block;width:160px;height:160px;border-radius:50%;object-fit:cover;margin:6px auto 12px;border:2px solid var(--border)}
+@media (max-width:620px){.photo,.photo-img,.photo-mono{width:72px;height:72px}.photo-mono{font-size:30px}}
+
+/* header fit between the phone and desktop layouts (v1.4): the tagline beside the brand is dropped (the hero says it) and the links are slightly tighter */
+@media (max-width:860px){
+  .brand small{display:none}
+  header.top .wrap{gap:16px}
+  nav.links a{padding:8px 10px}
+}
+.brand{white-space:nowrap}
+.hdr-actions{flex:none}

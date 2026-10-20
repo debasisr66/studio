@@ -224,3 +224,63 @@ test('css sanity: the main stylesheet must still define the design tokens and bo
   assert.ok(V.checkCssSanity({ 'css/site.css': ":root{--bg:#000}body{}" }).some(e => /light/i.test(e)));
   assert.deepEqual(V.checkCssSanity({}), [], 'no stylesheet in the set: nothing to check');
 });
+
+test('svg assets: no script, event handlers, foreignObject or external references; bounded size', () => {
+  const ok = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8" fill="#000"/></svg>';
+  assert.deepEqual(V.checkSvg({ 'assets/logo.svg': ok }), []);
+  for (const [name, bad] of Object.entries({
+    script: '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+    handler: '<svg xmlns="http://www.w3.org/2000/svg"><rect onclick="x()"/></svg>',
+    foreign: '<svg xmlns="http://www.w3.org/2000/svg"><foreignObject><div/></foreignObject></svg>',
+    external: '<svg xmlns="http://www.w3.org/2000/svg"><image href="https://evil.example/x.png"/></svg>',
+    xlink: '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><use xlink:href="https://evil.example/a.svg#x"/></svg>',
+    js: '<svg xmlns="http://www.w3.org/2000/svg"><a href="javascript:alert(1)"><rect/></a></svg>',
+    cssurl: '<svg xmlns="http://www.w3.org/2000/svg"><rect style="fill:url(https://evil.example/x)"/></svg>',
+  })) assert.ok(V.checkSvg({ 'assets/x.svg': bad }).length, name);
+  assert.ok(V.checkSvg({ 'assets/big.svg': ok + ' '.repeat(40 * 1024) }).some(e => /budget|size/i.test(e)));
+  assert.deepEqual(V.checkSvg({}), []);
+});
+
+// ---- v1.4: published profile photo ----
+function jpegBuf(w, h, extra = 0) {
+  return Buffer.concat([Buffer.from([0xFF, 0xD8, 0xFF, 0xC0, 0x00, 0x11, 0x08, h >> 8, h & 255, w >> 8, w & 255, 0x03, 1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1]), Buffer.alloc(extra), Buffer.from([0xFF, 0xD9])]);
+}
+
+test('profile photo: a 512x512 JPEG under the budget passes', () => {
+  assert.deepEqual(V.validateProfileImage(jpegBuf(512, 512, 5000)), []);
+});
+
+test('profile photo: rejects non-JPEG content (PNG, SVG, HTML), however it is named', () => {
+  assert.ok(V.validateProfileImage(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>')).some(e => /JPEG/.test(e)));
+  assert.ok(V.validateProfileImage(Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])).some(e => /JPEG/.test(e)));
+  assert.ok(V.validateProfileImage(Buffer.from('<html><script>alert(1)</script></html>')).some(e => /JPEG/.test(e)));
+});
+
+test('profile photo: rejects oversized files and oversized or tiny dimensions', () => {
+  assert.ok(V.validateProfileImage(jpegBuf(512, 512, 201 * 1024)).some(e => /KB|budget|size/i.test(e)));
+  assert.ok(V.validateProfileImage(jpegBuf(2000, 2000, 100)).some(e => /1024|pixels/i.test(e)));
+  assert.ok(V.validateProfileImage(jpegBuf(64, 64, 100)).some(e => /128|small/i.test(e)));
+});
+
+// ---- v1.4: profile manifest ----
+test('profile manifest: no photo yet, or a photo path with an ISO timestamp, is valid', () => {
+  assert.deepEqual(V.validateProfileManifest({ photo: null, updated: null }, () => true).errors, []);
+  assert.deepEqual(V.validateProfileManifest({ photo: 'content/profile.jpg', updated: '2026-10-20T08:00:00.000Z' }, () => true).errors, []);
+});
+
+test('profile manifest: rejects unsafe or odd photo paths and bad timestamps', () => {
+  for (const photo of ['https://evil.example/x.jpg', '//evil.example/x.jpg', '../secret.jpg', 'content/../x.jpg', 'content/profile.svg', 'content/profile.jpg?x=1', '', 5]) {
+    assert.ok(V.validateProfileManifest({ photo, updated: null }, () => true).errors.some(e => /photo/.test(e)), String(photo));
+  }
+  assert.ok(V.validateProfileManifest({ photo: 'content/profile.jpg', updated: 'yesterday' }, () => true).errors.some(e => /updated/.test(e)));
+  assert.ok(V.validateProfileManifest({ photo: 'content/profile.jpg' }, () => true).errors.some(e => /updated/.test(e)));
+  assert.ok(V.validateProfileManifest('nope', () => true).errors.length);
+  assert.ok(V.validateProfileManifest({}, () => true).errors.length);
+});
+
+test('profile manifest: a photo that does not exist is an error; a file with no photo set only warns', () => {
+  assert.ok(V.validateProfileManifest({ photo: 'content/profile.jpg', updated: '2026-10-20T08:00:00.000Z' }, () => false).errors.some(e => /does not exist/.test(e)));
+  const r = V.validateProfileManifest({ photo: null, updated: null }, p => p === 'content/profile.jpg');
+  assert.deepEqual(r.errors, []);
+  assert.equal(r.warnings.length, 1);
+});

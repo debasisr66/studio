@@ -4,6 +4,7 @@ const PAT_KEY = 'studio-admin-pat';
 const SEEN_KEY = 'studio-seen-version';
 const IDLE_MS = 30 * 60 * 1000;
 const RL = window.ReadsLib;
+const IL = window.ImageLib;
 const LANG = {JavaScript:'#F1E05A',TypeScript:'#3178C6',Swift:'#F05138',Python:'#3572A5',Kotlin:'#A97BFF',Java:'#B07219',Go:'#00ADD8',Rust:'#DEA584',HTML:'#E34C26',CSS:'#563D7C',Dart:'#00B4AB','C#':'#178600',Ruby:'#701516',Shell:'#89E051'};
 
 const $ = s => document.querySelector(s);
@@ -58,7 +59,7 @@ function md(text) {
 }
 
 /* ---------- state ---------- */
-const state = { changelog: null, registry: [], cache: null, blog: {posts: []}, reads: {books: [], articles: []}, dirty: {blog:false, reads:false}, filter: {tag:'', q:''}, editing: -1 };
+const state = { changelog: null, registry: [], cache: null, blog: {posts: []}, reads: {books: [], articles: []}, profile: {photo: null, updated: null}, profileDraft: null, profileShown: null, dirty: {blog:false, reads:false, profile:false}, filter: {tag:'', q:''}, editing: -1 };
 
 async function loadJson(path) {
   const r = await fetch(path + '?t=' + Date.now(), {cache:'no-store'});
@@ -68,9 +69,10 @@ async function loadJson(path) {
 
 async function boot() {
   $('#yr').textContent = new Date().getFullYear();
-  const [reg, cache, blog, reads, changelog] = await Promise.allSettled([
+  const [reg, cache, blog, reads, changelog, profile] = await Promise.allSettled([
     loadJson('content/products.json'), loadJson('content/cache.json'),
-    loadJson('content/blog.json'), loadJson('content/reads.json'), loadJson('content/changelog.json')]);
+    loadJson('content/blog.json'), loadJson('content/reads.json'), loadJson('content/changelog.json'), loadJson('content/profile.json')]);
+  if (profile.status === 'fulfilled' && profile.value && typeof profile.value === 'object') state.profile = profile.value;
   if (reg.status === 'fulfilled' && Array.isArray(reg.value)) state.registry = reg.value;
   if (cache.status === 'fulfilled' && cache.value && typeof cache.value.products === 'object') state.cache = cache.value;
   if (blog.status === 'fulfilled' && Array.isArray(blog.value.posts)) state.blog = blog.value;
@@ -205,7 +207,21 @@ function renderReads() {
     <article class="item">${tools('book', i, 'book ' + (x.title || ''))}<h3>${esc(x.title)}</h3><div class="when">${esc(x.author)}${x.year ? ' · ' + esc(x.year) : ''}</div>${x.note ? `<div class="body">${esc(x.note)}</div>` : ''}</article>`).join('') : '<div class="empty">Nothing here yet.</div>';
 }
 
-function renderAll() { renderProducts(); renderUpdates(); renderBlog(); renderReads(); renderVersion(); }
+/* Profile photo: shown when the manifest names one (path restricted to content/*.jpg, versioned by its timestamp so a new photo
+   is never served stale), or when the owner has a draft. Otherwise the monogram stays. */
+function renderProfile() {
+  const img = $('#profileImg'), mono = $('#profileMono'), p = state.profile || {};
+  let src = null;
+  if (state.profileDraft) src = state.profileDraft.dataUrl;
+  else if (state.profileShown) src = state.profileShown;   // just published: keep the local copy until the page is reloaded (Pages needs a minute or two)
+  else if (typeof p.photo === 'string' && /^content\/[A-Za-z0-9._-]+\.jpg$/.test(p.photo)) src = p.photo + (p.updated ? '?v=' + encodeURIComponent(p.updated) : '');
+  if (!src) { img.hidden = true; mono.hidden = false; img.removeAttribute('src'); return; }
+  img.onerror = () => { img.hidden = true; mono.hidden = false; };
+  if (img.getAttribute('src') !== src) img.src = src;
+  img.hidden = false; mono.hidden = true;
+}
+
+function renderAll() { renderProducts(); renderUpdates(); renderBlog(); renderReads(); renderVersion(); renderProfile(); }
 
 /* ---------- version + What's new ---------- */
 const storageOk = (() => { try { localStorage.setItem('__probe', '1'); localStorage.removeItem('__probe'); return true; } catch { return false; } })();
@@ -275,15 +291,31 @@ async function publishFile(path, obj, message) {
   return 'committed';
 }
 
-/* auto-lock after 30 minutes without interaction; unpublished drafts stay in memory */
-let idleTimer;
-const armIdle = () => { clearTimeout(idleTimer); if (document.body.classList.contains('admin')) idleTimer = setTimeout(() => { lock(); say('Admin locked after 30 minutes of inactivity.'); }, IDLE_MS); };
-['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, armIdle, {passive: true}));
+/* Binary twin of publishFile: GET sha -> skip if identical -> PUT with sha. One file per commit. */
+async function publishBinary(path, b64, message) {
+  if (!/^[A-Za-z0-9+\/]+={0,2}$/.test(b64)) throw new Error('Refusing to publish ' + path + ': not valid base64');
+  const cur = await ghApi(`/repos/${OWNER}/${HUB}/contents/${path}?ref=${BRANCH}`);
+  let sha;
+  if (cur.status === 200) {
+    const j = await cur.json(); sha = j.sha;
+    if (String(j.content || '').replace(/\s/g, '') === b64) return 'unchanged';
+  } else if (cur.status !== 404) throw new Error('Could not read ' + path + ' (' + cur.status + ')');
+  const put = await ghApi(`/repos/${OWNER}/${HUB}/contents/${path}`, {
+    method: 'PUT', body: JSON.stringify({message, content: b64, branch: BRANCH, ...(sha ? {sha} : {})})});
+  if (!put.ok) { const t = await put.text(); throw new Error('Publish of ' + path + ' failed (' + put.status + '): ' + t.slice(0, 200)); }
+  return 'committed';
+}
 
-function enableAdmin() { document.body.classList.add('admin'); updateDirty(); armIdle(); }
-function lock() { tokenStore.del(); document.body.classList.remove('admin'); clearTimeout(idleTimer); closeComposer(); }
+/* auto-lock after 30 minutes without interaction; unpublished drafts stay in memory */
+const idle = window.TokenStore.createIdleLock(IDLE_MS, () => { lock(); say('Admin locked after 30 minutes of inactivity.'); });
+const onActivity = () => { if (document.body.classList.contains('admin')) idle.arm(); };
+['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, onActivity, {passive: true}));
+
+function enableAdmin() { document.body.classList.add('admin'); updateDirty(); idle.arm(); }
+function lock() { tokenStore.del(); document.body.classList.remove('admin'); idle.disarm(); closeComposer(); }
 function updateDirty() {
-  const d = Object.entries(state.dirty).filter(([,v]) => v).map(([k]) => k + '.json');
+  const LABEL = {blog: 'blog.json', reads: 'reads.json', profile: 'profile photo'};
+  const d = Object.entries(state.dirty).filter(([,v]) => v).map(([k]) => LABEL[k] || k);
   $('#dirtyinfo').innerHTML = d.length ? `<span class="dirty">Unpublished: ${d.join(', ')}</span>` : 'No pending changes';
   $('#publishBtn').disabled = !d.length;
 }
@@ -340,7 +372,7 @@ $('#gear').onclick = () => {
   $('#pat').onkeydown = e => { if (e.key === 'Enter') go(); };
 };
 $('#lockBtn').onclick = () => {
-  if ((state.dirty.blog || state.dirty.reads) && !confirm('You have unpublished changes. Sign out anyway? (Changes stay on this page until you reload.)')) return;
+  if (Object.values(state.dirty).some(Boolean) && !confirm('You have unpublished changes. Sign out anyway? (Changes stay on this page until you reload.)')) return;
   lock(); say('Admin locked.');
 };
 
@@ -474,17 +506,71 @@ $('#readSearch').addEventListener('input', e => { state.filter.q = e.target.valu
 
 $('#publishBtn').onclick = async () => {
   const files = [['blog', 'content/blog.json', () => ({posts: state.blog.posts}), 'blog'], ['reads', 'content/reads.json', () => ({books: state.reads.books, articles: state.reads.articles}), 'reading list']];
-  const todo = files.filter(f => state.dirty[f[0]]); if (!todo.length) return;
+  const todo = files.filter(f => state.dirty[f[0]]);
+  const hasPhoto = !!(state.dirty.profile && state.profileDraft);
+  if (!todo.length && !hasPhoto) return;
   $('#publishBtn').disabled = true;
   const out = [];
   for (const [key, path, get, label] of todo) {   // one file per commit; a failure leaves the others untouched
     try { const r = await publishFile(path, get(), `cms: update ${label}`); state.dirty[key] = false; out.push(path + ': ' + r); }
     catch (e) { out.push(path + ': ' + e.message); }
   }
+  if (hasPhoto) {   // photo first, then the manifest that shows it, so the manifest never points at a missing file
+    try {
+      const r1 = await publishBinary('content/profile.jpg', state.profileDraft.base64, 'cms: update profile photo');
+      let updated = state.profile && state.profile.updated;
+      if (r1 === 'committed' || !(state.profile && state.profile.photo)) updated = new Date().toISOString();
+      const r2 = await publishFile('content/profile.json', {photo: 'content/profile.jpg', updated}, 'cms: show profile photo');
+      state.profile = {photo: 'content/profile.jpg', updated}; state.profileShown = state.profileDraft.dataUrl; state.profileDraft = null; state.dirty.profile = false;
+      out.push('content/profile.jpg: ' + r1, 'content/profile.json: ' + r2);
+    } catch (e) { out.push('profile photo: ' + e.message); }
+  }
   updateDirty();
   modal.open('<h3 id="modalTitle">Publish result</h3><pre class="mono pre-result">' + esc(out.join('\n')) + '</pre><p class="muted-xs">GitHub Pages usually reflects changes within a minute or two.</p><div class="btns"><button type="button" class="cta" id="mc">Close</button></div>');
   $('#mc').onclick = modal.close;
 };
-window.addEventListener('beforeunload', e => { if (state.dirty.blog || state.dirty.reads) { e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('beforeunload', e => { if (Object.values(state.dirty).some(Boolean)) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ---------- profile photo: choose, crop, re-encode, preview ---------- */
+async function processPhoto(file) {
+  const chk = IL.checkFile(file); if (!chk.ok) throw new Error(chk.error);
+  let bmp;
+  try { bmp = await createImageBitmap(file, {imageOrientation: 'from-image'}); }
+  catch { try { bmp = await createImageBitmap(file); } catch { throw new Error("That file isn't a usable image."); } }
+  const dim = IL.checkDimensions(bmp.width, bmp.height);
+  if (!dim.ok) { bmp.close(); throw new Error(dim.error); }
+  const {sx, sy, side} = IL.cropSquare(bmp.width, bmp.height), S = IL.LIMITS.outSide;
+  const canvas = document.createElement('canvas'); canvas.width = canvas.height = S;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, S, S);   // transparent PNGs become white, not black
+  ctx.drawImage(bmp, sx, sy, side, side, 0, 0, S, S); bmp.close();
+  const bytesAt = q => IL.base64Bytes(IL.dataUrlToBase64(canvas.toDataURL('image/jpeg', q)) || '');
+  const pick = IL.chooseQuality(bytesAt, IL.LIMITS.outMaxBytes);
+  if (!pick.ok) throw new Error('That photo could not be made small enough. Try a simpler image.');
+  const dataUrl = canvas.toDataURL('image/jpeg', pick.quality), base64 = IL.dataUrlToBase64(dataUrl);
+  if (!base64) throw new Error("That file isn't a usable image.");
+  return {dataUrl, base64, bytes: IL.base64Bytes(base64), quality: pick.quality};
+}
+function showPhotoError(msg) {
+  modal.open(`<h3 id="modalTitle" tabindex="-1">Can't use that photo</h3><p class="muted-sm">${esc(msg)}</p><div class="btns"><button type="button" class="cta" id="mc">Close</button></div>`, '#modalTitle');
+  $('#mc').onclick = modal.close;
+}
+function openPhotoPreview(res) {
+  modal.open(`<h3 id="modalTitle" tabindex="-1">Use this photo?</h3>
+    <img class="photo-preview" src="${esc(res.dataUrl)}" alt="Preview of your profile photo">
+    <p class="muted-sm">${IL.LIMITS.outSide} × ${IL.LIMITS.outSide} px, ${Math.max(1, Math.round(res.bytes / 1024))} KB. The photo will be public once published. Location and camera details are removed.</p>
+    <div class="btns"><button type="button" class="cta ghost" id="mc">Cancel</button><button type="button" class="cta" id="mu">Use this photo</button></div>`, '#modalTitle');
+  $('#mc').onclick = modal.close;
+  $('#mu').onclick = () => {
+    state.profileDraft = res; state.dirty.profile = true; updateDirty(); renderProfile(); modal.close();
+    say('Photo ready. Publish to make it public.');
+  };
+}
+$('#changePhoto').onclick = () => $('#photoFile').click();
+$('#photoFile').addEventListener('change', async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try { openPhotoPreview(await processPhoto(f)); } catch (err) { showPhotoError(err.message); }
+});
 
 boot();
