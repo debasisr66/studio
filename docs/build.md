@@ -1,6 +1,6 @@
 # Build and Publish — Command Reference
 
-Current release line: **v1.4** (branch `release/v1.4` until merged); v1.3 is tagged. From v1.4 releases go through a **pull request** (see §15). Branch names must differ from tag names: a branch called `v1.1` and a tag `v1.1` made `git push origin v1.1` ambiguous (fix: `git push origin refs/tags/v1.1`).
+Current release line: **v1.4** (merged and tagged); v1.3 is tagged. From v1.4 releases go through a **pull request** (see §15). Branch names must differ from tag names: a branch called `v1.1` and a tag `v1.1` made `git push origin v1.1` ambiguous (fix: `git push origin refs/tags/v1.1`).
 
 Reference only. There is no build step: the repository is the site. Pages serves `main`, root `/`. Run from `/Users/debasisray/CoworkProjects/studio-site`.
 
@@ -174,7 +174,7 @@ The admin token now lives in the tab only: unlock again after closing the tab, i
 
 ## 15. Release by pull request (v1.4 onward)
 
-CI gets a real run before anything reaches `main`, and the ruleset (below) makes a normal merge wait for it.
+CI gets a real run before anything reaches `main`. GitHub does not enforce "CI must pass" (see §16), so the rule is: merge only after `gh pr checks` is green.
 
 ```bash
 git push -u origin release/vX.Y
@@ -185,20 +185,27 @@ git checkout main && git pull --rebase
 git tag vX.Y && git push origin refs/tags/vX.Y     # full ref: never ambiguous with a branch name
 ```
 
-If you must override a failing check, you are bypassing a control on purpose: say why in the pull request first.
+Never merge a red pull request: nothing technical stops you, so the discipline is the control.
 
-## 16. Branch rulesets
+## 16. Branch protection
 
-Definitions and the reasoning are in `docs/rulesets/` and `docs/design.md` §11.4.
+One ruleset is in force (definition in `docs/rulesets/history.json`): no deletion and no force-push on `main`, for everyone. A CI-required ruleset was tested and **not applied** because it blocks the sync and keep-alive bots (`docs/rulesets/README.md`, `docs/design.md` §11.4).
 
 ```bash
-gh api -X POST repos/debasisr66/studio/rulesets --input docs/rulesets/history.json    # no force-push, no deletion (everyone)
-gh api -X POST repos/debasisr66/studio/rulesets --input docs/rulesets/ci.json         # CI required; admin and Actions may bypass
-gh api repos/debasisr66/studio/rulesets --jq '.[] | "\(.id) \(.name) \(.enforcement)"'
-gh api -X DELETE repos/debasisr66/studio/rulesets/<id>                                 # roll back one ruleset instantly
+gh api repos/debasisr66/studio/rulesets --jq '.[] | "\(.id) \(.name) \(.enforcement)"'      # should list only: main: history protected
+gh api repos/debasisr66/studio/rules/branches/main --jq '.[].type'                              # deletion, non_fast_forward
+gh api -X DELETE repos/debasisr66/studio/rulesets/<id>                                          # remove one (rollback)
 ```
 
-If the admin screen or the sync ever fails with a "protected branch" or "required status check" message, list the rulesets and delete the CI one first, then investigate.
+If a bot or the admin screen ever fails with a "repository rule violations" message, delete any ruleset that is not the history one, then investigate.
+
+CI gating is by process: merge a pull request only after `gh pr checks` is green (§15). Dependabot pull requests are checked the same way, and the workflows they change can be run in dry-run mode on their branch first:
+
+```bash
+gh workflow run sync.yml --ref <dependabot-branch> -f dry_run=true
+gh workflow run keepalive.yml --ref <dependabot-branch> -f dry_run=true
+gh workflow run health.yml --ref <dependabot-branch>
+```
 
 ## 17. Keep-alive, fonts, photo
 

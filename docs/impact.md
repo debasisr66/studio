@@ -1,6 +1,6 @@
 # Impact Analysis — Studio
 
-Releases: **v1.4 (built and verified locally, branch `release/v1.4`)** · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped)
+Releases: **v1.4 (shipped 2026-10-20)** · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped)
 
 ---
 
@@ -13,7 +13,7 @@ Date: 2026-10-20 · Rollback tag: `v1.3` · Order of work: **impact → plan →
 | # | Change | Type |
 |---|--------|------|
 | U1 | **Self-host the fonts** (Inter, JetBrains Mono): `fonts/*.woff2` with their licences; Google Fonts removed from the page and the CSP | Privacy, performance, hardening |
-| U2 | **Branch protection** by two repository rulesets on `main`: history can never be rewritten or deleted; CI (`check`) is a required status check, with the repository admin (the owner's token, which the admin screen uses) and the GitHub Actions app allowed to bypass | Process control |
+| U2 | **Branch protection** on `main`: a *history* ruleset (no deletion, no force-push, for everyone) is applied. A *CI-required* ruleset was built and tested but **not kept**: it blocks the sync and keep-alive bots | Process control |
 | U3 | **Keep-alive** (`keepalive.yml` + `scripts/keepalive.js`): if `main` has had no commit for 30 days, add one empty commit so GitHub does not disable the scheduled workflows; the health check also fails if any workflow is disabled | Reliability |
 | U4 | **Pin Actions by commit hash** in all workflows; **Dependabot** proposes weekly updates | Supply-chain hardening |
 | U5 | Health check moved to **12:00 UTC**: observed scheduled runs start 4–5 hours late (the 03:00 sync ran at 07:26–08:24 UTC), so 06:00 could precede the sync | Fix |
@@ -60,8 +60,8 @@ Date: 2026-10-20 · Rollback tag: `v1.3` · Order of work: **impact → plan →
 | ID | Risk | Likelihood | Impact | Mitigation | Status |
 |----|------|-----------|--------|-----------|--------|
 | X1 | Self-hosted fonts render differently from Google's | Low | Medium | Same font files; computed-style comparison against v1.3 | **Materialised and closed**: Latin-only changed the rupee sign; both subsets now hosted; 24 cases, 0 differences; CI guards coverage |
-| X2 | A ruleset blocks the admin screen's commits or the sync bot's commits | Medium | High | Admin role and the GitHub Actions app are bypass actors; applied only after merge; tested straight away (a forced keep-alive commit as the Actions app, a direct push as admin); one-command rollback; owner re-checks one real publish | Open until tested |
-| X3 | The owner can still bypass CI (admin bypass is required so the admin screen's direct commits keep working) | Certain | Low | Honest limit, documented. The rulesets block force-push and deletion for **everyone**, and gate pull-request merges for the normal path | Accepted |
+| X2 | A ruleset blocks the admin screen's commits or the sync bot's commits | Medium | High | Applied only after merge; tested straight away; one-command rollback | **Materialised and handled**: the CI-required ruleset did block the bots (`Required status check "check" is expected`); removed within minutes, before any scheduled run; only the history ruleset remains; bot and admin paths re-tested OK |
+| X3 | CI cannot technically block the owner's merges or the bots' direct pushes | Certain | Low | Honest limit, documented. History cannot be rewritten or deleted by anyone; CI gates the normal path **by process** (pull request, merge only when green) | Accepted |
 | X4 | Keep-alive adds clutter or permissions | Low | Low | At most one empty commit per 30 days; `contents: write` only in that workflow; decision logic unit-tested | Mitigated |
 | X5 | Pinned hashes go stale | Medium | Low | Dependabot weekly pull requests | Mitigated |
 | X6 | Editing `sync.yml` breaks the sync | Low | High | Pin only (diff is one line); verified hash; dry run on GitHub after merge | Open until the GitHub dry run |
@@ -77,7 +77,7 @@ Date: 2026-10-20 · Rollback tag: `v1.3` · Order of work: **impact → plan →
 ## 6. Rollback
 
 ```bash
-# rulesets first (if publishing or sync is ever blocked):
+# the history ruleset (only if it ever has to go):
 gh api repos/debasisr66/studio/rulesets --jq '.[]|"\(.id) \(.name)"'
 gh api -X DELETE repos/debasisr66/studio/rulesets/<id>
 

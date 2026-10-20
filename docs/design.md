@@ -502,39 +502,41 @@ Chosen: **Lattice Ascent** (option 2): a 4 × 4 grid of rounded squares that gro
 
 ### 11.4 Protecting `main`
 
-Two rulesets, because they answer different questions:
+**What is in force:** one ruleset, **history protected**: nobody (including the owner) can delete `main` or force-push to it. **What is not:** a "CI required" ruleset. It was built, applied temporarily and tested; the tests showed it cannot coexist with the bots, so it was removed (evidence below). CI gating is by process instead.
 
-| Ruleset | Rules | Bypass |
-|---------|-------|--------|
-| **History** | No deletion of `main`; no force-push | **None**: applies to everyone, including the owner |
-| **CI** | Required status check `check` (the CI job) | Repository admin role (the owner's token, including the admin screen) and the GitHub Actions app (sync and keep-alive) |
+| Ruleset | Rules | Bypass | Status |
+|---------|-------|--------|--------|
+| **History** | No deletion of `main`; no force-push | None | **In force** |
+| **CI required** | Required status check `check` | Admin role only (GitHub does not accept the Actions app as a bypass actor on a personal repository) | **Tested, not applied** |
 
-Who can do what (intended behavior; verified in `test.md`):
+What the experiment on 2026-10-20 showed (details in `test.md` §F):
 
-| Actor and action | Result |
-|------------------|--------|
-| Pull request with green CI, merged | Allowed |
-| Pull request with red or missing CI, merged normally | **Blocked** until CI passes (the owner can override only by an explicit bypass) |
-| Owner or admin screen: direct commit to `main` | Allowed (bypass), so content publishing keeps working |
-| Sync and keep-alive workflows: direct commit | Allowed (Actions bypass) |
-| Anyone, including the owner: force-push or delete `main` | **Blocked** |
-| A future collaborator without bypass: direct commit | **Blocked** |
+| Actor and action | With the CI ruleset | Final configuration (history only) |
+|------------------|---------------------|------------------------------------|
+| Owner merges a PR with failing CI, normally | **Refused** ("the base branch policy prohibits the merge"); only `--admin` overrides | Allowed (by process, merge only after `gh pr checks` is green) |
+| Owner or admin screen: direct commit to `main` | Allowed (admin bypass) | Allowed |
+| **Sync and keep-alive bots: direct commit** | **Rejected** (`Required status check "check" is expected`) | Allowed |
+| Anyone, including the owner: force-push or delete `main` | Rejected | **Rejected** (tested on a throwaway branch with identical rules) |
 
 ```mermaid
 flowchart LR
   subgraph Paths to main
     A[Release or code change] --> PR[Pull request] --> CI{CI green?}
-    CI -- yes --> M[Merge]
-    CI -- no --> X1[Blocked]
-    B[Admin screen publish] --> D[Direct commit, bypass]
+    CI -- yes, by process --> M[Merge]
+    CI -- no --> X1[Do not merge]
+    B[Admin screen publish] --> D[Direct commit]
     C[Sync and keep-alive bots] --> D
-    E[Force-push or delete] --> X2[Blocked for everyone]
+    E[Force-push or delete] --> X2[Blocked for everyone, enforced by GitHub]
   end
   M --> Main[(main)]
   D --> Main
 ```
 
-Honest limit: because the owner can bypass, CI is a guard rail for the normal path and for others, not a lock the owner cannot open. The alternative (also binding the owner) would stop the admin screen from publishing.
+**Why the CI ruleset was not kept:** a brand-new commit has no checks yet, so a required check rejects any direct push by a non-admin, including the nightly sync and the keep-alive. The bots cannot be exempted. Alternatives were rejected: a personal access token for the bots (a new long-lived secret that expires and silently stops the sync), routing bot commits through pull requests (pull requests opened by the default token do not trigger CI), or a GitHub App (heavy for one person).
+
+**What this means in practice:** history cannot be rewritten or deleted by anyone; CI protects the normal path because releases go through a pull request and are merged only when green; the admin screen and the bots keep working. A bad *content* commit from the admin screen is caught by CI after the fact (red run and email), not prevented.
+
+**Next idea, not built:** gate *deployment* instead of merging (publish with a workflow that runs CI first), which would also stop a bad admin-screen commit from going live. It needs its own design because the bots' pushes do not trigger push workflows.
 
 ### 11.5 Keep-alive
 

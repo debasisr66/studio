@@ -1,6 +1,6 @@
 # Test Plan and Traceability — Studio
 
-Releases: **v1.4 (built and verified locally; awaiting pull request and approval)** · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
+Releases: **v1.4 (shipped 2026-10-20)** · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
 
 ---
 
@@ -22,7 +22,7 @@ Date: 2026-10-20 · Environment: macOS, Node v25.2.1, Claude desktop browser pan
 | REQ-38 | Actions are pinned by commit hash, workflows declare minimum permissions, and CI enforces both; Dependabot keeps pins current |
 | REQ-39 | The health check runs after the (late) scheduled sync and reports any disabled workflow |
 | REQ-40 | The header fits at every window width |
-| REQ-41 | The branch rulesets behave as designed (history protected for everyone; CI required; admin screen and bots keep working) |
+| REQ-41 | Branch protection works without breaking publishing or the bots (history protected for everyone; CI gating tested) |
 | REQ-42 | Nothing else breaks |
 | REQ-43 | All artefacts updated |
 
@@ -36,11 +36,11 @@ Date: 2026-10-20 · Environment: macOS, Node v25.2.1, Claude desktop browser pan
 | REQ-34 | TC-P01–P10 | ✅ with generated images; ⏳ real photo through the OS picker (owner) |
 | REQ-35 | TC-V25–V27 | ✅ |
 | REQ-36 | TC-K20–K23 | ✅ |
-| REQ-37 | TC-A01–A08, TC-A09; **TC-A10** | ✅ logic and dry runs; ⏳ forced run on GitHub |
+| REQ-37 | TC-A01–A10 | ✅ |
 | REQ-38 | TC-W10–W14, TC-W15 | ✅ |
-| REQ-39 | TC-H10–H12; **TC-H13** | ✅ logic; ⏳ runs on GitHub |
+| REQ-39 | TC-H10–H13 | ✅ (first scheduled 12:00 UTC run still to come) |
 | REQ-40 | TC-E01 | ✅ |
-| REQ-41 | **TC-B01–B06** | ⏳ after merge |
+| REQ-41 | TC-B01–B07 | ✅ history protected; CI-required ruleset tested and **not kept** (see §C) |
 | REQ-42 | TC-R17–R21 | ✅ |
 | REQ-43 | TC-D04 | ✅ |
 
@@ -158,15 +158,41 @@ Not defects: test-script slips (assigning the same file list twice is ignored by
 
 See [security.md](security.md) (v1.4 review log): 18 checks, no open High or Critical finding.
 
-## F. Pending (stated plainly)
+## F. Live results after merge (PR #1 merged as `84b1dd2`, 2026-10-20)
 
-| ID | Test | Why pending |
-|----|------|-------------|
-| TC-H13 | Health check run on GitHub (manual, then the first 12:00 UTC scheduled run) | After merge |
-| TC-A10 | Keep-alive: forced run on GitHub adds one empty commit as the Actions bot; a dry run adds none | After merge |
-| TC-B01–B06 | Rulesets: (1) a pull request with green CI merges; (2) a pull request with failing CI is blocked; (3) direct commit as admin works (the admin screen's path); (4) the keep-alive's commit as the Actions app works under the rulesets; (5) force-push to `main` is rejected; (6) deleting `main` is rejected | Applied only after merge; results recorded in this file |
-| TC-M07 | Owner uploads a real photo with the OS file picker, publishes, and checks the live page | Needs the owner and a real photo |
-| (not run) | EXIF **orientation** of a real phone photo (the code requests orientation from the image, but only synthetic images were used); blocked-`sessionStorage` fallback in a browser; real screen reader and phone; the 60-day behaviour (cannot be tested short of waiting) | Environment limits |
+| ID | Test | Result |
+|----|------|--------|
+| TC-F05 | Live site on a fresh tab: footer "Studio v1.4"; only the site's own host contacted; fonts from `/fonts/`; CSP `style-src 'self'; font-src 'self'`; logo and favicon load; monogram shown, **Change photo** hidden from a visitor; What's new lists v1.4 first (5 releases); **no overflow at 643 px** (the width that overflowed on v1.3); console clean | ✅ |
+| TC-H13 | Health check run on GitHub against the v1.4 site: HEALTHY (covers the new files and workflow states) | ✅ run 39384909054 |
+| (sync) | Sync dry run on GitHub with the pinned checkout: both products fetched, "No changes" | ✅ run 39384913785 (X6 closed) |
+| TC-A10 | Keep-alive: dry run says "no heartbeat needed"; **forced run under the final configuration made exactly one empty commit as `github-actions[bot]` (`c580840`, zero files changed)**, run green | ✅ |
+| TC-W16 | Dependabot opened PRs #2 and #3 at once (setup-node 7.1.0, checkout 7.0.1), keeping hash pins with the version in the comment; CI passed on both; the real sync, keep-alive and health workflows ran **green in dry-run mode on both branches** | ✅ (left open for the owner: major version jumps) |
+
+### Branch protection experiment (REQ-41)
+
+Carried out live on 2026-10-20 with immediate rollback available. Run IDs and messages are exact.
+
+| ID | Test | Result |
+|----|------|--------|
+| TC-B01 | History ruleset applied to `main`; `GET rules/branches/main` lists `deletion` and `non_fast_forward` | ✅ ruleset 25458711 |
+| TC-B02 | **CI-required ruleset with the Actions app as bypass actor**: GitHub refuses it ("Actor GitHub Actions integration must be part of the ruleset source or owner organization") | ❌ the design assumption was wrong |
+| TC-B03 | **CI-required ruleset with admin bypass only (temporary)**; forced keep-alive as the bot: **rejected**, "GH013 … Required status check \"check\" is expected", `main` unchanged. This would have stopped the nightly sync | ❌ → ruleset removed |
+| TC-B04 | Same temporary ruleset: a pull request with deliberately failing CI shows merge state BLOCKED; `gh pr merge` without `--admin` is **refused** ("the base branch policy prohibits the merge"). PR closed unmerged, branch deleted | ✅ (shows what the ruleset would give for PRs) |
+| TC-B05 | Same temporary ruleset: owner's direct push to `main` is **accepted** with GitHub reporting the bypassed rule (`84b1dd2..6c1173e`), the path the admin screen uses | ✅ |
+| TC-B06 | History rules on a **throwaway branch** (identical rules): a normal push works; amending and force-pushing is rejected ("Cannot force-push to this branch"); deleting the branch is rejected ("Cannot delete this branch"). Throwaway ruleset and branch removed | ✅ |
+| TC-B07 | Final configuration: only the history ruleset exists; bot path re-tested OK (TC-A10); admin path unchanged | ✅ |
+
+**Conclusion:** a required-CI ruleset cannot coexist with the bots on a personal repository, so it is not applied; history protection is. See `docs/design.md` §11.4 and `docs/rulesets/README.md`.
+
+## G. Still pending or not run (stated plainly)
+
+| ID | Item | Why |
+|----|------|-----|
+| TC-M07 | Owner uploads a real photo through the OS file picker, publishes, and checks the live page | Needs the owner and a real photo |
+| (not run) | EXIF **orientation** of a real phone photo (the code asks the browser to apply it, but only synthetic images were used) | Needs a real rotated photo |
+| (not run) | First **scheduled** 12:00 UTC health run and the first Monday keep-alive; the 60-day lapse itself | Time |
+| (not run) | Blocked-`sessionStorage` fallback in a browser; real screen reader and phone | Environment |
+| (open) | Dependabot PRs #2 and #3 not merged | Owner's decision |
 
 ---
 

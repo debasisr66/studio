@@ -264,7 +264,9 @@ gh run list --status failure --limit 10     # what is red right now?
 | `content/profile.jpg: is not a valid JPEG` in CI | A non-JPEG was committed under that name | Re-upload through the admin screen |
 | `… is not pinned by a 40-character commit hash` | A workflow uses an action by tag | Pin it by hash (copy the commit of the release) |
 | `workflow "…" is disabled_inactivity` | GitHub switched a scheduled workflow off | `gh workflow enable "<name>"`, then check the keep-alive |
-| Publish fails with a protected-branch or required-status-check message | A ruleset is blocking a direct commit | `build.md` §16: list the rulesets and delete the CI one, then investigate |
+| Publish or a bot fails with a "repository rule violations" or "required status check" message | A ruleset is blocking a direct commit | `gh api repos/debasisr66/studio/rulesets` and delete any CI-required ruleset (only the history one should exist), then investigate |
+| `Cannot force-push to this branch` / `Cannot delete this branch` | The history ruleset doing its job | Do not force-push `main`; use `git revert` |
+| Dependabot opens a pull request for an action | A new version exists (the pins are by hash) | Run the workflows it touches in dry-run mode on its branch (`gh workflow run <name> --ref <branch> -f dry_run=true`), then merge if green |
 
 **Two things that surprise people**
 1. The sync bot's commits do not start CI (GitHub does not run workflows from `GITHUB_TOKEN` pushes). The daily health check covers them.
@@ -312,27 +314,32 @@ What the browser does to the file: decodes it, crops a centred square, scales to
 
 To remove the photo: set `content/profile.json` to `{"photo": null, "updated": null}`. The old image stays in git history, so do not publish a photo you would not want to remain visible there.
 
-## Step 16 — Releasing through a pull request, and the branch rulesets (v1.4)
+## Step 16 — Releasing through a pull request, and what protects `main` (v1.4)
 
 From v1.4 a release is a pull request, so CI runs before the change reaches `main`.
 
 ```bash
 git push -u origin release/vX.Y
 gh pr create --base main --head release/vX.Y --title "vX.Y: summary" --body "…"
-gh pr checks --watch
+gh pr checks --watch                        # wait for the job named "check"; merge ONLY if it is green
 gh pr merge --merge --delete-branch
 git checkout main && git pull --rebase
 git tag vX.Y && git push origin refs/tags/vX.Y
 ```
 
-Two rulesets protect `main` (files in `docs/rulesets/`):
+**What GitHub enforces on `main`:** one ruleset, "history protected": nobody, including you, can delete `main` or force-push to it. Inspect it with `gh api repos/debasisr66/studio/rulesets`.
 
-| Ruleset | Effect | Who can bypass |
-|---------|--------|----------------|
-| **History** | Nobody can force-push or delete `main` | Nobody |
-| **CI required** | A change must pass the `check` job | The repository admin (the owner's token, so the admin screen can publish) and the GitHub Actions app (the sync and keep-alive bots) |
+**What is deliberately NOT enforced by GitHub: "CI must pass".** It was built and tested live, and removed. The lesson is worth keeping:
 
-**The honest limit:** because the owner can bypass the CI ruleset, CI is a guard rail for the normal path and for any collaborator, not a lock the owner cannot open. The alternative would stop the admin screen from publishing. If publishing or the sync ever fails with a "protected branch" or "required status check" message, list the rulesets and delete the CI one (`build.md` §16).
+| What we tried | What happened |
+|---------------|---------------|
+| A ruleset requiring the CI check, with the GitHub Actions app allowed to bypass | GitHub refused: the Actions app cannot be a bypass actor on a personal repository |
+| The same ruleset with only you (admin) allowed to bypass | It worked for pull requests (a red PR could not be merged normally, only with `--admin`) and for your direct pushes, **but the nightly sync and the keep-alive were rejected** ("Required status check \"check\" is expected"), because a brand-new commit has no checks yet |
+| Alternatives | A personal access token for the bots (a new long-lived secret that expires and silently stops the sync); sending bot commits through pull requests (those pull requests do not trigger CI); a GitHub App (too heavy for one person) |
+
+So CI gating is **by process** (the commands above), history is protected by GitHub, and a bad content commit from the admin screen is caught by CI afterwards (red run and email). A possible future design is to gate *deployment* instead of merging; it needs its own design.
+
+**How the experiment was run safely** (a good pattern for any risky setting): apply it, test the thing most likely to break (the bots) straight away, keep the one-line rollback ready, and remove it before the next scheduled run. Test destructive rules (force-push, delete) on a throwaway branch with identical rules, never on `main`.
 
 ## Step 17 — Scheduled work, keep-alive and delays (v1.4)
 
