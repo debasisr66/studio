@@ -116,7 +116,7 @@ test('syntax: valid JS passes, broken JS is reported', () => {
 test('index: CSP that allows unsafe-inline styles is rejected', () => {
   const loose = GOOD_HTML.replace("script-src 'self'", "script-src 'self'; style-src 'self' 'unsafe-inline'");
   assert.ok(V.validateIndex(loose, () => true).some(e => /style-src/.test(e)));
-  const strict = GOOD_HTML.replace("script-src 'self'", "script-src 'self'; style-src 'self' https://fonts.googleapis.com");
+  const strict = GOOD_HTML.replace("script-src 'self'", "script-src 'self'; style-src 'self'");
   assert.deepEqual(V.validateIndex(strict, () => true), []);
 });
 
@@ -169,4 +169,58 @@ test('changelog: title and item limits, types, and no links or markup', () => {
 test('size budget: stylesheet is budgeted', () => {
   assert.deepEqual(V.checkSizes({ 'css/site.css': 1000 }), []);
   assert.ok(V.checkSizes({ 'css/site.css': 10 ** 6 }).some(e => /css\/site\.css/.test(e)));
+});
+
+// ---- v1.4: no third parties, self-hosted fonts ----
+
+test('index: third-party hosts in style-src or font-src are rejected; self-only passes', () => {
+  const fonts = GOOD_HTML.replace("script-src 'self'", "script-src 'self'; style-src 'self'; font-src 'self'");
+  assert.deepEqual(V.validateIndex(fonts, () => true), []);
+  const g1 = GOOD_HTML.replace("script-src 'self'", "script-src 'self'; style-src 'self' https://fonts.googleapis.com");
+  assert.ok(V.validateIndex(g1, () => true).some(e => /style-src.*third-party|third-party.*style-src/i.test(e)));
+  const g2 = GOOD_HTML.replace("script-src 'self'", "script-src 'self'; font-src https://fonts.gstatic.com");
+  assert.ok(V.validateIndex(g2, () => true).some(e => /font-src/.test(e)));
+});
+
+test('index: external stylesheet, font or script links are rejected', () => {
+  const ext = GOOD_HTML.replace('</head>', '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter"></head>');
+  assert.ok(V.validateIndex(ext, () => true).some(e => /external/i.test(e)));
+  const ext2 = GOOD_HTML.replace('<body>', '<body><script src="https://cdn.example.com/x.js"></script>');
+  assert.ok(V.validateIndex(ext2, () => true).some(e => /external/i.test(e)));
+  const protoRel = GOOD_HTML.replace('<body>', '<body><script src="//cdn.example.com/x.js"></script>');
+  assert.ok(V.validateIndex(protoRel, () => true).some(e => /external/i.test(e)));
+});
+
+test('css: external urls and imports are rejected; relative urls must exist', () => {
+  const ok = "@font-face{font-family:X;src:url(../fonts/x.woff2) format('woff2')}";
+  assert.deepEqual(V.checkCss({ 'css/site.css': ok }, p => p === 'fonts/x.woff2'), []);
+  assert.ok(V.checkCss({ 'css/site.css': ok }, () => false).some(e => /fonts\/x\.woff2/.test(e)));
+  assert.ok(V.checkCss({ 'css/site.css': "a{background:url(https://evil.example/x.png)}" }, () => true).some(e => /external/i.test(e)));
+  assert.ok(V.checkCss({ 'css/site.css': "@import url('https://fonts.googleapis.com/css');" }, () => true).some(e => /external|import/i.test(e)));
+  assert.deepEqual(V.checkCss({ 'css/site.css': "a{background:url(data:image/svg+xml;base64,AAAA)}" }, () => true), []);
+});
+
+test('fonts: each font needs a licence file and stays within budget', () => {
+  const sizes = { 'fonts/inter-latin.woff2': 48000, 'fonts/jetbrains-mono-latin.woff2': 31000 };
+  assert.deepEqual(V.checkFonts(sizes, ['fonts/LICENSE-Inter.txt', 'fonts/LICENSE-JetBrainsMono.txt']), []);
+  assert.ok(V.checkFonts(sizes, ['fonts/LICENSE-Inter.txt']).some(e => /jetbrains-mono-latin\.woff2.*licen[cs]e/i.test(e)));
+  assert.ok(V.checkFonts({ 'fonts/inter-latin.woff2': 10 ** 6 }, ['fonts/LICENSE-Inter.txt']).some(e => /budget/.test(e)));
+  assert.deepEqual(V.checkFonts({}, []), []);
+});
+
+test('font coverage: Inter must declare a unicode-range that includes the rupee sign (U+20B9)', () => {
+  const latinOnly = "@font-face{font-family:'Inter';src:url(a.woff2);unicode-range:U+0000-00FF,U+2000-206F,U+20AC}";
+  const withExt = latinOnly + "@font-face{font-family:'Inter';src:url(b.woff2);unicode-range:U+0100-02BA,U+20A0-20AB,U+20AD-20C0}";
+  assert.ok(V.checkFontCoverage({ 'css/site.css': latinOnly }).some(e => /20B9/i.test(e)));
+  assert.deepEqual(V.checkFontCoverage({ 'css/site.css': withExt }), []);
+  assert.deepEqual(V.checkFontCoverage({ 'css/site.css': "@font-face{font-family:'Inter';src:url(a.woff2)}" }), [], 'no unicode-range means the face covers everything');
+  assert.deepEqual(V.checkFontCoverage({ 'css/site.css': 'a{color:red}' }), [], 'no Inter face declared at all: nothing to check');
+});
+
+test('css sanity: the main stylesheet must still define the design tokens and both themes', () => {
+  const good = ":root{--bg:#000;--text:#fff}:root[data-theme=\"light\"]{--bg:#fff;--text:#000}body{background:var(--bg)}";
+  assert.deepEqual(V.checkCssSanity({ 'css/site.css': good }), []);
+  assert.ok(V.checkCssSanity({ 'css/site.css': "@font-face{font-family:X}body{margin:0}" }).some(e => /design tokens/i.test(e)));
+  assert.ok(V.checkCssSanity({ 'css/site.css': ":root{--bg:#000}body{}" }).some(e => /light/i.test(e)));
+  assert.deepEqual(V.checkCssSanity({}), [], 'no stylesheet in the set: nothing to check');
 });
