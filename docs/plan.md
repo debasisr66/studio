@@ -1,6 +1,88 @@
 # Plan — Studio
 
-Status key: ✅ done · ⏳ pending · 🔒 needs owner · Releases: **v1.3 (shipped 2026-10-19, tag `v1.3`)**, v1.2 (shipped, tag `v1.2`), v1.1 (shipped, tag `v1.1`)
+Status key: ✅ done · ⏳ pending · 🔒 needs owner · Releases: **v1.4 (in progress)**, v1.3 (shipped 2026-10-19, tag `v1.3`), v1.2 (shipped, tag `v1.2`), v1.1 (shipped, tag `v1.1`)
+
+---
+
+# v1.4 — Self-hosted fonts, protected main, keep-alive, profile photo, logo
+
+Date: 2026-10-20 · Branch: `release/v1.4` · Rollback tag: `v1.3`
+
+## Why
+
+The v1.3 rating left four known gaps: a third-party font request (privacy and a point of failure), CI that alerts but cannot block, scheduled workflows that GitHub silently disables after 60 days of inactivity, and Actions pinned by tag. This release closes them, fixes the small items found since, and adds two things asked for: a **profile photo** the owner can upload and an **abstract Studio logo**.
+
+## Method
+
+impact (done) → **plan (this document)** → design → build → test → security checks → update artefacts → pull request with CI → owner approval → merge → apply protection → verify → tag. This is the first release to go through a **pull request**, so CI gets a real run before anything reaches `main`.
+
+## Scope
+
+| # | Item |
+|---|------|
+| U1 | Self-host Inter and JetBrains Mono; remove Google hosts from the page and CSP; licences included; CI forbids third-party hosts in `style-src` and `font-src` |
+| U2 | Two rulesets on `main`: (a) **history**: no deletion, no force-push, for everyone; (b) **CI**: required status check `check`, with the repository admin role and the GitHub Actions app as bypass actors |
+| U3 | `keepalive.yml`: weekly check; empty commit only when `main` is 30+ days quiet; health check fails if any workflow is disabled |
+| U4 | Pin `actions/checkout` and `actions/setup-node` by commit hash in every workflow; Dependabot weekly for GitHub Actions |
+| U5 | Health check at 12:00 UTC; document that scheduled runs are routinely hours late |
+| U6 | Idle-lock logic extracted to `js/token-store.js` and unit-tested |
+| P1 | Profile photo: admin **Change photo**, validation, square crop, 512 px JPEG re-encode, publish to `content/profile.jpg`, display in the hero with a monogram fallback; CI validates the file |
+| L1 | Logo: option 2 (**Lattice Ascent**) as `assets/logo.svg`, header mark and favicon; concepts kept in `docs/brand/` |
+| W1 | Changelog entry v1.4 and all artefacts |
+
+## Decisions (made without asking, easy to change)
+
+| Decision | Choice | Why |
+|----------|--------|-----|
+| Logo | Option 2, Lattice Ascent (owner's choice) | Chosen after seeing three original concepts |
+| Branch protection design | Two rulesets: history protection for everyone; CI required with admin and Actions bypass | The admin screen commits straight to `main` with the owner's token, and the sync and keep-alive bots push straight to `main`. A rule that also bound the owner and the bots would break publishing and syncing. The trade-off is documented: the owner can bypass CI, but not rewrite history |
+| Keep-alive threshold | 30 days without a commit on `main` | Half of GitHub's 60-day limit, so a missed week cannot cause a lapse; roughly one empty commit per 30 quiet days |
+| Photo format | JPEG, 512 × 512, one file `content/profile.jpg` | Small (tens of KB), universally supported, metadata removed by re-encoding |
+| Photo placement | Hero, beside the "Studio by Debasis Ray" line; monogram until a photo exists | Identity at the top; no empty gap before upload |
+| SVG uploads | Not accepted | SVG can carry script |
+| Release route | Pull request, merged with a merge commit | Keeps the `--no-ff` history and lets CI gate the merge |
+
+## Phases
+
+| Phase | Work | Gate | Status |
+|-------|------|------|--------|
+| 0 | Logo options created and shown; owner chose option 2. Branch `release/v1.4` | Choice recorded | ✅ |
+| 1 | Impact analysis | Reviewed | ✅ |
+| 2 | This plan | Reviewed | ✅ |
+| 3 | Design (fonts, photo flow, logo use, protection model, keep-alive logic) | Reviewed | ✅ (`design.md` §11) |
+| 4a | Fonts: download, licences, `@font-face`, CSP, validator rules and tests | Visual comparison vs v1.3 clean | ⏳ |
+| 4b | Logo and favicon | Legible at 128, 32, 16 px | ⏳ |
+| 4c | Idle lock extraction and tests; image library and tests | Tests pass | ⏳ |
+| 4d | Profile photo: upload dialog, binary publish, display, validator | Flows pass with a generated test image and a stubbed API | ⏳ |
+| 4e | Keep-alive logic and workflow; pin hashes; Dependabot; health changes | Unit tests; YAML valid; dry runs | ⏳ |
+| 5 | Test: unit, visual diff, browser flows, regression | All pass; results in `test.md` | ⏳ |
+| 6 | Security checks (`security.md`) | No open High findings | ⏳ |
+| 7 | Update artefacts and changelog | Consistent | ⏳ |
+| 8 | Open the pull request; CI green; **owner approves**; merge; Pages, health and sync dry run green | Live smoke checklist | ⏳ 🔒 |
+| 9 | Apply the rulesets; test them (forced keep-alive commit as Actions, direct admin push, force-push rejected, a deliberately failing PR); tag `v1.4` | Rollback tested in principle, command recorded | ⏳ |
+| 10 | Owner: upload a real photo, publish, verify | Commit and live check | ⏳ 🔒 |
+
+## Acceptance criteria
+
+- D1: No request leaves the page for any host except the same origin (and `api.github.com` in admin); the CSP has no third-party host in `style-src` or `font-src`; CI rejects a regression.
+- D2: Computed styles match v1.3 except the header logo and the new hero photo area (fonts introduce no differences).
+- D3: Each ruleset behaves as designed (see phase 9); the admin screen and the sync still work; force-push and deletion of `main` are rejected.
+- D4: Keep-alive makes no commit when `main` is recent, one empty commit when quiet or forced, and the decision logic is unit-tested.
+- D5: All workflows use pinned hashes; the sync dry run passes on GitHub; Dependabot is configured.
+- D6: A generated test image becomes a 512 × 512 JPEG under 150 KB with no metadata; an SVG, a corrupt file, an oversized file and an over-large pixel count are rejected; the admin screen publishes it as one file, one commit.
+- D7: The idle lock locks after the configured time and re-arms on activity (unit-tested with fake timers).
+- D8: The logo is the header mark and the favicon and is legible at 16 px.
+- D9: Every artefact references v1.4 and agrees with the others.
+
+## Out of scope
+
+A server, user accounts, SVG or animated uploads, multiple photos, photo cropping controls beyond a centre crop, requiring pull requests for admin-screen content changes (would remove the admin screen's direct publishing), replacing GitHub Pages or adding a CDN.
+
+## Honest limits to carry forward
+
+- The owner can bypass the CI ruleset by design; only history rewriting and deletion are blocked for everyone.
+- GitHub does not publish an exact definition of "repository activity"; commits to `main` are the known-good signal, so keep-alive uses them.
+- Pages serves the photo with a cache of up to about ten minutes.
 
 ---
 

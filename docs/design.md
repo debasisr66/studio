@@ -1,6 +1,6 @@
 # Design — Studio
 
-Releases: v1.3 (What's new, admin session, strict CSP: §10) · v1.2 (operational flows: §9; no UI change) · v1.1 (UI: §1–8).
+Releases: v1.4 (fonts, profile photo, logo, protection and keep-alive: §11) · v1.3 (What's new, admin session, strict CSP: §10) · v1.2 (operational flows: §9; no UI change) · v1.1 (UI: §1–8).
 
 UI sections, HCI best practices applied, and the flows behind the Reads feature. Diagrams are Mermaid and render on GitHub.
 
@@ -413,3 +413,143 @@ The token logic lives in `js/token-store.js` (no DOM access, unit-tested): `crea
 ### 10.5 Visual-regression approach
 
 Because the CSS file moves, the design is only accepted if v1.2 and v1.3 render identically. A test harness loads both builds in same-origin frames at 375, 768 and 1280 px, in dark and light, with identical content, and compares computed styles element by element. Only the What's new button and the footer version may differ.
+
+## 11. v1.4 design — fonts, profile photo, logo, protection, keep-alive
+
+### 11.1 Self-hosted fonts
+
+| | v1.3 | v1.4 |
+|---|------|------|
+| Where fonts load from | `fonts.googleapis.com` (CSS) and `fonts.gstatic.com` (files) | `fonts/` on the same origin |
+| CSP `style-src` / `font-src` | `'self' https://fonts.googleapis.com` / `https://fonts.gstatic.com` | `'self'` / `'self'` |
+| Third parties that see a visit | Google | None |
+| Files | n/a | `inter-latin.woff2`, `jetbrains-mono-latin.woff2` (variable fonts, Latin subset), plus their SIL Open Font Licence texts |
+
+- `css/site.css` declares `@font-face` for each file with `font-display: swap`, so text shows at once in the fallback stack and swaps when the font arrives.
+- The Latin subset covers all English text on the site. Other scripts (for example Devanagari in a future post) fall back to the system font by design.
+- The Inter file is preloaded (`<link rel="preload" as="font" crossorigin>`), which the CSP allows under `font-src 'self'`.
+- Fallback stack is unchanged (`system-ui…` and `ui-monospace…`), so a failed font load only changes letter shapes slightly.
+- CI rules: `style-src` and `font-src` may contain only `'self'`; `index.html` may not link any external stylesheet or font; each font file needs a licence file beside it and a size budget.
+
+### 11.2 Profile photo
+
+**Purpose:** put a face to "Studio by Debasis Ray". Owner-only upload; public display.
+
+**Hero layout**
+
+| Width | Layout |
+|-------|--------|
+| Desktop and tablet | A 96 px round photo to the left of the eyebrow line "Studio by Debasis Ray" |
+| Phone | The same, 72 px, above the heading |
+| No photo yet | A round monogram "D" (the existing avatar style) in the same place, so nothing shifts when a photo is added |
+
+The image has `alt="Debasis Ray"` and fixed `width`/`height`, so loading never moves the page.
+
+**Admin flow**
+
+```mermaid
+flowchart TD
+  A[Admin unlocked] --> B[Click Change photo]
+  B --> C[Choose a PNG, JPEG or WebP]
+  C --> D{Allowed type and size under 10 MB?}
+  D -- no --> E[Inline message, nothing changes]
+  D -- yes --> F[Decode image in the browser]
+  F -- cannot decode or over 50 megapixels --> E
+  F -- ok --> G[Centre-crop to a square, scale to 512 px, re-encode JPEG, step quality down until under 150 KB]
+  G --> H[Preview dialog shows the round crop]
+  H -- Cancel --> I[Nothing kept]
+  H -- Use this photo --> J[Draft saved, hero shows it, admin bar says Unpublished: profile photo]
+  J --> K[Publish changes]
+  K --> L[GET sha, skip if identical, PUT content/profile.jpg, one commit]
+```
+
+**Rules** (enforced in `js/image-lib.js`, unit-tested)
+
+| Rule | Value |
+|------|-------|
+| Accepted types | `image/png`, `image/jpeg`, `image/webp` (**no SVG, no GIF**) |
+| Input file size | At most 10 MB |
+| Decoded size | At most 50 megapixels (guards against decompression bombs) |
+| Output | Square centre crop, 512 × 512, JPEG, quality 0.86 stepping down to 0.60 until the file is at most 150 KB |
+| Metadata | None survives: re-encoding drops EXIF (including location) |
+| Stored as | `content/profile.jpg` (one file, one commit) |
+
+**Privacy note shown in the dialog:** "The photo will be public once published. Location and camera details are removed."
+
+**After publishing:** the admin sees the new photo at once; visitors may see the old one for up to about ten minutes (Pages cache).
+
+**Microcopy:** "Change photo" · "Use this photo" · "Choose a PNG, JPEG or WebP image up to 10 MB." · "That file isn't a usable image." · "Photo ready. Publish to make it public."
+
+**Accessibility:** a real button with a visible label (not icon-only); the file chooser is native; the preview dialog follows the existing dialog rules; errors are announced; the photo has alt text.
+
+**Validator (CI):** if `content/profile.jpg` exists it must start with the JPEG signature, be at most 200 KB, and be at most 1024 × 1024 pixels (read from the JPEG header).
+
+### 11.3 Logo
+
+Chosen: **Lattice Ascent** (option 2): a 4 × 4 grid of rounded squares that grow and twist toward one bright cell. Concept: structure that scales (engineering at scale) rising to one product; many cells, one point of focus. Concepts 1 (Open Orbit) and 3 (Convergence) stay in `docs/brand/`.
+
+| Use | Rule |
+|-----|------|
+| File | `assets/logo.svg` (128-unit viewBox, no scripts, no external references) |
+| Header | 28 px mark followed by the "Studio" wordmark; decorative (`alt=""`) because the wordmark carries the name |
+| Favicon | The same SVG |
+| Colour | Dark tile `#15131F`; purples `#2A2250 → #8470E0`; one amber cell `#F5B544` (the only warm colour in the product) |
+| Clear space | At least a quarter of the mark's width on every side |
+| Do not | Recolour the amber cell, stretch, add effects or place on a busy background |
+
+### 11.4 Protecting `main`
+
+Two rulesets, because they answer different questions:
+
+| Ruleset | Rules | Bypass |
+|---------|-------|--------|
+| **History** | No deletion of `main`; no force-push | **None**: applies to everyone, including the owner |
+| **CI** | Required status check `check` (the CI job) | Repository admin role (the owner's token, including the admin screen) and the GitHub Actions app (sync and keep-alive) |
+
+Who can do what (intended behavior; verified in `test.md`):
+
+| Actor and action | Result |
+|------------------|--------|
+| Pull request with green CI, merged | Allowed |
+| Pull request with red or missing CI, merged normally | **Blocked** until CI passes (the owner can override only by an explicit bypass) |
+| Owner or admin screen: direct commit to `main` | Allowed (bypass), so content publishing keeps working |
+| Sync and keep-alive workflows: direct commit | Allowed (Actions bypass) |
+| Anyone, including the owner: force-push or delete `main` | **Blocked** |
+| A future collaborator without bypass: direct commit | **Blocked** |
+
+```mermaid
+flowchart LR
+  subgraph Paths to main
+    A[Release or code change] --> PR[Pull request] --> CI{CI green?}
+    CI -- yes --> M[Merge]
+    CI -- no --> X1[Blocked]
+    B[Admin screen publish] --> D[Direct commit, bypass]
+    C[Sync and keep-alive bots] --> D
+    E[Force-push or delete] --> X2[Blocked for everyone]
+  end
+  M --> Main[(main)]
+  D --> Main
+```
+
+Honest limit: because the owner can bypass, CI is a guard rail for the normal path and for others, not a lock the owner cannot open. The alternative (also binding the owner) would stop the admin screen from publishing.
+
+### 11.5 Keep-alive
+
+GitHub disables scheduled workflows in a public repository after 60 days without repository activity. The keep-alive prevents that without noise.
+
+```mermaid
+flowchart TD
+  A[Weekly schedule or manual run] --> B[Read the date of the last commit on main]
+  B --> C{Older than 30 days, or forced?}
+  C -- no --> D[Do nothing, exit green]
+  C -- yes --> E{Dry run?}
+  E -- yes --> F[Report what it would do]
+  E -- no --> G[One empty commit: keep scheduled workflows active]
+  G --> H[Push as the Actions bot]
+```
+
+The decision is a pure function (`needsHeartbeat`) with unit tests. The health check additionally fails, naming the workflow, if any workflow is not `active`.
+
+### 11.6 Scheduling reality
+
+Scheduled runs start late: the 03:00 UTC cron ran at 07:42, 07:26, 07:49, 07:55, 08:19 and 08:24 UTC on successive days. Cron times are therefore *approximate*. The health check moves from 06:00 to **12:00 UTC**, well after the sync's usual start, so it normally checks a freshly synced cache; if the sync was late it reports drift only when a release really is missing.
