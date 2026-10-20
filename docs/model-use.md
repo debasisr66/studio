@@ -1,6 +1,6 @@
 # Model and Agent Use — Studio
 
-Recorded 2026-10-19, updated after v1.3 work. This document reports what could be measured. Where a figure is not exposed by the tooling, it says so instead of guessing.
+Recorded 2026-10-19, updated after v1.4 work (2026-10-20). This document reports what could be measured. Where a figure is not exposed by the tooling, it says so instead of guessing.
 
 ## 1. Session
 
@@ -8,7 +8,7 @@ Recorded 2026-10-19, updated after v1.3 work. This document reports what could b
 |------|-------|
 | Session title | Studio hub site setup |
 | Session started | 2026-10-13 12:26 UTC |
-| Last update of this document | 2026-10-19 (v1.3 build; figures in §4 refreshed) |
+| Last update of this document | 2026-10-20 (v1.4 build; figures in §4 refreshed) |
 | Model | `claude-sonnet-5-5` (Claude Sonnet 5.5) |
 | Reasoning effort | medium |
 | Fast mode | off |
@@ -45,24 +45,33 @@ Recorded 2026-10-19, updated after v1.3 work. This document reports what could b
 | v1.3 build | Main · Sonnet 5.5 | Test-first validator rules; CSP refactor (stylesheet extracted, 12 inline styles removed); admin token to `sessionStorage` and extracted into a tested module; version label and What's new; a visual-regression harness that compares computed styles against v1.2 |
 | v1.3 test and security checks | Main · Sonnet 5.5 | 61 unit tests; 24-case visual matrix; stubbed-API admin flow with a fake token; hostile-input checks; accessibility-tree review (found an unnamed button); `security.md` threat model and 15-point review |
 | v1.3 documentation | Main · Sonnet 5.5 | Plan, impact, design, test, build, security (new), architecture, learning guide, README, model-use |
+| v1.3 release | Main · Sonnet 5.5 | Merge, deploy, tag; owner's real admin publish verified |
+| Product introduction | Main · Sonnet 5.5 | Read Penny's own README, release notes, test and security records; wrote the Studio and Penny intro from them |
+| v1.4 logo concepts | Main · Sonnet 5.5 | Generated three original abstract SVGs (Open Orbit, Lattice Ascent, Convergence), rendered them at several sizes, redrew two after review; owner chose option 2 |
+| v1.4 impact, plan, design | Main · Sonnet 5.5 | Written first and committed before any code |
+| v1.4 build | Main · Sonnet 5.5 | Test-first: font self-hosting and CI rules; logo; profile photo (rules library, upload flow, binary publish, manifest); idle-lock extraction; keep-alive logic and workflow; pinned Actions, Dependabot and a workflow-hygiene rule; health changes; header fit fix; changelog |
+| v1.4 test and security checks | Main · Sonnet 5.5 | Rebuilt the visual-comparison harness (fonts: 24 cases; final: 24 cases; 26-width sweep); browser flows with generated images, planted GPS metadata, hostile files and a stubbed API; 102 unit tests; 18-point security review. Found and fixed six defects, one of them live in v1.3 |
+| v1.4 documentation | Main · Sonnet 5.5 | All artefacts, new `docs/rulesets/` and `docs/brand/` |
 
 Tools used by the main agent: shell (`git`, `gh`, `node`, `python3`), file read/write/edit, the built-in browser pane (navigate, scripted checks, screenshots, resize), and session-metadata tools (for this document). Skills were not invoked.
 
 ## 4. Token and usage figures
 
-Measured with the session usage tool during the v1.3 work (2026-10-19):
+Measured with the session usage tool during the v1.4 work (2026-10-20):
 
 | Measure | Value |
 |---------|-------|
-| Current context window in use | **444,875 tokens** of 1,000,000 (44%) |
+| Current context window in use | **693,832 tokens** of 1,000,000 (69%) |
 | Auto-compaction threshold | 97% of the window |
-| Context breakdown | Messages 377,831 · System tools 30,284 · MCP tools 20,964 · Skills 9,959 · System prompt 4,752 · Memory files 1,085 |
-| Plan limits (account-wide, not only this session) | 5-hour window 32% used; weekly all-models 27% used |
+| Context breakdown | Messages 626,788 · System tools 30,284 · MCP tools 20,964 · Skills 9,959 · System prompt 4,752 · Memory files 1,085 |
+| Plan limits (account-wide, not only this session) | 5-hour window **64%** used (resets in about 2 h); weekly all-models 36% used |
 | Extra usage (overage) | disabled |
 
-Trend across this document's life (context in use): 236,539 tokens (24%) when the v1.1 set was written, 314,205 (31%) during v1.2, 444,875 (44%) now. v1.3 added about **131,000 tokens** to the conversation, the largest release so far, driven by the visual-regression harness, the browser-based security checks and the larger document set. Context size measures what is currently held, not what was billed.
+Trend across this document's life (context in use): 236,539 tokens (24%) with the v1.1 set, 314,205 (31%) during v1.2, 444,875 (44%) during v1.3, 693,832 (69%) now. **v1.4 added about 249,000 tokens to the conversation, nearly double v1.3**, driven by the rebuilt comparison harness and its several rounds of diagnosis, the many browser checks, and the largest document set so far. Context size measures what is currently held, not what was billed.
 
-Budget counter for the v1.3 turn: the in-session token budget fell from 15,000,000 to about 14,890,000, roughly **110,000 tokens** (approximation of that turn's consumption, not a billing figure). For comparison: v1.1 turn about 118,000; v1.2 turn about 43,000 at the point it was recorded.
+Budget counter for the v1.4 turn: the in-session token budget fell from 15,000,000 to about 14,801,000, roughly **198,000 tokens** (an approximation of that turn's consumption, not a billing figure). For comparison: v1.1 about 118,000; v1.3 about 110,000.
+
+**Practical note:** at 69% of the context window and 64% of the 5-hour plan limit, a further release of this size in the same session would approach the auto-compaction point. Starting a fresh session (the repository's documents carry the context) is the sensible next step.
 
 ### Not available
 
