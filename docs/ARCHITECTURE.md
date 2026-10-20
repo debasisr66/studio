@@ -59,7 +59,7 @@ Key property: **data flows one way**. Product repos notify the hub; the hub only
 | `.github/workflows/health.yml` | Daily health check at 12:00 UTC (read-only) | Developer |
 | `.github/workflows/keepalive.yml` | Weekly keep-alive (the only workflow besides the sync allowed to commit) | Developer |
 | `.github/dependabot.yml` | Weekly updates for the pinned Actions | Developer |
-| `docs/rulesets/*.json` | The two branch rulesets for `main`, kept as reviewable definitions | Developer |
+| `docs/rulesets/` | The history ruleset (in force) and the CI-required ruleset that was tested and not applied, with the reasoning | Developer |
 | `docs/brand/` | The three logo concepts and a preview sheet | Developer |
 | `tests/*.test.js` | Node unit tests, no dependencies | Developer |
 | `docs/notify-studio.yml` | Template for product repos | Developer |
@@ -173,7 +173,7 @@ No `'unsafe-inline'` or `'unsafe-eval'` anywhere. To make that possible, the sty
 
 **Profile photo.** In admin mode **Change photo** opens the file chooser. `js/image-lib.js` and `js/app.js` check type (PNG, JPEG, WebP only), size (10 MB) and pixels (50 MP), decode the image in the browser, crop a centred square, scale to 512 px and re-encode as a JPEG of at most 150 KB, which removes all metadata. A preview dialog asks for confirmation. Publishing writes `content/profile.jpg` then `content/profile.json` (`{"photo": "content/profile.jpg", "updated": "<UTC>"}`) as two commits. The page shows the photo only when the manifest names one, using `?v=<updated>` so a new photo is never served stale, and keeps a monogram otherwise. CI validates both files.
 
-**Branch protection.** Two rulesets on `main` (definitions in `docs/rulesets/`): *history* (no deletion, no force-push, for everyone) and *CI required* (status check `check`; the admin role and the GitHub Actions app may bypass so the admin screen and the bots can commit directly). Releases go through a pull request.
+**Branch protection.** One ruleset on `main`, "history protected" (no deletion, no force-push, for everyone; definition in `docs/rulesets/`). A required-CI ruleset was tested live and removed: it rejects the sync and keep-alive bots' direct pushes, and GitHub does not allow the Actions app as a bypass actor on a personal repository. CI gating is by process: releases go through a pull request and are merged only when green. See `docs/design.md` §11.4.
 
 **Scheduled work.** GitHub starts scheduled runs hours late (the 03:00 UTC sync has run between 07:26 and 08:24 UTC), so the health check runs at 12:00 UTC. A weekly keep-alive adds one empty commit to `main` only after 30 days without a commit, so GitHub does not disable the scheduled workflows after 60 days of inactivity. The health check also fails if any workflow is not active.
 

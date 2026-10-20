@@ -1,6 +1,6 @@
 # Plan — Studio
 
-Status key: ✅ done · ⏳ pending · 🔒 needs owner · Releases: **v1.4 (built and verified locally; awaiting pull request and approval)**, v1.3 (shipped 2026-10-19, tag `v1.3`), v1.2 (shipped, tag `v1.2`), v1.1 (shipped, tag `v1.1`)
+Status key: ✅ done · ⏳ pending · 🔒 needs owner · Releases: **v1.4 (shipped 2026-10-20, tag `v1.4`)**, v1.3 (shipped 2026-10-19, tag `v1.3`), v1.2 (shipped, tag `v1.2`), v1.1 (shipped, tag `v1.1`)
 
 ---
 
@@ -21,7 +21,7 @@ impact (done) → **plan (this document)** → design → build → test → sec
 | # | Item |
 |---|------|
 | U1 | Self-host Inter and JetBrains Mono; remove Google hosts from the page and CSP; licences included; CI forbids third-party hosts in `style-src` and `font-src` |
-| U2 | Two rulesets on `main`: (a) **history**: no deletion, no force-push, for everyone; (b) **CI**: required status check `check`, with the repository admin role and the GitHub Actions app as bypass actors |
+| U2 | Branch protection on `main`: (a) **history** ruleset (no deletion, no force-push, for everyone): **applied**; (b) **CI-required** ruleset: built and tested, **not applied** because it blocks the sync and keep-alive bots (see "What changed") |
 | U3 | `keepalive.yml`: weekly check; empty commit only when `main` is 30+ days quiet; health check fails if any workflow is disabled |
 | U4 | Pin `actions/checkout` and `actions/setup-node` by commit hash in every workflow; Dependabot weekly for GitHub Actions |
 | U5 | Health check at 12:00 UTC; document that scheduled runs are routinely hours late |
@@ -35,7 +35,7 @@ impact (done) → **plan (this document)** → design → build → test → sec
 | Decision | Choice | Why |
 |----------|--------|-----|
 | Logo | Option 2, Lattice Ascent (owner's choice) | Chosen after seeing three original concepts |
-| Branch protection design | Two rulesets: history protection for everyone; CI required with admin and Actions bypass | The admin screen commits straight to `main` with the owner's token, and the sync and keep-alive bots push straight to `main`. A rule that also bound the owner and the bots would break publishing and syncing. The trade-off is documented: the owner can bypass CI, but not rewrite history |
+| Branch protection design | *Planned:* two rulesets (history for everyone; CI required with admin and Actions bypass). *Result:* history applied; CI-required not applied, because the Actions app cannot be a bypass actor on a personal repository and the bots would be blocked | The admin screen commits straight to `main` with the owner's token, and the sync and keep-alive bots push straight to `main`. A rule that also bound the owner and the bots would break publishing and syncing. The trade-off is documented: the owner can bypass CI, but not rewrite history |
 | Keep-alive threshold | 30 days without a commit on `main` | Half of GitHub's 60-day limit, so a missed week cannot cause a lapse; roughly one empty commit per 30 quiet days |
 | Photo format | JPEG, 512 × 512, one file `content/profile.jpg` | Small (tens of KB), universally supported, metadata removed by re-encoding |
 | Photo placement | Hero, beside the "Studio by Debasis Ray" line; monogram until a photo exists | Identity at the top; no empty gap before upload |
@@ -58,15 +58,15 @@ impact (done) → **plan (this document)** → design → build → test → sec
 | 5 | Test: unit, visual diff, browser flows, regression | All pass; results in `test.md` | ✅ 102 unit tests; 24-case comparison; 26-width sweep; photo flows |
 | 6 | Security checks (`security.md`) | No open High findings | ✅ 15 checks pass, S-30 (rulesets) pending until applied |
 | 7 | Update artefacts and changelog | Consistent | ✅ |
-| 8 | Open the pull request; CI green; **owner approves**; merge; Pages, health and sync dry run green | Live smoke checklist | pull request #1 open, CI green; ⏳ 🔒 approval and merge |
-| 9 | Apply the rulesets; test them (forced keep-alive commit as Actions, direct admin push, force-push rejected, a deliberately failing PR); tag `v1.4` | Rollback tested in principle, command recorded | ⏳ |
+| 8 | Open the pull request; CI green; **owner approves**; merge; Pages, health and sync dry run green | Live smoke checklist | ✅ PR #1 merged as `84b1dd2`; CI, Pages, health, sync dry run, keep-alive dry run green; live smoke test clean |
+| 9 | Apply the rulesets; test them (forced keep-alive commit as Actions, direct admin push, force-push rejected, a deliberately failing PR); tag `v1.4` | Rollback tested in principle, command recorded | ✅ all tested; design corrected (CI ruleset not kept); rollback exercised for real; tagged |
 | 10 | Owner: upload a real photo, publish, verify | Commit and live check | ⏳ 🔒 |
 
 ## Acceptance criteria
 
 - D1: No request leaves the page for any host except the same origin (and `api.github.com` in admin); the CSP has no third-party host in `style-src` or `font-src`; CI rejects a regression.
 - D2: Computed styles match v1.3 except the header logo and the new hero photo area (fonts introduce no differences).
-- D3: Each ruleset behaves as designed (see phase 9); the admin screen and the sync still work; force-push and deletion of `main` are rejected.
+- D3: *Original:* each ruleset behaves as designed. *Result:* the history ruleset behaves as designed and force-push and deletion are rejected; the CI-required ruleset was found to block the bots and was not kept, so D3 is met by the history ruleset plus CI-by-process (test.md TC-B01–B07).
 - D4: Keep-alive makes no commit when `main` is recent, one empty commit when quiet or forced, and the decision logic is unit-tested.
 - D5: All workflows use pinned hashes; the sync dry run passes on GitHub; Dependabot is configured.
 - D6: A generated test image becomes a 512 × 512 JPEG under 150 KB with no metadata; an SVG, a corrupt file, an oversized file and an over-large pixel count are rejected; the admin screen publishes it as one file, one commit.
@@ -83,6 +83,8 @@ impact (done) → **plan (this document)** → design → build → test → sec
 | Header fit fix added to scope | Found a 23 px overflow on live v1.3 between 621 and 640 px |
 | CI gained rules for SVGs, stylesheet sanity, workflows, photo and manifest | Each guards something this release introduced or nearly broke |
 | Health moved to 12:00 UTC (was planned for the same release) | Scheduled runs start hours late |
+| **CI-required ruleset not applied** | Tested live: it blocks the bots' direct pushes (`Required status check "check" is expected`), and GitHub refuses the Actions app as a bypass actor on a personal repo. History protection is applied; CI gating stays by process |
+| Dependabot found two real updates immediately | Verified on their branches (sync, keep-alive, health dry runs) before deciding; left for the owner |
 
 ## Out of scope
 

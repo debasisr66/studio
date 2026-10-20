@@ -1,20 +1,26 @@
 # Studio and Penny — Product Introduction
 
-*Studio by Debasis Ray — learning never ends!* · https://debasisr66.github.io/studio/
+*Studio by Debasis Ray — learning never ends!* · https://debasisr66.github.io/studio/ · current version **v1.4**
 
 ## In one paragraph
 
-**Studio** is a small product studio's front door: one address where each product, its latest release, its downloads and the writing around it are found, kept current automatically from the products' own repositories. **Penny** is its first flagship product, a private, offline-first personal expense manager. Studio shows how a product team can ship several independent products behind one brand with almost no operating overhead: no servers, no database, no accounts.
+**Studio** is a small product studio's front door: one address where each product, its latest release, its downloads and the writing around it are found, kept current automatically from the products' own repositories. **Penny** is its first flagship product, a private, offline-first personal expense manager. Studio shows how a product team can ship several independent products behind one brand with almost no operating overhead: no servers, no database, no accounts, and no third party contacted when someone visits.
 
 ## How Studio works
 
 | Layer | What it does |
 |-------|--------------|
-| **Hub site** | Product cards (Open app, Download, Source), Updates feed of release notes, Blog, Reads (a curated, shareable reading list), and a **What's new** button with the version in the footer |
+| **Hub site** | Product cards (Open app, Download, Source), an Updates feed of release notes, a Blog, **Reads** (a curated, shareable reading list the owner adds to like a post), the owner's profile photo, the Studio logo, and a **What's new** button with the version in the footer |
 | **Live data** | A sync refreshes each product's description, version and downloads from GitHub nightly, and within minutes of a product release |
 | **One-way flow** | Products notify the hub; the hub only reads them. The hub can never change a product |
-| **Safety net** | Strict security policy, 61 automated tests, CI on every change, a daily health check, full git history for rollback |
+| **Privacy** | Fonts, logo and every other asset are served by Studio itself: visiting contacts no one else, and there are no trackers or analytics |
+| **Owner tools** | A small admin layer (unlocked with a personal token that lives only in the browser tab) for the blog, reads and profile photo; photos are cropped, resized and stripped of location data before publishing |
+| **Safety net** | Strict security policy (no inline script or style, nothing from other sites), 102 automated tests, CI on every change, a daily health check that also watches the sync and the scheduled jobs, a weekly keep-alive so the nightly updates are never switched off, automation pinned to exact versions with weekly update proposals, and full git history for rollback |
+| **Release discipline** | Every release goes through impact analysis, plan, design, test-first build, a visual comparison against the previous release, a security review and a pull request with green CI |
+| **Protection of the record** | The main branch's history cannot be rewritten or deleted by anyone, including the owner |
 | **Run cost** | Static hosting on GitHub Pages; no backend to patch or monitor |
+
+**What Studio does not claim:** GitHub cannot force "CI must pass" on this site without also blocking its own automation (tested and documented), so green CI is a rule of the release process rather than a technical lock; and a mistaken content change made from the admin screen is caught by CI afterwards, not prevented.
 
 ## Where Penny sits
 
@@ -67,6 +73,6 @@ A mobile-friendly personal expense manager in Indian rupees. All data stays in t
 | Stable for personal use today? | **Yes**: heavily tested, verified in deployment, safe upgrade and recovery paths |
 | Behaves like a product, not a prototype? | **Yes**: versioned releases, notes, downloads, tests, review, traceability, rollback |
 | Ready to promote to a wide audience? | **Not yet**: close the voice-on-device, language review and accessibility items first |
-| What does Studio add? | A single credible home that keeps Penny's releases, downloads and story current with no manual work |
+| What does Studio add? | A single credible home that keeps Penny's releases, downloads and story current with no manual work, built to the same engineering standard as the product it presents |
 
-*Sources: Penny's README, release notes, V3.2 verification record and security review; Studio's architecture and test documents. Figures are as recorded on 19 October 2026.*
+*Sources: Penny's README, release notes, V3.2 verification record and security review (figures as recorded on 19 October 2026); Studio's architecture, test and security documents (figures as recorded on 20 October 2026, v1.4).*

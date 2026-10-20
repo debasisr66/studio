@@ -33,7 +33,7 @@ There is no server code, no database and no user account system.
 | T10 | **Workflow abuse** | CI and health: `permissions: contents: read`, no secrets; sync: `contents: write` on this repo only; product repos are only ever read | Workflow files | Low |
 | T11 | **Availability** | GitHub Pages; daily health check at 12:00 UTC (after the sync, which GitHub starts hours late); the health check also fails if any workflow is disabled; a weekly keep-alive adds one empty commit only when `main` has been quiet for 30 days, so GitHub does not switch scheduled workflows off after 60 days | TC-A01–A09, TC-H10–H12 | Medium: no SLA; GitHub does not publish an exact definition of "repository activity", so keep-alive relies on commits to `main`, the known-good signal |
 | T12 | **Hostile or sensitive image upload** (owner-only, so mainly a mistake or a malicious file chosen in error) | Type allowlist (PNG, JPEG, WebP; no SVG, no GIF); size and pixel limits; the file is decoded and re-encoded by the browser into a fresh 512 px JPEG, so scripts, polyglots and **all metadata (including GPS)** do not survive; only a validated JPEG data URL is published; CI checks the committed file's signature, size and dimensions | TC-P01–P05, TC-P03 (planted GPS marker absent from output), TC-V25–V27 | Low. The photo is public once published (the dialog says so) |
-| T13 | **Repository process failures** (a bad change reaching `main`; history rewritten) | Two rulesets: history protection (no force-push, no deletion) for everyone including the owner; required CI check with the admin role and the Actions app allowed to bypass so the admin screen and the bots keep working; pull-request releases | TC-B01–B06 (after merge) | **Medium, accepted**: the owner can bypass the CI requirement by design (otherwise the admin screen could not publish). CI is a guard rail for the normal path and for anyone else, not a lock the owner cannot open |
+| T13 | **Repository process failures** (a bad change reaching `main`; history rewritten or deleted) | A *history* ruleset: nobody, including the owner, can force-push or delete `main` (tested on a throwaway branch with identical rules; in force on `main`). Releases go through a pull request and are merged only when CI is green. A *CI-required* ruleset was tested and **not kept**: it rejects the bots' direct pushes and GitHub does not allow the Actions app as a bypass actor on a personal repository | TC-B01–B07 | **Medium, accepted**: CI cannot technically block the owner's merges or the bots' pushes; a bad content commit from the admin screen is caught by CI afterwards (red run and email), not prevented |
 | T14 | **A second write path** (the keep-alive workflow can commit) | `contents: write` only in that workflow and in sync (CI-enforced allowlist); it makes only empty commits, touches no file, uses no secret, takes its message from its own script through an environment variable (never interpolated into the shell), and is unit-tested | TC-A01–A09, TC-W12 | Low |
 
 ## 3. Control inventory (as of v1.3)
@@ -52,7 +52,7 @@ There is no server code, no database and no user account system.
 | Self-hosted fonts with licences; no third-party host in CSP or page; rupee coverage | `fonts/`, `css/site.css`, CI |
 | Photo rules (type, size, pixels, re-encode, metadata removal); manifest path restricted; published JPEG validated | `js/image-lib.js`, `js/app.js`, CI |
 | Actions pinned by hash; permissions declared; write only where a bot must commit; Dependabot | `.github/`, CI |
-| Branch rulesets (history for everyone; CI required with admin and Actions bypass) | Repository settings (applied after merge) |
+| Branch ruleset "history protected" (no deletion, no force-push, for everyone); definitions in `docs/rulesets/` | Repository settings |
 | Keep-alive (weekly, empty commit only after 30 quiet days); health check also reports disabled workflows | `keepalive.yml`, `health.yml` |
 
 ## 4. v1.3 review log
@@ -122,7 +122,8 @@ Scope: self-hosted fonts, logo, profile photo upload and publishing, workflow ch
 | S-27 | Admin token handling unchanged and still correct: `sessionStorage` only; the idle lock is now unit-tested | Pass | TC-K20–K23 |
 | S-28 | The sync workflow differs only by the pinned hash; its permissions, triggers and steps are unchanged | Pass | TC-W14, TC-R19 |
 | S-29 | No token-like strings in the repository; tests used only clearly fake tokens | Pass | TC-R21 |
-| S-30 | Rulesets protect history for everyone and gate CI for the normal path; admin screen and bots keep working | **Pending** (applied after merge) | TC-B01–B06 |
+| S-30 | History is protected for everyone (force-push and deletion rejected); the admin screen's direct commit and the bots' commits still work; the CI-required ruleset was found to block the bots and was not kept | **Pass** (with the documented limit) | TC-B01–B07 |
+| S-31 | Dependabot's proposals keep commit-hash pins and pass CI; the workflows they change (sync, keep-alive, health) ran green in dry-run mode on their branches | Pass | TC-W16 |
 
 ### v1.4 findings
 
@@ -130,9 +131,9 @@ Scope: self-hosted fonts, logo, profile photo upload and publishing, workflow ch
 |----|----------|---------|--------|
 | F-4 | Low | Google Fonts requested from Google | **Closed** (self-hosted) |
 | F-5 | Low | Actions pinned by tag, not hash | **Closed** (pinned; Dependabot added) |
-| F-6 | Info | The owner can bypass the CI ruleset (needed so the admin screen can commit); history rewriting and deletion are blocked for everyone | Accepted, documented (T13) |
+| F-6 | Medium (process) | CI cannot technically gate the owner's merges or the bots' direct pushes: a required-check ruleset blocks the bots (proved) and the Actions app cannot be exempted on a personal repo. Mitigation: history protected for everyone; CI gating by process; CI-after-the-fact alerts for content commits | Accepted, documented (T13). Possible later design: gate deployment instead of merging |
 | F-7 | Low | The profile photo is public and permanent in git history once published (removing it later does not remove the old commit) | Accepted; the preview dialog says it will be public |
 | F-8 | Info | The page was unstyled for a short time on the branch because of an editing slip; no visitor impact (never deployed). CI now rejects a stylesheet without its tokens | Closed |
 | F-9 | Low | Scheduled workflows start hours late, so a check scheduled "after" another can run before it | Closed (health moved to 12:00 UTC; delays documented) |
 
-**No open High or Critical findings.** S-30 stays pending until the rulesets are applied and tested; this document is updated with the result.
+**No open High or Critical findings.** F-6 is a documented process limit, not a vulnerability.

@@ -52,26 +52,27 @@ Recorded 2026-10-19, updated after v1.4 work (2026-10-20). This document reports
 | v1.4 build | Main · Sonnet 5.5 | Test-first: font self-hosting and CI rules; logo; profile photo (rules library, upload flow, binary publish, manifest); idle-lock extraction; keep-alive logic and workflow; pinned Actions, Dependabot and a workflow-hygiene rule; health changes; header fit fix; changelog |
 | v1.4 test and security checks | Main · Sonnet 5.5 | Rebuilt the visual-comparison harness (fonts: 24 cases; final: 24 cases; 26-width sweep); browser flows with generated images, planted GPS metadata, hostile files and a stubbed API; 102 unit tests; 18-point security review. Found and fixed six defects, one of them live in v1.3 |
 | v1.4 documentation | Main · Sonnet 5.5 | All artefacts, new `docs/rulesets/` and `docs/brand/` |
+| v1.4 release | Main · Sonnet 5.5 | Merged PR #1; verified the live site and the new workflows on GitHub; **applied and live-tested the branch rulesets**, discovered the CI-required ruleset blocks the bots (and that the Actions app cannot be a bypass actor), removed it within minutes, kept history protection, tested force-push and deletion on a throwaway branch; checked and verified Dependabot's two pull requests in dry-run mode; corrected the design, security log, test record, guides and the product introduction; tagged |
 
 Tools used by the main agent: shell (`git`, `gh`, `node`, `python3`), file read/write/edit, the built-in browser pane (navigate, scripted checks, screenshots, resize), and session-metadata tools (for this document). Skills were not invoked.
 
 ## 4. Token and usage figures
 
-Measured with the session usage tool during the v1.4 work (2026-10-20):
+Measured with the session usage tool at the end of the v1.4 release (2026-10-20):
 
 | Measure | Value |
 |---------|-------|
-| Current context window in use | **693,832 tokens** of 1,000,000 (69%) |
+| Current context window in use | **743,824 tokens** of 1,000,000 (74%) |
 | Auto-compaction threshold | 97% of the window |
-| Context breakdown | Messages 626,788 · System tools 30,284 · MCP tools 20,964 · Skills 9,959 · System prompt 4,752 · Memory files 1,085 |
-| Plan limits (account-wide, not only this session) | 5-hour window **64%** used (resets in about 2 h); weekly all-models 36% used |
+| Context breakdown | Messages 676,780 · System tools 30,284 · MCP tools 20,964 · Skills 9,959 · System prompt 4,752 · Memory files 1,085 |
+| Plan limits (account-wide, not only this session) | 5-hour window **70%** used (resets in about 1 h 45 min); weekly all-models 37% used |
 | Extra usage (overage) | disabled |
 
-Trend across this document's life (context in use): 236,539 tokens (24%) with the v1.1 set, 314,205 (31%) during v1.2, 444,875 (44%) during v1.3, 693,832 (69%) now. **v1.4 added about 249,000 tokens to the conversation, nearly double v1.3**, driven by the rebuilt comparison harness and its several rounds of diagnosis, the many browser checks, and the largest document set so far. Context size measures what is currently held, not what was billed.
+Trend across this document's life (context in use): 236,539 tokens (24%) with the v1.1 set, 314,205 (31%) during v1.2, 444,875 (44%) during v1.3, 693,832 (69%) after the v1.4 build, **743,824 (74%) after the v1.4 release steps**. The release itself (merge, live verification, ruleset experiment, write-up) added about 50,000 tokens on top of the roughly 249,000 the v1.4 build added. Context size measures what is currently held, not what was billed.
 
-Budget counter for the v1.4 turn: the in-session token budget fell from 15,000,000 to about 14,801,000, roughly **198,000 tokens** (an approximation of that turn's consumption, not a billing figure). For comparison: v1.1 about 118,000; v1.3 about 110,000.
+Budget counter: the in-session token budget stands at about 14.95 million of 15 million at the time of writing for this release turn (roughly 50,000 tokens used since the previous turn ended; an approximation, not a billing figure).
 
-**Practical note:** at 69% of the context window and 64% of the 5-hour plan limit, a further release of this size in the same session would approach the auto-compaction point. Starting a fresh session (the repository's documents carry the context) is the sensible next step.
+**Practical note:** at 74% of the context window and 70% of the 5-hour plan limit, start the next release in a **fresh session**; this repository's documents (`plan.md`, `design.md`, `test.md`, `security.md`, `build.md`, `LEARNING-GUIDE.md`) carry the context.
 
 ### Not available
 

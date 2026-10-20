@@ -16,7 +16,7 @@ Product studio hub for [@debasisr66](https://github.com/debasisr66): one site th
 - **Blog and Books:** editable in the browser through a small admin layer (⚙) that publishes straight to this repo.
 - **Stays current by itself:** a nightly sync, plus an instant sync when a product repo publishes a release.
 
-It is a plain static site: no build step, no npm, no frameworks, and nothing loaded from another site (fonts are self-hosted). Hosted on GitHub Pages from `main`, which is protected by branch rulesets; releases go through a pull request. A read-only safety net (CI checks on every push and a daily health check) watches content, security settings and the sync.
+It is a plain static site: no build step, no npm, no frameworks, and nothing loaded from another site (fonts are self-hosted). Hosted on GitHub Pages from `main`, whose history is protected (no force-push or deletion); releases go through a pull request merged only when CI is green. A read-only safety net (CI checks on every push and a daily health check) watches content, security settings and the sync.
 
 ## How it fits together
 
@@ -43,7 +43,7 @@ Data flows one way: product repos notify the hub, and the hub only reads them. D
 | `.github/workflows/sync.yml` | Nightly, on-dispatch and manual sync |
 | `.github/workflows/ci.yml`, `health.yml` | Tests and validation on every push; daily health check (read-only) |
 | `.github/workflows/keepalive.yml`, `.github/dependabot.yml` | Weekly keep-alive so scheduled workflows are not switched off; weekly Actions updates |
-| `docs/rulesets/`, `docs/brand/` | Branch rulesets for `main`; logo concepts |
+| `docs/rulesets/`, `docs/brand/` | The branch ruleset for `main` (and the one that was tested and not applied); logo concepts |
 | `docs/` | Documentation and the notify workflow template |
 
 ## Add a product
