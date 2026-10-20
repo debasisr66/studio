@@ -423,10 +423,10 @@ Because the CSS file moves, the design is only accepted if v1.2 and v1.3 render 
 | Where fonts load from | `fonts.googleapis.com` (CSS) and `fonts.gstatic.com` (files) | `fonts/` on the same origin |
 | CSP `style-src` / `font-src` | `'self' https://fonts.googleapis.com` / `https://fonts.gstatic.com` | `'self'` / `'self'` |
 | Third parties that see a visit | Google | None |
-| Files | n/a | `inter-latin.woff2`, `jetbrains-mono-latin.woff2` (variable fonts, Latin subset), plus their SIL Open Font Licence texts |
+| Files | n/a | `inter-latin.woff2`, `inter-latin-ext.woff2`, `jetbrains-mono-latin.woff2`, `jetbrains-mono-latin-ext.woff2` (variable fonts: Latin and Latin Extended), plus their SIL Open Font Licence texts |
 
 - `css/site.css` declares `@font-face` for each file with `font-display: swap`, so text shows at once in the fallback stack and swaps when the font arrives.
-- The Latin subset covers all English text on the site. Other scripts (for example Devanagari in a future post) fall back to the system font by design.
+- **Design change found in testing:** the first design shipped only the Latin subset. The visual comparison showed the **rupee sign (₹, U+20B9) lives in the Latin Extended subset**, so a Latin-only build changed its width. Both subsets are now self-hosted, the browser downloads an Extended file only when a page uses one of its characters, and CI requires the Inter faces to cover U+20B9. Other scripts (for example Devanagari in a future post) fall back to the system font by design.
 - The Inter file is preloaded (`<link rel="preload" as="font" crossorigin>`), which the CSP allows under `font-src 'self'`.
 - Fallback stack is unchanged (`system-ui…` and `ui-monospace…`), so a failed font load only changes letter shapes slightly.
 - CI rules: `style-src` and `font-src` may contain only `'self'`; `index.html` may not link any external stylesheet or font; each font file needs a licence file beside it and a size budget.
@@ -461,6 +461,7 @@ flowchart TD
   H -- Use this photo --> J[Draft saved, hero shows it, admin bar says Unpublished: profile photo]
   J --> K[Publish changes]
   K --> L[GET sha, skip if identical, PUT content/profile.jpg, one commit]
+  L --> M[Then the same for content/profile.json, one commit]
 ```
 
 **Rules** (enforced in `js/image-lib.js`, unit-tested)
@@ -472,17 +473,19 @@ flowchart TD
 | Decoded size | At most 50 megapixels (guards against decompression bombs) |
 | Output | Square centre crop, 512 × 512, JPEG, quality 0.86 stepping down to 0.60 until the file is at most 150 KB |
 | Metadata | None survives: re-encoding drops EXIF (including location) |
-| Stored as | `content/profile.jpg` (one file, one commit) |
+| Stored as | `content/profile.jpg` plus a tiny manifest `content/profile.json` (`{"photo": "content/profile.jpg", "updated": "<UTC timestamp>"}`): two files, **two commits**, photo first so the manifest never points at a missing file |
 
 **Privacy note shown in the dialog:** "The photo will be public once published. Location and camera details are removed."
 
-**After publishing:** the admin sees the new photo at once; visitors may see the old one for up to about ten minutes (Pages cache).
+**Why a manifest (design change found while building):** without it, every visit before a photo exists would request a file that returns an error (console noise), and a replaced photo could be served stale for up to ten minutes. With it, the page shows a photo only when the manifest names one, requests it as `content/profile.jpg?v=<timestamp>` (a new photo is a new URL, so it is never stale), and restricts the path to `content/*.jpg` so it can never point at another site.
+
+**After publishing:** the admin keeps seeing the local copy for the rest of the session (the published URL is not served until Pages rebuilds, a minute or two); visitors get the new photo as soon as the site is rebuilt.
 
 **Microcopy:** "Change photo" · "Use this photo" · "Choose a PNG, JPEG or WebP image up to 10 MB." · "That file isn't a usable image." · "Photo ready. Publish to make it public."
 
 **Accessibility:** a real button with a visible label (not icon-only); the file chooser is native; the preview dialog follows the existing dialog rules; errors are announced; the photo has alt text.
 
-**Validator (CI):** if `content/profile.jpg` exists it must start with the JPEG signature, be at most 200 KB, and be at most 1024 × 1024 pixels (read from the JPEG header).
+**Validator (CI):** if `content/profile.jpg` exists it must start with the JPEG signature, be at most 200 KB, and be between 128 and 1024 pixels on each side (read from the JPEG header); `profile.json` must have a null photo or a path like `content/profile.jpg` with a UTC timestamp, and the file it names must exist.
 
 ### 11.3 Logo
 
@@ -553,3 +556,7 @@ The decision is a pure function (`needsHeartbeat`) with unit tests. The health c
 ### 11.6 Scheduling reality
 
 Scheduled runs start late: the 03:00 UTC cron ran at 07:42, 07:26, 07:49, 07:55, 08:19 and 08:24 UTC on successive days. Cron times are therefore *approximate*. The health check moves from 06:00 to **12:00 UTC**, well after the sync's usual start, so it normally checks a freshly synced cache; if the sync was late it reports drift only when a release really is missing.
+
+### 11.7 Header fit (found in testing)
+
+Between the phone and desktop layouts (about 620 to 860 px) the header needed more room than it had: the **live v1.3 page overflowed by 23 px at 621 px and by 4 px at 640 px**, because the What's new button joined the links and the "by Debasis Ray" line beside the brand. My earlier checks used 375, 768 and 1280 px, none of which fall in that band. v1.4 hides the small "by Debasis Ray" line below 861 px (the hero says it) and tightens the link spacing. The rule going forward: **sweep many widths** (26 from 320 to 1920 px), not three.

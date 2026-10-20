@@ -1,6 +1,6 @@
 # Plan — Studio
 
-Status key: ✅ done · ⏳ pending · 🔒 needs owner · Releases: **v1.4 (in progress)**, v1.3 (shipped 2026-10-19, tag `v1.3`), v1.2 (shipped, tag `v1.2`), v1.1 (shipped, tag `v1.1`)
+Status key: ✅ done · ⏳ pending · 🔒 needs owner · Releases: **v1.4 (built and verified locally; awaiting pull request and approval)**, v1.3 (shipped 2026-10-19, tag `v1.3`), v1.2 (shipped, tag `v1.2`), v1.1 (shipped, tag `v1.1`)
 
 ---
 
@@ -50,14 +50,14 @@ impact (done) → **plan (this document)** → design → build → test → sec
 | 1 | Impact analysis | Reviewed | ✅ |
 | 2 | This plan | Reviewed | ✅ |
 | 3 | Design (fonts, photo flow, logo use, protection model, keep-alive logic) | Reviewed | ✅ (`design.md` §11) |
-| 4a | Fonts: download, licences, `@font-face`, CSP, validator rules and tests | Visual comparison vs v1.3 clean | ⏳ |
-| 4b | Logo and favicon | Legible at 128, 32, 16 px | ⏳ |
-| 4c | Idle lock extraction and tests; image library and tests | Tests pass | ⏳ |
-| 4d | Profile photo: upload dialog, binary publish, display, validator | Flows pass with a generated test image and a stubbed API | ⏳ |
-| 4e | Keep-alive logic and workflow; pin hashes; Dependabot; health changes | Unit tests; YAML valid; dry runs | ⏳ |
-| 5 | Test: unit, visual diff, browser flows, regression | All pass; results in `test.md` | ⏳ |
-| 6 | Security checks (`security.md`) | No open High findings | ⏳ |
-| 7 | Update artefacts and changelog | Consistent | ⏳ |
+| 4a | Fonts: download, licences, `@font-face`, CSP, validator rules and tests | Visual comparison vs v1.3 clean | ✅ after fixing the rupee-sign regression the comparison found; 24 cases, 0 differences |
+| 4b | Logo and favicon | Legible at 128, 32, 16 px | ✅ (16 px keeps the amber cell and grid; fine detail blurs) |
+| 4c | Idle lock extraction and tests; image library and tests | Tests pass | ✅ 4 idle-lock and 9 image tests |
+| 4d | Profile photo: upload dialog, binary publish, display, validator | Flows pass with a generated test image and a stubbed API | ✅ added a manifest (design change) so there is no console error before upload and no stale photo |
+| 4e | Keep-alive logic and workflow; pin hashes; Dependabot; health changes | Unit tests; YAML valid; dry runs | ✅ 8 keep-alive tests, 4 workflow-rule tests, 3 health tests |
+| 5 | Test: unit, visual diff, browser flows, regression | All pass; results in `test.md` | ✅ 102 unit tests; 24-case comparison; 26-width sweep; photo flows |
+| 6 | Security checks (`security.md`) | No open High findings | ✅ 15 checks pass, S-30 (rulesets) pending until applied |
+| 7 | Update artefacts and changelog | Consistent | ✅ |
 | 8 | Open the pull request; CI green; **owner approves**; merge; Pages, health and sync dry run green | Live smoke checklist | ⏳ 🔒 |
 | 9 | Apply the rulesets; test them (forced keep-alive commit as Actions, direct admin push, force-push rejected, a deliberately failing PR); tag `v1.4` | Rollback tested in principle, command recorded | ⏳ |
 | 10 | Owner: upload a real photo, publish, verify | Commit and live check | ⏳ 🔒 |
@@ -73,6 +73,16 @@ impact (done) → **plan (this document)** → design → build → test → sec
 - D7: The idle lock locks after the configured time and re-arms on activity (unit-tested with fake timers).
 - D8: The logo is the header mark and the favicon and is legible at 16 px.
 - D9: Every artefact references v1.4 and agrees with the others.
+
+## What changed during the build (and why)
+
+| Change | Reason |
+|--------|--------|
+| Fonts: Latin **and Latin Extended** self-hosted | The visual comparison showed the rupee sign lives in the Extended subset |
+| Profile photo gets a manifest (`profile.json`) | Avoids a console error before a photo exists and avoids a stale cached photo |
+| Header fit fix added to scope | Found a 23 px overflow on live v1.3 between 621 and 640 px |
+| CI gained rules for SVGs, stylesheet sanity, workflows, photo and manifest | Each guards something this release introduced or nearly broke |
+| Health moved to 12:00 UTC (was planned for the same release) | Scheduled runs start hours late |
 
 ## Out of scope
 

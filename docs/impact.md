@@ -1,6 +1,6 @@
 # Impact Analysis — Studio
 
-Releases: **v1.4 (in progress, branch `release/v1.4`)** · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped)
+Releases: **v1.4 (built and verified locally, branch `release/v1.4`)** · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped)
 
 ---
 
@@ -59,17 +59,20 @@ Date: 2026-10-20 · Rollback tag: `v1.3` · Order of work: **impact → plan →
 
 | ID | Risk | Likelihood | Impact | Mitigation | Status |
 |----|------|-----------|--------|-----------|--------|
-| X1 | Self-hosted fonts render differently from Google's | Low | Medium | Same font files; computed-style comparison against v1.3 | Open until tested |
+| X1 | Self-hosted fonts render differently from Google's | Low | Medium | Same font files; computed-style comparison against v1.3 | **Materialised and closed**: Latin-only changed the rupee sign; both subsets now hosted; 24 cases, 0 differences; CI guards coverage |
 | X2 | A ruleset blocks the admin screen's commits or the sync bot's commits | Medium | High | Admin role and the GitHub Actions app are bypass actors; applied only after merge; tested straight away (a forced keep-alive commit as the Actions app, a direct push as admin); one-command rollback; owner re-checks one real publish | Open until tested |
 | X3 | The owner can still bypass CI (admin bypass is required so the admin screen's direct commits keep working) | Certain | Low | Honest limit, documented. The rulesets block force-push and deletion for **everyone**, and gate pull-request merges for the normal path | Accepted |
 | X4 | Keep-alive adds clutter or permissions | Low | Low | At most one empty commit per 30 days; `contents: write` only in that workflow; decision logic unit-tested | Mitigated |
 | X5 | Pinned hashes go stale | Medium | Low | Dependabot weekly pull requests | Mitigated |
-| X6 | Editing `sync.yml` breaks the sync | Low | High | Pin only; dry run on GitHub before and after merge | Open until tested |
-| X7 | A malicious or huge image is uploaded | Low | Medium | Owner-only; PNG, JPEG, WebP only (no SVG); decoded and re-encoded; size and pixel limits; CI validates `profile.jpg` | Open until tested |
+| X6 | Editing `sync.yml` breaks the sync | Low | High | Pin only (diff is one line); verified hash; dry run on GitHub after merge | Open until the GitHub dry run |
+| X7 | A malicious or huge image is uploaded | Low | Medium | Owner-only; PNG, JPEG, WebP only (no SVG); decoded and re-encoded; size and pixel limits; CI validates `profile.jpg` | **Closed** (TC-P05, TC-V25) |
 | X8 | Photo reveals location or device metadata | Medium | Medium | Re-encoding through a canvas drops all metadata; documented | Mitigated by design |
-| X9 | A changed photo shows stale for a few minutes | High | Low | GitHub Pages caches for up to 10 minutes; admin sees the new one immediately; documented | Accepted |
+| X9 | A changed photo shows stale for a few minutes | High | Low | The manifest's timestamp is part of the photo URL, so a new photo is a new URL | **Closed** (design improved) |
 | X10 | Scheduled-run delays cause false alarms | Medium | Low | Health moved to 12:00 UTC; delays documented | Mitigated |
-| X11 | Logo unreadable at favicon size | Low | Low | Checked at 128, 32 and 16 px | Open until tested |
+| X11 | Logo unreadable at favicon size | Low | Low | Checked at 128, 32 and 16 px | Closed with a note: at 16 px the grid blurs but the amber cell and tile remain |
+
+| X12 | An editing slip leaves the page unstyled | Low | High | CI rule requires the colour tokens and light theme; the visual comparison caught the slip before anything was deployed | Closed (TC-V28) |
+| X13 | The header overflows at widths nobody tested (**live v1.3 does**, 621 to 640 px) | Medium | Low | Fixed; a 26-width sweep is now part of testing | Closed (TC-E01) |
 
 ## 6. Rollback
 

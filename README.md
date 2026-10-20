@@ -12,10 +12,11 @@ Product studio hub for [@debasisr66](https://github.com/debasisr66): one site th
 - **Updates:** a feed of the latest GitHub Releases, with notes and attached files.
 - **What's new:** the version is shown in the footer and a **What's new** button lists every release in plain language.
 - **Reads:** a curated reading list with a LinkedIn-style "Share a read…" composer (owner only), tag filters, search, and share buttons (LinkedIn, copy link, native share).
+- **Profile photo and logo:** the owner can upload a profile photo in the admin layer; Studio has its own abstract logo.
 - **Blog and Books:** editable in the browser through a small admin layer (⚙) that publishes straight to this repo.
 - **Stays current by itself:** a nightly sync, plus an instant sync when a product repo publishes a release.
 
-It is a plain static site: no build step, no npm, no frameworks. Hosted on GitHub Pages from `main`. A read-only safety net (CI checks on every push and a daily health check) watches content, security settings and the sync.
+It is a plain static site: no build step, no npm, no frameworks, and nothing loaded from another site (fonts are self-hosted). Hosted on GitHub Pages from `main`, which is protected by branch rulesets; releases go through a pull request. A read-only safety net (CI checks on every push and a daily health check) watches content, security settings and the sync.
 
 ## How it fits together
 
@@ -30,7 +31,8 @@ Data flows one way: product repos notify the hub, and the hub only reads them. D
 | Path | Purpose |
 |------|---------|
 | `index.html`, `css/site.css` | Page markup and the stylesheet (strict CSP: no inline script or style) |
-| `js/app.js`, `js/reads-lib.js`, `js/token-store.js` | Site logic and admin layer; pure helpers (unit-tested); admin token storage |
+| `fonts/`, `assets/logo.svg` | Self-hosted fonts (with licences) and the Studio logo |
+| `js/app.js`, `js/reads-lib.js`, `js/token-store.js`, `js/image-lib.js` | Site logic and admin layer; pure helpers (unit-tested): reads, admin token and idle lock, profile photo rules |
 | `tests/` | Node unit tests (`node --test tests/*.test.js`) |
 | `scripts/validate-site.js`, `scripts/health-check.js` | CI validation and the daily health check |
 | `content/products.json` | Registry of which repos to show (edit this to add a product) |
@@ -40,6 +42,8 @@ Data flows one way: product repos notify the hub, and the hub only reads them. D
 | `scripts/sync-products.js` | Sync script (Node, no dependencies) |
 | `.github/workflows/sync.yml` | Nightly, on-dispatch and manual sync |
 | `.github/workflows/ci.yml`, `health.yml` | Tests and validation on every push; daily health check (read-only) |
+| `.github/workflows/keepalive.yml`, `.github/dependabot.yml` | Weekly keep-alive so scheduled workflows are not switched off; weekly Actions updates |
+| `docs/rulesets/`, `docs/brand/` | Branch rulesets for `main`; logo concepts |
 | `docs/` | Documentation and the notify workflow template |
 
 ## Add a product

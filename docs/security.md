@@ -1,6 +1,6 @@
 # Security — Studio
 
-Threat model, control inventory and review log. Living document: updated every release. Last review: **v1.3, 2026-10-19** (shipped; live smoke test also clean: strict CSP served, console empty, no token in storage for a visitor).
+Threat model, control inventory and review log. Living document: updated every release. Last review: **v1.4, 2026-10-20** .
 
 This is a design-and-test review of a small static site, with evidence from the test runs in [test.md](test.md). It is not a penetration test and not a certification.
 
@@ -25,13 +25,16 @@ There is no server code, no database and no user account system.
 | T2 | **Token theft from the browser** by script running on this origin | Token in `sessionStorage` only (this tab; gone when it closes); never in `localStorage`, cookies, URL or DOM; 30-minute idle lock; legacy stored tokens deleted; strict CSP removes the usual routes for running attacker script | TC-K09–K13, unit tests TC-K01–K08 | **Medium, accepted**: any script that does run on the origin could read `sessionStorage`; a static site has no way to hide a token from its own page |
 | T3 | **Over-broad token** | Fine-grained tokens limited to the `studio` repo; Contents read and write only; dispatch and admin tokens are separate; the dispatch token lives only as a secret in the product repo | Setup steps and runbook in the learning guide | Low; depends on the owner following the steps |
 | T4 | **Malicious or accidental commit** (including a compromised token) | Git history is the audit trail and backup; CI validates content shape on every push; no npm dependencies; Actions limited to `contents: read` (CI, health) and `contents: write` on the hub only (sync) | CI runs, `git revert` runbook | Low–medium: CI alerts but does not block merges (no branch protection) |
-| T5 | **Supply chain** | No package manager and no build step; first-party actions only (`actions/checkout@v4`, `actions/setup-node@v4`) | Repository contents | Low: action versions are pinned by tag, not by commit hash |
+| T5 | **Supply chain** | No package manager and no build step; the two first-party actions are pinned by **commit hash** (verified to be the v4.4.0 commits); Dependabot proposes weekly updates; CI rejects any unpinned action, any workflow without a permissions block, and `contents: write` outside the sync and keep-alive workflows | TC-W10–W14 | Low: the pins must be kept current (Dependabot) |
 | T6 | **Clickjacking** (the page framed by another site) | None possible in-page: GitHub Pages does not let you send `frame-ancestors` or `X-Frame-Options`, and a meta CSP ignores `frame-ancestors` | Documented limitation | Low: admin controls need a present token; acceptable now, fixable with a CDN adding headers |
-| T7 | **Third-party content** (Google Fonts) | CSP allows only the two Google font hosts; no analytics, trackers or other third parties; no metadata or favicon services | CSP meta tag; network listing | Low: stylesheet integrity is not pinned and font requests tell Google a visitor loaded the page. Fix: self-host fonts |
+| T7 | **Third-party content** | Fonts are self-hosted with their licences; CSP `style-src` and `font-src` are `'self'` only; CI rejects third-party hosts, external links and external CSS urls; no analytics, trackers or metadata services. The only third parties a visitor can reach are ones they choose to click (LinkedIn share) | TC-F01, TC-V20–V24 | **Low (was: Google saw every visit)** |
 | T8 | **Outbound link abuse** (tab-napping, referrer leakage) | Every external link has `rel="noopener noreferrer"` | TC-A05 | Low |
 | T9 | **Share-link injection** | Only normalised http(s) URLs are shared; `encodeURIComponent` on the LinkedIn URL | TC-U12, TC-B09 | Low |
 | T10 | **Workflow abuse** | CI and health: `permissions: contents: read`, no secrets; sync: `contents: write` on this repo only; product repos are only ever read | Workflow files | Low |
-| T11 | **Availability** | GitHub Pages; daily health check; sync failure isolation | Health runs | Medium: no SLA; scheduled workflows stop after 60 days of repository inactivity (see impact.md V5) |
+| T11 | **Availability** | GitHub Pages; daily health check at 12:00 UTC (after the sync, which GitHub starts hours late); the health check also fails if any workflow is disabled; a weekly keep-alive adds one empty commit only when `main` has been quiet for 30 days, so GitHub does not switch scheduled workflows off after 60 days | TC-A01–A09, TC-H10–H12 | Medium: no SLA; GitHub does not publish an exact definition of "repository activity", so keep-alive relies on commits to `main`, the known-good signal |
+| T12 | **Hostile or sensitive image upload** (owner-only, so mainly a mistake or a malicious file chosen in error) | Type allowlist (PNG, JPEG, WebP; no SVG, no GIF); size and pixel limits; the file is decoded and re-encoded by the browser into a fresh 512 px JPEG, so scripts, polyglots and **all metadata (including GPS)** do not survive; only a validated JPEG data URL is published; CI checks the committed file's signature, size and dimensions | TC-P01–P05, TC-P03 (planted GPS marker absent from output), TC-V25–V27 | Low. The photo is public once published (the dialog says so) |
+| T13 | **Repository process failures** (a bad change reaching `main`; history rewritten) | Two rulesets: history protection (no force-push, no deletion) for everyone including the owner; required CI check with the admin role and the Actions app allowed to bypass so the admin screen and the bots keep working; pull-request releases | TC-B01–B06 (after merge) | **Medium, accepted**: the owner can bypass the CI requirement by design (otherwise the admin screen could not publish). CI is a guard rail for the normal path and for anyone else, not a lock the owner cannot open |
+| T14 | **A second write path** (the keep-alive workflow can commit) | `contents: write` only in that workflow and in sync (CI-enforced allowlist); it makes only empty commits, touches no file, uses no secret, takes its message from its own script through an environment variable (never interpolated into the shell), and is unit-tested | TC-A01–A09, TC-W12 | Low |
 
 ## 3. Control inventory (as of v1.3)
 
@@ -46,6 +49,11 @@ There is no server code, no database and no user account system.
 | Content and site validation; unit tests | CI |
 | Daily health check (site up, cache equals GitHub releases) | `health.yml` |
 | Read-only access to product repos; one-way dispatch | `sync-products.js`, `notify-studio.yml` |
+| Self-hosted fonts with licences; no third-party host in CSP or page; rupee coverage | `fonts/`, `css/site.css`, CI |
+| Photo rules (type, size, pixels, re-encode, metadata removal); manifest path restricted; published JPEG validated | `js/image-lib.js`, `js/app.js`, CI |
+| Actions pinned by hash; permissions declared; write only where a bot must commit; Dependabot | `.github/`, CI |
+| Branch rulesets (history for everyone; CI required with admin and Actions bypass) | Repository settings (applied after merge) |
+| Keep-alive (weekly, empty commit only after 30 quiet days); health check also reports disabled workflows | `keepalive.yml`, `health.yml` |
 
 ## 4. v1.3 review log
 
@@ -93,3 +101,38 @@ Scope: admin token storage, strict CSP (styles), What's new and changelog, versi
 ## 6. Not covered
 
 Penetration testing, dependency audit of GitHub-hosted runners, GitHub account security (2FA, sessions), and the security of the Penny and debasis-web applications themselves.
+
+## 7. v1.4 review log
+
+Scope: self-hosted fonts, logo, profile photo upload and publishing, workflow changes (pinning, keep-alive, health), repository rulesets.
+
+| ID | Check | Result | Evidence |
+|----|-------|--------|----------|
+| S-16 | No request leaves the page for a third party; CSP `style-src` and `font-src` are self-only | Pass | TC-F01, TC-F04 |
+| S-17 | Font licences present beside every font; the fonts cover the rupee sign | Pass | TC-V23, TC-V24 |
+| S-18 | All actions pinned by commit hash; hashes verified to be the intended release | Pass | TC-W10, TC-W14 |
+| S-19 | Workflow permissions: CI and health read-only (health also `actions: read`); write only in sync and keep-alive; CI enforces it | Pass | TC-W11, TC-W12 |
+| S-20 | Keep-alive makes only an empty commit, from its own message, with no interpolation into the shell; decision logic tested | Pass | `keepalive.yml`, TC-A01–A09 |
+| S-21 | Photo upload accepts only PNG, JPEG and WebP; rejects SVG (including one disguised as PNG), GIF, PDF, corrupt, empty, tiny and oversized files | Pass | TC-P05 |
+| S-22 | Photo output is always a fresh JPEG; location and camera metadata do not survive | Pass | TC-P03 |
+| S-23 | Photo publish validates the base64 and the JPEG data URL; one file per commit; the manifest path is restricted to `content/*.jpg` so it cannot point the page at another site | Pass | TC-P08, TC-V26 |
+| S-24 | CI validates the committed photo and manifest | Pass | TC-V25–V27 |
+| S-25 | The logo SVG contains no script, handlers, foreign objects or external references; CI enforces it for every SVG | Pass | TC-V29 |
+| S-26 | Zero CSP violations across the photo dialog, preview, publish and the new header | Pass | TC-P12 |
+| S-27 | Admin token handling unchanged and still correct: `sessionStorage` only; the idle lock is now unit-tested | Pass | TC-K20–K23 |
+| S-28 | The sync workflow differs only by the pinned hash; its permissions, triggers and steps are unchanged | Pass | TC-W14, TC-R19 |
+| S-29 | No token-like strings in the repository; tests used only clearly fake tokens | Pass | TC-R21 |
+| S-30 | Rulesets protect history for everyone and gate CI for the normal path; admin screen and bots keep working | **Pending** (applied after merge) | TC-B01–B06 |
+
+### v1.4 findings
+
+| ID | Severity | Finding | Status |
+|----|----------|---------|--------|
+| F-4 | Low | Google Fonts requested from Google | **Closed** (self-hosted) |
+| F-5 | Low | Actions pinned by tag, not hash | **Closed** (pinned; Dependabot added) |
+| F-6 | Info | The owner can bypass the CI ruleset (needed so the admin screen can commit); history rewriting and deletion are blocked for everyone | Accepted, documented (T13) |
+| F-7 | Low | The profile photo is public and permanent in git history once published (removing it later does not remove the old commit) | Accepted; the preview dialog says it will be public |
+| F-8 | Info | The page was unstyled for a short time on the branch because of an editing slip; no visitor impact (never deployed). CI now rejects a stylesheet without its tokens | Closed |
+| F-9 | Low | Scheduled workflows start hours late, so a check scheduled "after" another can run before it | Closed (health moved to 12:00 UTC; delays documented) |
+
+**No open High or Critical findings.** S-30 stays pending until the rulesets are applied and tested; this document is updated with the result.
