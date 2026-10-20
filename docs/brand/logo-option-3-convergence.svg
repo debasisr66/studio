@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Studio logo">
+<rect width="128" height="128" rx="28" fill="#15131F"/>
+<path d="M63.15 20.96 Q44.57 51.48 26 64" fill="none" stroke="#8470E0" stroke-width="4.2" stroke-linecap="round" opacity="0.60"/>
+<circle cx="63.15" cy="20.96" r="2.8" fill="#8470E0"/>
+<path d="M81.09 29.33 Q53.54 55.66 26 64" fill="none" stroke="#6E56CF" stroke-width="4.5" stroke-linecap="round" opacity="0.73"/>
+<circle cx="81.09" cy="29.33" r="3.1" fill="#6E56CF"/>
+<path d="M93.55 44.71 Q59.77 63.36 26 64" fill="none" stroke="#8470E0" stroke-width="4.9" stroke-linecap="round" opacity="0.87"/>
+<circle cx="93.55" cy="44.71" r="3.3" fill="#8470E0"/>
+<path d="M98.00 64.00 Q62.00 64.00 26 64" fill="none" stroke="#6E56CF" stroke-width="5.2" stroke-linecap="round" opacity="1.00"/>
+<circle cx="98.00" cy="64.00" r="3.6" fill="#6E56CF"/>
+<path d="M93.55 83.29 Q59.77 64.64 26 64" fill="none" stroke="#8470E0" stroke-width="4.9" stroke-linecap="round" opacity="0.87"/>
+<circle cx="93.55" cy="83.29" r="3.3" fill="#8470E0"/>
+<path d="M81.09 98.67 Q53.54 72.34 26 64" fill="none" stroke="#6E56CF" stroke-width="4.5" stroke-linecap="round" opacity="0.73"/>
+<circle cx="81.09" cy="98.67" r="3.1" fill="#6E56CF"/>
+<path d="M63.15 107.04 Q44.57 76.52 26 64" fill="none" stroke="#8470E0" stroke-width="4.2" stroke-linecap="round" opacity="0.60"/>
+<circle cx="63.15" cy="107.04" r="2.8" fill="#8470E0"/>
+<circle cx="26" cy="64" r="10" fill="#F5B544"/>
+<circle cx="26" cy="64" r="4" fill="#15131F"/>
+</svg>

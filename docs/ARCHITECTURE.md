@@ -38,9 +38,13 @@ Key property: **data flows one way**. Product repos notify the hub; the hub only
 | Path | Role | Written by |
 |------|------|-----------|
 | `index.html` | Page markup only (strict CSP: no inline script, no inline style) | Developer |
-| `css/site.css` | The stylesheet | Developer |
+| `css/site.css` | The stylesheet, including the `@font-face` rules | Developer |
+| `fonts/` | Self-hosted Inter and JetBrains Mono (Latin and Latin Extended) with their licences | Developer |
+| `assets/logo.svg` | The Studio logo (header mark and favicon) | Developer |
 | `js/app.js`, `js/reads-lib.js` | Site logic and admin layer; pure, unit-tested helpers (URLs, validation, filters, dates, asset choice) | Developer |
-| `js/token-store.js` | Where the admin token lives (`sessionStorage`, memory fallback, legacy purge); unit-tested | Developer |
+| `js/token-store.js` | Where the admin token lives (`sessionStorage`, memory fallback, legacy purge) and the idle lock; unit-tested | Developer |
+| `js/image-lib.js` | Rules for the profile photo (types, limits, crop, quality steps, JPEG reader); unit-tested | Developer |
+| `content/profile.json`, `content/profile.jpg` | The profile photo manifest and the photo (the photo exists only after the owner uploads one) | Admin screen |
 | `content/changelog.json` | Release notes shown by **What's new** and the footer version; newest first | Owner (git) |
 | `content/products.json` | Registry: which repos to show, with overrides | Owner (edit + commit) |
 | `content/cache.json` | Live GitHub data (description, stars, language, latest release) | `sync.yml` (bot) |
@@ -48,10 +52,15 @@ Key property: **data flows one way**. Product repos notify the hub; the hub only
 | `content/reads.json` | Reading list articles + books | Admin CMS |
 | `scripts/sync-products.js` | Fetches and validates product data (logic exported for tests) | Developer |
 | `scripts/validate-site.js` | CI: schema, URL-safety, CSP (scripts and styles), no inline styles, changelog, size and syntax checks | Developer |
-| `scripts/health-check.js` | Daily: live site answers and cache matches GitHub releases | Developer |
+| `scripts/health-check.js` | Daily: live site answers, cache matches GitHub releases, no workflow disabled | Developer |
+| `scripts/keepalive.js` | Weekly: decides whether `main` is quiet enough to need a heartbeat commit | Developer |
 | `.github/workflows/sync.yml` | Runs the sync | Developer |
 | `.github/workflows/ci.yml` | Tests and validation on push and pull request (read-only) | Developer |
-| `.github/workflows/health.yml` | Daily health check (read-only) | Developer |
+| `.github/workflows/health.yml` | Daily health check at 12:00 UTC (read-only) | Developer |
+| `.github/workflows/keepalive.yml` | Weekly keep-alive (the only workflow besides the sync allowed to commit) | Developer |
+| `.github/dependabot.yml` | Weekly updates for the pinned Actions | Developer |
+| `docs/rulesets/*.json` | The two branch rulesets for `main`, kept as reviewable definitions | Developer |
+| `docs/brand/` | The three logo concepts and a preview sheet | Developer |
 | `tests/*.test.js` | Node unit tests, no dependencies | Developer |
 | `docs/notify-studio.yml` | Template for product repos | Developer |
 | `docs/ARCHITECTURE.md`, `docs/LEARNING-GUIDE.md` | This documentation | Developer |
@@ -152,6 +161,20 @@ Limits worth knowing:
 
 ## 11. Content-Security-Policy (strict, v1.3)
 
-`default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'none'; form-action 'none'`
+`default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'none'; form-action 'none'`
 
-No `'unsafe-inline'` or `'unsafe-eval'` anywhere. To make that possible, the stylesheet is `css/site.css`, no markup or script emits `style=`, and the two dynamic values (avatar hue, language dot colour) travel as `data-*` attributes and are applied with `element.style.setProperty`, which the CSP allows. CI rejects any regression. Limits of a static host are in [security.md](security.md) (no `frame-ancestors`, no HSTS control).
+No `'unsafe-inline'` or `'unsafe-eval'` anywhere. To make that possible, the stylesheet is `css/site.css`, no markup or script emits `style=`, and the two dynamic values (avatar hue, language dot colour) travel as `data-*` attributes and are applied with `element.style.setProperty`, which the CSP allows. CI rejects any regression. Since v1.4 nothing on the page comes from another host (fonts are self-hosted). Limits of a static host are in [security.md](security.md) (no `frame-ancestors`, no HSTS control).
+
+## 12. v1.4 additions
+
+**Fonts.** `fonts/` holds Inter and JetBrains Mono (variable fonts, Latin and Latin Extended). The Extended files matter: the rupee sign (U+20B9) is in them. The browser downloads an Extended file only when a page uses one of its characters. CI requires a licence beside every font, rejects third-party hosts and external CSS urls, and requires the Inter faces to cover U+20B9.
+
+**Logo.** `assets/logo.svg` (concept "Lattice Ascent", chosen from three) is the header mark and the favicon. CI rejects an SVG containing script, event handlers, foreign objects or external references.
+
+**Profile photo.** In admin mode **Change photo** opens the file chooser. `js/image-lib.js` and `js/app.js` check type (PNG, JPEG, WebP only), size (10 MB) and pixels (50 MP), decode the image in the browser, crop a centred square, scale to 512 px and re-encode as a JPEG of at most 150 KB, which removes all metadata. A preview dialog asks for confirmation. Publishing writes `content/profile.jpg` then `content/profile.json` (`{"photo": "content/profile.jpg", "updated": "<UTC>"}`) as two commits. The page shows the photo only when the manifest names one, using `?v=<updated>` so a new photo is never served stale, and keeps a monogram otherwise. CI validates both files.
+
+**Branch protection.** Two rulesets on `main` (definitions in `docs/rulesets/`): *history* (no deletion, no force-push, for everyone) and *CI required* (status check `check`; the admin role and the GitHub Actions app may bypass so the admin screen and the bots can commit directly). Releases go through a pull request.
+
+**Scheduled work.** GitHub starts scheduled runs hours late (the 03:00 UTC sync has run between 07:26 and 08:24 UTC), so the health check runs at 12:00 UTC. A weekly keep-alive adds one empty commit to `main` only after 30 days without a commit, so GitHub does not disable the scheduled workflows after 60 days of inactivity. The health check also fails if any workflow is not active.
+
+**Supply chain.** `actions/checkout` and `actions/setup-node` are pinned by commit hash (v4.4.0); Dependabot proposes updates weekly; CI rejects unpinned actions, missing permissions blocks and `contents: write` outside the sync and keep-alive workflows.

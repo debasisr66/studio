@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const RL = require('../js/reads-lib.js');
+const IL = require('../js/image-lib.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const REPO_RE = /^[\w.-]+\/[\w.-]+$/;
@@ -15,7 +16,7 @@ const isStr = v => typeof v === 'string';
 const httpUrl = u => { try { const x = new URL(u); return x.protocol === 'http:' || x.protocol === 'https:'; } catch { return false; } };
 
 // size budgets in bytes: generous versus today's sizes, tight enough to catch accidental bloat
-const BUDGETS = { 'index.html': 60 * 1024, 'css/site.css': 30 * 1024, 'js/app.js': 80 * 1024, 'js/reads-lib.js': 20 * 1024, 'js/token-store.js': 10 * 1024, total: 150 * 1024 };
+const BUDGETS = { 'index.html': 60 * 1024, 'css/site.css': 30 * 1024, 'js/app.js': 80 * 1024, 'js/reads-lib.js': 20 * 1024, 'js/token-store.js': 10 * 1024, 'js/image-lib.js': 10 * 1024, total: 150 * 1024 };
 
 function validateProducts(list) {
   if (!Array.isArray(list)) return ['products.json: must be an array'];
@@ -107,13 +108,19 @@ function validateIndex(html, exists) {
   if (csp) {
     const style = (csp[1].match(/style-src([^;]*)/) || [, ''])[1];
     if (/unsafe-inline|unsafe-eval/.test(style)) errors.push("index.html: CSP style-src must not allow 'unsafe-inline' or 'unsafe-eval'");
+    for (const dir of ['style-src', 'font-src']) {
+      const val = (csp[1].match(new RegExp(dir + '([^;]*)')) || [, ''])[1];
+      const hosts = val.split(/\s+/).filter(tok => tok && tok !== "'self'" && tok !== "'none'");
+      if (hosts.length) errors.push(`index.html: CSP ${dir} allows third-party sources (${hosts.join(' ')}); fonts and styles must be self-hosted`);
+    }
   }
   if (/<script(?![^>]*\bsrc=)[^>]*>/i.test(html)) errors.push('index.html: inline <script> found (the CSP forbids it); move it to js/');
   if (/<style[\s>]/i.test(html)) errors.push('index.html: inline <style> block found (the CSP forbids it); move it to css/site.css');
   if (/<[a-z][^>]*\sstyle\s*=/i.test(html)) errors.push('index.html: style= attribute found (the CSP forbids it); use a class');
-  for (const m of html.matchAll(/<(?:script|link)\b[^>]*\b(?:src|href)="([^"#?]+)"/gi)) {
-    const ref = m[1];
-    if (/^(https?:|data:|\/\/)/i.test(ref) || ref.startsWith('#')) continue;
+  for (const m of html.matchAll(/<(?:script|link)\b[^>]*\b(?:src|href)="([^"]+)"/gi)) {
+    const ref = m[1].split(/[?#]/)[0];
+    if (/^(https?:)?\/\//i.test(ref)) { errors.push(`index.html: references an external resource (${ref}); self-host it`); continue; }
+    if (/^data:/i.test(ref) || ref.startsWith('#')) continue;
     if (!exists(ref)) errors.push(`index.html: references ${ref}, which does not exist`);
   }
   return errors;
@@ -164,6 +171,133 @@ function validateChangelog(c) {
   return errors;
 }
 
+/* CSS may not pull anything from other hosts; relative url() targets must exist. exists(path) takes a repo-relative path. */
+function checkCss(sources, exists) {
+  const errors = [];
+  for (const [file, css] of Object.entries(sources)) {
+    if (/@import/i.test(css)) errors.push(`${file}: @import is not allowed (external or chained styles)`);
+    for (const m of css.matchAll(/url\(\s*(['"]?)([^'")]+)\1\s*\)/gi)) {
+      const ref = m[2].trim();
+      if (/^(https?:)?\/\//i.test(ref)) { errors.push(`${file}: external url(${ref}); self-host it`); continue; }
+      if (/^data:/i.test(ref)) continue;
+      const target = path.posix.normalize(path.posix.join(path.posix.dirname(file), ref.split(/[?#]/)[0]));
+      if (!exists(target)) errors.push(`${file}: url(${ref}) points to ${target}, which does not exist`);
+    }
+  }
+  return errors;
+}
+
+const FONT_BUDGET = 150 * 1024;
+const squash = n => n.toLowerCase().replace(/[^a-z0-9]/g, '');
+/* every font file needs a licence file beside it (SIL OFL requires the notice to travel with the font) */
+function checkFonts(sizes, licenceFiles) {
+  const errors = [];
+  const lic = (licenceFiles || []).map(f => squash(path.posix.basename(f).replace(/^license-?/i, '').replace(/\.txt$/i, '')));
+  for (const [file, size] of Object.entries(sizes)) {
+    if (!/\.woff2?$/i.test(file)) continue;
+    if (size > FONT_BUDGET) errors.push(`${file}: ${size} bytes exceeds the ${FONT_BUDGET}-byte font budget`);
+    const base = squash(path.posix.basename(file).replace(/\.woff2?$/i, ''));
+    if (!lic.some(l => l && base.startsWith(l))) errors.push(`${file}: no licence file (expected fonts/LICENSE-<Family>.txt)`);
+  }
+  return errors;
+}
+
+/* The page shows amounts in rupees. A self-hosted face that lacks U+20B9 makes the browser fall back to another font for the sign
+   (found in v1.4 testing: Latin-only subset). Require every declared Inter face set to cover it. */
+function parseRanges(list) {
+  return list.split(',').map(t => t.trim().replace(/^U\+/i, '')).filter(Boolean).map(t => {
+    const [a, b] = t.split('-'); return [parseInt(a, 16), parseInt(b || a, 16)];
+  });
+}
+function checkFontCoverage(sources, codepoints = [0x20B9]) {
+  const errors = [];
+  for (const [file, css] of Object.entries(sources)) {
+    const faces = [...css.matchAll(/@font-face\s*\{([^}]*)\}/gi)].map(m => m[1]).filter(b => /font-family\s*:\s*['"]?Inter['"]?/i.test(b));
+    if (!faces.length) continue;
+    const ranges = faces.map(b => { const u = b.match(/unicode-range\s*:\s*([^;}]+)/i); return u ? parseRanges(u[1]) : null; });
+    if (ranges.some(r => r === null)) continue;                        // a face without unicode-range covers everything
+    for (const cp of codepoints) {
+      if (!ranges.some(rs => rs.some(([a, b]) => cp >= a && cp <= b)))
+        errors.push(`${file}: the Inter font faces do not cover U+${cp.toString(16).toUpperCase()}; add the Latin Extended subset`);
+    }
+  }
+  return errors;
+}
+
+/* A cut-and-paste slip once removed the colour tokens from the stylesheet and left the page unstyled (v1.4). Guard against it. */
+function checkCssSanity(sources) {
+  const errors = [];
+  const css = sources['css/site.css'];
+  if (css === undefined) return errors;
+  if (!/:root\s*\{[^}]*--bg\s*:/.test(css)) errors.push('css/site.css: the :root design tokens (--bg and the rest) are missing; the page would render unstyled');
+  if (!/:root\[data-theme=["']light["']\]\s*\{/.test(css)) errors.push('css/site.css: the light theme tokens (:root[data-theme="light"]) are missing');
+  return errors;
+}
+
+/* SVG files can carry script and external loads. Allow plain shapes only (the xmlns declaration URLs are namespaces, not loads). */
+const SVG_BUDGET = 30 * 1024;
+function checkSvg(sources) {
+  const errors = [];
+  for (const [file, svg] of Object.entries(sources)) {
+    if (svg.length > SVG_BUDGET) errors.push(`${file}: ${svg.length} bytes exceeds the ${SVG_BUDGET}-byte SVG size budget`);
+    if (/<script/i.test(svg)) errors.push(`${file}: contains a <script> element`);
+    if (/\son[a-z]+\s*=/i.test(svg)) errors.push(`${file}: contains an event-handler attribute`);
+    if (/<foreignObject/i.test(svg)) errors.push(`${file}: contains <foreignObject>`);
+    if (/javascript:/i.test(svg)) errors.push(`${file}: contains a javascript: URL`);
+    if (/(?:xlink:)?href\s*=\s*["']\s*(?:https?:)?\/\//i.test(svg) || /url\(\s*["']?\s*(?:https?:)?\/\//i.test(svg))
+      errors.push(`${file}: references an external resource`);
+  }
+  return errors;
+}
+
+/* content/profile.jpg is written by the admin screen. Whatever lands there must really be a small, square-ish JPEG. */
+const PROFILE_MAX_BYTES = 200 * 1024, PROFILE_MAX_SIDE = 1024;
+function validateProfileImage(buf) {
+  const errors = [];
+  const info = IL.jpegInfo(buf);
+  if (!info.ok) return ['content/profile.jpg: is not a valid JPEG (the file must begin with the JPEG signature and have a readable frame header)'];
+  if (buf.length > PROFILE_MAX_BYTES) errors.push(`content/profile.jpg: ${buf.length} bytes exceeds the ${PROFILE_MAX_BYTES}-byte (200 KB) budget`);
+  if (info.width > PROFILE_MAX_SIDE || info.height > PROFILE_MAX_SIDE) errors.push(`content/profile.jpg: ${info.width}x${info.height} is larger than ${PROFILE_MAX_SIDE}x${PROFILE_MAX_SIDE} pixels`);
+  if (info.width < IL.LIMITS.minSide || info.height < IL.LIMITS.minSide) errors.push(`content/profile.jpg: ${info.width}x${info.height} is too small (at least ${IL.LIMITS.minSide} pixels on each side)`);
+  return errors;
+}
+
+/* content/profile.json says whether a photo is shown and carries the version used to bust caches. The path is restricted so
+   the manifest can never point the page at another site. */
+function validateProfileManifest(m, exists) {
+  const errors = [], warnings = [];
+  if (!isObj(m) || !('photo' in m) || !('updated' in m)) return { errors: ['content/profile.json: needs "photo" and "updated" (both may be null)'], warnings };
+  if (m.photo !== null && !(isStr(m.photo) && /^content\/[A-Za-z0-9._-]+\.jpg$/.test(m.photo) && !m.photo.includes('..'))) errors.push('content/profile.json: photo must be null or a path like content/profile.jpg');
+  if (m.photo === null && m.updated !== null) errors.push('content/profile.json: updated must be null when there is no photo');
+  if (m.photo !== null && !(isStr(m.updated) && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(m.updated))) errors.push('content/profile.json: updated must be an ISO timestamp (UTC) when a photo is set');
+  if (isStr(m.photo) && errors.length === 0 && !exists(m.photo)) errors.push(`content/profile.json: photo points to ${m.photo}, which does not exist`);
+  if (m.photo === null && exists('content/profile.jpg')) warnings.push('content/profile.jpg exists but profile.json does not show it (publish again to include it)');
+  return { errors, warnings };
+}
+
+/* Workflow hygiene: actions pinned by commit hash, permissions always declared, write access only where a bot must commit. */
+const WRITE_ALLOWED = ['sync.yml', 'keepalive.yml'];
+function checkWorkflows(sources) {
+  const errors = [];
+  for (const [file, text] of Object.entries(sources)) {
+    const base = path.posix.basename(file);
+    for (const m of text.matchAll(/^\s*-?\s*uses:\s*([^\s#]+)/gm)) {
+      const ref = m[1];
+      if (ref.startsWith('./')) continue;
+      const at = ref.split('@')[1];
+      if (!at || !/^[0-9a-f]{40}$/.test(at)) errors.push(`${file}: ${ref} is not pinned by a 40-character commit hash`);
+    }
+    if (!/^permissions\s*:/m.test(text)) { errors.push(`${file}: no top-level permissions block (declare the minimum)`); continue; }
+    if (/^permissions\s*:\s*write-all/m.test(text)) errors.push(`${file}: permissions: write-all is not allowed`);
+    const block = (text.match(/^permissions\s*:\s*\n((?:[ \t]+[^\n]*\n?)*)/m) || [, ''])[1];
+    for (const m of block.matchAll(/^[ \t]+([a-z-]+)\s*:\s*write\b/gm)) {
+      if (m[1] === 'contents' && WRITE_ALLOWED.includes(base)) continue;
+      errors.push(`${file}: ${m[1]}: write is not allowed here${m[1] === 'contents' ? ' (only ' + WRITE_ALLOWED.join(' and ') + ' may commit)' : ''}`);
+    }
+  }
+  return errors;
+}
+
 function checkSizes(sizes) {
   const errors = [];
   let total = 0;
@@ -207,13 +341,28 @@ function run() {
   const files = ['index.html', ...dirFiles('css', '.css'), ...dirFiles('js', '.js')];
   const sizes = Object.fromEntries(files.map(f => [f, Buffer.byteLength(read(f))]));
   errors.push(...checkSizes(sizes));
+  const cssSources = Object.fromEntries(files.filter(f => f.endsWith('.css')).map(f => [f, read(f)]));
+  errors.push(...checkCss(cssSources, p => fs.existsSync(path.join(ROOT, p))));
+  errors.push(...checkFontCoverage(cssSources));
+  errors.push(...checkCssSanity(cssSources));
+  const profile = json('content/profile.json');
+  if (profile !== undefined) { const r = validateProfileManifest(profile, p => fs.existsSync(path.join(ROOT, p))); errors.push(...r.errors); warnings.push(...r.warnings); }
+  if (fs.existsSync(path.join(ROOT, 'content/profile.jpg'))) errors.push(...validateProfileImage(fs.readFileSync(path.join(ROOT, 'content/profile.jpg'))));
+  const wfDir = path.join(ROOT, '.github/workflows');
+  const wfSources = fs.existsSync(wfDir) ? Object.fromEntries(fs.readdirSync(wfDir).filter(f => /\.ya?ml$/.test(f)).map(f => ['.github/workflows/' + f, read('.github/workflows/' + f)])) : {};
+  errors.push(...checkWorkflows(wfSources));
+  const svgSources = Object.fromEntries(dirFiles('assets', '.svg').map(f => [f, read(f)]));
+  errors.push(...checkSvg(svgSources));
+  const fontFiles = dirFiles('fonts', '.woff2');
+  const fontSizes = Object.fromEntries(fontFiles.map(f => [f, fs.statSync(path.join(ROOT, f)).size]));
+  errors.push(...checkFonts(fontSizes, dirFiles('fonts', '.txt')));
   const jsSources = Object.fromEntries(files.filter(f => f.endsWith('.js')).map(f => [f, read(f)]));
   errors.push(...checkSyntax(jsSources));
   errors.push(...checkNoInlineStyles(jsSources));
   return { errors, warnings, sizes };
 }
 
-module.exports = { validateProducts, validateCache, validateBlog, validateReads, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
+module.exports = { checkWorkflows, validateProfileManifest, validateProfileImage, checkSvg, checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
 
 if (require.main === module) {
   const { errors, warnings, sizes } = run();

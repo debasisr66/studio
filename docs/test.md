@@ -1,10 +1,177 @@
 # Test Plan and Traceability — Studio
 
-Releases: **v1.3 (shipped 2026-10-19)** · v1.2 (shipped) · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
+Releases: **v1.4 (built and verified locally; awaiting pull request and approval)** · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
 
 ---
 
-# v1.3 — Safer admin session, version tracking, What's new
+# v1.4 — Self-hosted fonts, protected main, keep-alive, profile photo, logo
+
+Date: 2026-10-20 · Environment: macOS, Node v25.2.1, Claude desktop browser pane (Chromium), local static server. No real token and no real photo were used anywhere: a clearly fake test token, a stubbed GitHub API and generated images stand in. Where the real thing is needed, the test is listed under §F as pending.
+
+## A. Requirements
+
+| ID | Requirement |
+|----|-------------|
+| REQ-31 | Fonts are self-hosted: no request leaves the page for a third party, and rendering is identical to before (including the rupee sign) |
+| REQ-32 | CI forbids third-party hosts in `style-src` and `font-src`, external links, external CSS urls and unsafe SVG; requires font licences, rupee coverage and a sane stylesheet |
+| REQ-33 | The logo is the header mark and the favicon and is recognisable at small sizes |
+| REQ-34 | Profile photo: owner-only upload; only PNG, JPEG, WebP; size and pixel limits; centre-cropped 512 px JPEG; metadata removed; published as two single-file commits; shown with a monogram fallback |
+| REQ-35 | The published photo and its manifest are validated in CI |
+| REQ-36 | The admin idle lock is unit-tested |
+| REQ-37 | Keep-alive adds a commit only when `main` is quiet (or forced), and the decision is unit-tested |
+| REQ-38 | Actions are pinned by commit hash, workflows declare minimum permissions, and CI enforces both; Dependabot keeps pins current |
+| REQ-39 | The health check runs after the (late) scheduled sync and reports any disabled workflow |
+| REQ-40 | The header fits at every window width |
+| REQ-41 | The branch rulesets behave as designed (history protected for everyone; CI required; admin screen and bots keep working) |
+| REQ-42 | Nothing else breaks |
+| REQ-43 | All artefacts updated |
+
+## B. Traceability matrix
+
+| Req | Test cases | Result |
+|-----|-----------|--------|
+| REQ-31 | TC-F01–F04 | ✅ |
+| REQ-32 | TC-V20–V30 | ✅ |
+| REQ-33 | TC-L01–L03 | ✅ (16 px: see note) |
+| REQ-34 | TC-P01–P10 | ✅ with generated images; ⏳ real photo through the OS picker (owner) |
+| REQ-35 | TC-V25–V27 | ✅ |
+| REQ-36 | TC-K20–K23 | ✅ |
+| REQ-37 | TC-A01–A08, TC-A09; **TC-A10** | ✅ logic and dry runs; ⏳ forced run on GitHub |
+| REQ-38 | TC-W10–W14, TC-W15 | ✅ |
+| REQ-39 | TC-H10–H12; **TC-H13** | ✅ logic; ⏳ runs on GitHub |
+| REQ-40 | TC-E01 | ✅ |
+| REQ-41 | **TC-B01–B06** | ⏳ after merge |
+| REQ-42 | TC-R17–R21 | ✅ |
+| REQ-43 | TC-D04 | ✅ |
+
+## C. Test cases and results
+
+**Unit tests: `node --test tests/*.test.js`: 102 of 102 pass** (validator 40, reads/date/asset 21, token store and idle lock 12, image rules 9, health 8, keep-alive 8, sync 4).
+
+### Fonts and third parties (REQ-31, REQ-32)
+
+| ID | What it checks | Result |
+|----|----------------|--------|
+| TC-F01 | Fresh load: every request goes to the same host; the fonts are fetched from `/fonts/`; the Latin file loads and the Latin Extended files are fetched only when a character needs them; no Google host appears | ✅ |
+| TC-F02 | **First attempt (Latin only) failed the visual comparison**: 32 differences in Penny's release notes, which contain the rupee sign U+20B9 (it lives in Inter's Latin Extended subset). Fixed by self-hosting both subsets | ❌ → ✅ (DEF-10) |
+| TC-F03 | After the fix: 24 cases (375/768/1280 px × dark/light × 4 states) against v1.3: **0 differences**. The harness was first shown to fail on a deliberate padding and colour change (25 differences) | ✅ |
+| TC-F04 | The page and stylesheet contain no `googleapis` or `gstatic` references; CSP is `style-src 'self'; font-src 'self'` | ✅ |
+| TC-V20 | CSP with a third-party host in `style-src` or `font-src` is rejected; self-only passes | ✅ |
+| TC-V21 | External stylesheet, font and script links (including URLs with a query string and protocol-relative ones) are rejected. *The first version of this rule missed URLs containing `?`, which is the form Google Fonts used; the test caught it* | ✅ (DEF-13) |
+| TC-V22 | CSS: external `url()` and `@import` rejected; relative `url()` targets must exist; `data:` allowed | ✅ |
+| TC-V23 | Each font file needs a matching licence file and stays under 150 KB | ✅ |
+| TC-V24 | The Inter faces must cover U+20B9 (the rule fails on a Latin-only build, passes with the Extended file) | ✅ |
+| TC-V28 | Stylesheet sanity: the colour tokens and the light theme must still exist. *Added after a splice of mine removed them and left the page unstyled (7,836 differences in the comparison)* | ✅ (DEF-11) |
+| TC-V29 | SVG assets: no script, event handlers, `foreignObject`, `javascript:` or external references; size budget (7 hostile variants) | ✅ |
+| TC-V30 | Real repo: validator reports 0 errors; it reported 5 (Google references), then 1 (rupee coverage), then 0 as each fix landed | ✅ |
+
+### Logo (REQ-33)
+
+| ID | What it checks | Result |
+|----|----------------|--------|
+| TC-L01 | `assets/logo.svg` loads as the header mark (28 px, decorative `alt=""`) and as the favicon | ✅ |
+| TC-L02 | The three concepts were rendered and reviewed; options 2 and 3 were redrawn once after review; the owner chose option 2 | ✅ |
+| TC-L03 | Recognisable at 128, 32 and 16 px. *At 16 px the fine cells blur; the dark tile, purple grid and amber top-right cell remain, which is what identifies it* | ✅ with that note |
+
+### Profile photo (REQ-34, REQ-35)
+
+| ID | What it checks | Result |
+|----|----------------|--------|
+| TC-P01 | 1600 × 900 PNG becomes a 512 × 512 JPEG (data URL, signature `/9j/`, 4 KB); centre crop verified by colour (left red, centre green, right blue); 600 × 1000 WebP also becomes 512 × 512 | ✅ |
+| TC-P02 | Transparent PNG becomes white, not black | ✅ |
+| TC-P03 | **Metadata removal**: a JPEG with an injected EXIF-style segment containing GPS coordinates and a camera name goes in; none of it is present in the output | ✅ |
+| TC-P04 | Quality stepping: a 4.7 MB noise image comes out at 115 KB (under the 150 KB limit); stepping logic also unit-tested | ✅ |
+| TC-P05 | Rejections with plain messages: SVG, an SVG disguised as PNG, GIF, PDF, a corrupt PNG, an empty file, a 64 px image, an 11 MB file | ✅ |
+| TC-P06 | Preview dialog: opens on its title, shows a round JPEG preview with alt text, states that the photo becomes public and that location and camera details are removed; Cancel keeps nothing | ✅ |
+| TC-P07 | "Use this photo": draft saved, hero shows it, monogram hidden, admin bar says "Unpublished: profile photo" | ✅ |
+| TC-P08 | Publish (stubbed API): `GET` then `PUT content/profile.jpg` (no SHA, new file), then `GET` then `PUT content/profile.json` (with the existing SHA); messages "cms: update profile photo" and "cms: show profile photo"; manifest has the path and an ISO timestamp; result dialog lists both | ✅ |
+| TC-P09 | Publishing the same photo again: both files report "unchanged" and the manifest timestamp is kept | ✅ |
+| TC-P10 | After publishing and a later re-render the hero keeps the local photo (no flash to the not-yet-deployed URL) | ✅ (DEF-14) |
+| TC-V25 | CI: a 512 × 512 JPEG under 200 KB passes; PNG, SVG and HTML posing as `profile.jpg` fail; oversized, over 1024 px and under 128 px fail | ✅ |
+| TC-V26 | CI: `profile.json` accepts "no photo" and a valid path with a UTC timestamp; rejects external URLs, `..`, other extensions and odd timestamps | ✅ |
+| TC-V27 | CI: a manifest pointing at a missing file is an error; a stray photo with no manifest only warns | ✅ |
+| TC-P11 | Visitor view with no photo: monogram shown, no request for a photo, **no console error** | ✅ |
+| TC-P12 | Zero CSP violations across the whole upload, preview, publish flow | ✅ |
+
+### Admin session and idle lock (REQ-36)
+
+| ID | What it checks | Result |
+|----|----------------|--------|
+| TC-K20 | Idle lock fires once after the idle time and is then no longer armed | ✅ |
+| TC-K21 | Activity restarts the countdown and never leaves two timers | ✅ |
+| TC-K22 | `disarm` cancels, and is safe when not armed | ✅ |
+| TC-K23 | Works with the real timers by default | ✅ |
+| (carried) | A reload in the same tab keeps the admin session (token in `sessionStorage`), as designed | ✅ observed again |
+
+### Keep-alive, workflows, health (REQ-37 to REQ-39)
+
+| ID | What it checks | Result |
+|----|----------------|--------|
+| TC-A01–A08 | Decision unit tests: recent means no commit; at or past 30 days means a heartbeat; threshold configurable; forced always; unreadable date means a harmless heartbeat; future date never; message stable and short; default is 30 days | ✅ |
+| TC-A09 | Dry runs on the real repo: "no heartbeat needed: last commit 0 days ago" and "would add a heartbeat commit: forced" | ✅ |
+| TC-W10 | Workflow rule: actions pinned by a 40-character hash pass; tags, branches and short hashes fail | ✅ |
+| TC-W11 | Every workflow declares top-level permissions | ✅ |
+| TC-W12 | `contents: write` only in the sync and keep-alive workflows; `write-all` and other write scopes rejected | ✅ |
+| TC-W13 | The rule flagged exactly the 5 unpinned lines in the real workflows before pinning, and passes after | ✅ |
+| TC-W15 | CI on pull request #1 (the first release through a pull request): job `check` succeeded on GitHub (Node 22, pinned `checkout` and `setup-node`, 102 tests and the validator); merge state clean | ✅ |
+| TC-W14 | Both pinned hashes verified to be the commits of `v4.4.0` (and of the `v4` tag); all five workflow files and the Dependabot file parse as valid YAML; `sync.yml` differs only by the pinned hash | ✅ |
+| TC-H10 | Health logic: all workflows active is clean; every non-active workflow is named with its state; missing or odd input tolerated | ✅ |
+| TC-H11 | Health schedule moved to 12:00 UTC after observing scheduled runs start 4–5 hours late (03:00 cron ran at 07:26–08:24 UTC); `actions: read` added | ✅ |
+| TC-H12 | Key-file list extended to the new assets (stylesheet, logo, fonts, scripts, changelog, profile manifest) | ✅ |
+
+### Header fit (REQ-40)
+
+| ID | What it checks | Result |
+|----|----------------|--------|
+| TC-E01 | Overflow sweep over 26 widths from 320 to 1920 px. **v1.3 (live) overflowed at 621 px (+23 px) and 640 px (+4 px)**; v1.4: none at any width | ✅ (DEF-12) |
+
+### Visual comparison, final build (REQ-42)
+
+| ID | What it checks | Result |
+|----|----------------|--------|
+| TC-R17 | 24 cases against v1.3: 480 differences, **all inside the header (logo, tagline, spacing) or the hero (the new photo area)**; none anywhere else | ✅ |
+| TC-R18 | Phone layout measured: photo 72 px, logo 28 px, header buttons 44 px, no horizontal scroll | ✅ |
+| TC-R19 | `git diff main` over `.github`, `scripts`, `content`: only the intended files; `sync-products.js`, products, blog, reads and cache are unchanged | ✅ |
+| TC-R20 | Sync dry run: both products fetched, "No changes" | ✅ |
+| TC-R21 | No token-like strings in the repository, docs, tests or content | ✅ |
+
+### Documentation
+
+| ID | What it checks | Result |
+|----|----------------|--------|
+| TC-D04 | Plan, impact, design, test, build, model-use, security, architecture, learning guide, README, changelog updated | ✅ |
+
+## D. Defects found during v1.4
+
+| ID | Defect | Found by | Fix |
+|----|--------|----------|-----|
+| DEF-10 | Latin-only self-hosted fonts changed the width of the **rupee sign** (it is in the Latin Extended subset) | Visual comparison (32 differences) | Both subsets self-hosted; CI rule requires U+20B9 coverage |
+| DEF-11 | My stylesheet splice deleted the colour tokens: page unstyled | Visual comparison (7,836 differences) | Restored from the committed file; CI rule for the tokens and light theme |
+| DEF-12 | **Live v1.3** header overflowed horizontally between phone and tablet widths (+23 px at 621 px) | A pane width between my test sizes, then a 26-width sweep | Tagline hidden below 861 px, tighter spacing |
+| DEF-13 | CI missed external links whose URL contains `?` | A new unit test | Pattern fixed |
+| DEF-14 | After publishing, a later re-render swapped the hero to a not-yet-deployed URL | Review of the publish flow | Local copy kept for the session |
+| DEF-15 | Design assumption wrong: the 06:00 health run is not reliably after the sync because scheduled runs start hours late | Checking why no run existed at 03:00 UTC | Health moved to 12:00 UTC; delays documented |
+
+Not defects: test-script slips (assigning the same file list twice is ignored by browsers; a test that did not wait for the unlock), and the scroll-spy highlight, which the comparison normalises.
+
+## E. Security checks
+
+See [security.md](security.md) (v1.4 review log): 18 checks, no open High or Critical finding.
+
+## F. Pending (stated plainly)
+
+| ID | Test | Why pending |
+|----|------|-------------|
+| TC-H13 | Health check run on GitHub (manual, then the first 12:00 UTC scheduled run) | After merge |
+| TC-A10 | Keep-alive: forced run on GitHub adds one empty commit as the Actions bot; a dry run adds none | After merge |
+| TC-B01–B06 | Rulesets: (1) a pull request with green CI merges; (2) a pull request with failing CI is blocked; (3) direct commit as admin works (the admin screen's path); (4) the keep-alive's commit as the Actions app works under the rulesets; (5) force-push to `main` is rejected; (6) deleting `main` is rejected | Applied only after merge; results recorded in this file |
+| TC-M07 | Owner uploads a real photo with the OS file picker, publishes, and checks the live page | Needs the owner and a real photo |
+| (not run) | EXIF **orientation** of a real phone photo (the code requests orientation from the image, but only synthetic images were used); blocked-`sessionStorage` fallback in a browser; real screen reader and phone; the 60-day behaviour (cannot be tested short of waiting) | Environment limits |
+
+---
+
+# v1.3 — Safer admin session, version tracking, What's new (shipped)
+
 
 Date: 2026-10-19 · Environment: macOS, Node v25.2.1, Claude desktop browser pane (Chromium engine), local static server; no real token used anywhere (a clearly fake test token and a stubbed GitHub API stand in)
 

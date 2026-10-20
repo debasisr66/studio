@@ -1,4 +1,4 @@
-/* Where the admin token lives. No DOM access, so Node can test it (UMD).
+/* Where the admin token lives, and when it is given up (idle lock). No DOM access, so Node can test it (UMD).
    create(getStorage, key): token in the given storage (the page passes sessionStorage: this tab only, forgotten when
    the tab closes). If that storage is blocked or full, the token is held in memory only, so a reload simply locks.
    purge(getStorage, key): deletes a token that an earlier version left in persistent storage (never migrated). */
@@ -44,5 +44,18 @@
     } catch (e) { return false; }
   }
 
-  return { create: create, purge: purge };
+  /* createIdleLock(ms, onIdle[, timers]): arm() (re)starts a countdown, so calling it on every user action means onIdle runs
+     only after `ms` of inactivity; disarm() cancels. `timers` ({set, clear}) is injectable so the logic can be tested without waiting. */
+  function createIdleLock(ms, onIdle, timers) {
+    var t = timers || { set: function (f, d) { return setTimeout(f, d); }, clear: function (h) { clearTimeout(h); } };
+    var handle = null;
+    function disarm() { if (handle !== null) { t.clear(handle); handle = null; } }
+    return {
+      arm: function () { disarm(); handle = t.set(function () { handle = null; onIdle(); }, ms); },
+      disarm: disarm,
+      isArmed: function () { return handle !== null; }
+    };
+  }
+
+  return { create: create, purge: purge, createIdleLock: createIdleLock };
 });

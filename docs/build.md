@@ -1,6 +1,6 @@
 # Build and Publish — Command Reference
 
-Current release line: **v1.3** (merged; tagged `v1.3`). Branch names must differ from tag names: a branch called `v1.1` and a tag `v1.1` made `git push origin v1.1` ambiguous (fix: `git push origin refs/tags/v1.1`).
+Current release line: **v1.4** (branch `release/v1.4` until merged); v1.3 is tagged. From v1.4 releases go through a **pull request** (see §15). Branch names must differ from tag names: a branch called `v1.1` and a tag `v1.1` made `git push origin v1.1` ambiguous (fix: `git push origin refs/tags/v1.1`).
 
 Reference only. There is no build step: the repository is the site. Pages serves `main`, root `/`. Run from `/Users/debasisray/CoworkProjects/studio-site`.
 
@@ -16,7 +16,7 @@ gh auth status
 
 ```bash
 git tag v1.0 && git push origin v1.0        # rollback point (done once per release)
-git checkout -b release/v1.3               # never reuse a tag name for a branch
+git checkout -b release/v1.4               # never reuse a tag name for a branch
 ```
 
 ## 3. Test locally
@@ -171,3 +171,50 @@ Normalise the scroll-spy `aria-current` attribute before comparing (it depends o
 ## 14. Admin session notes (v1.3)
 
 The admin token now lives in the tab only: unlock again after closing the tab, in a new tab, or after 30 minutes idle. After upgrading from v1.2 the old stored token is deleted, so unlock once.
+
+## 15. Release by pull request (v1.4 onward)
+
+CI gets a real run before anything reaches `main`, and the ruleset (below) makes a normal merge wait for it.
+
+```bash
+git push -u origin release/vX.Y
+gh pr create --base main --head release/vX.Y --title "vX.Y: summary" --body "What changed, what was tested, what is pending"
+gh pr checks --watch                               # waits for the CI job named "check"
+gh pr merge --merge --delete-branch                # merge commit keeps the history readable; blocked if CI is not green
+git checkout main && git pull --rebase
+git tag vX.Y && git push origin refs/tags/vX.Y     # full ref: never ambiguous with a branch name
+```
+
+If you must override a failing check, you are bypassing a control on purpose: say why in the pull request first.
+
+## 16. Branch rulesets
+
+Definitions and the reasoning are in `docs/rulesets/` and `docs/design.md` §11.4.
+
+```bash
+gh api -X POST repos/debasisr66/studio/rulesets --input docs/rulesets/history.json    # no force-push, no deletion (everyone)
+gh api -X POST repos/debasisr66/studio/rulesets --input docs/rulesets/ci.json         # CI required; admin and Actions may bypass
+gh api repos/debasisr66/studio/rulesets --jq '.[] | "\(.id) \(.name) \(.enforcement)"'
+gh api -X DELETE repos/debasisr66/studio/rulesets/<id>                                 # roll back one ruleset instantly
+```
+
+If the admin screen or the sync ever fails with a "protected branch" or "required status check" message, list the rulesets and delete the CI one first, then investigate.
+
+## 17. Keep-alive, fonts, photo
+
+```bash
+# keep-alive (weekly by itself); manual runs
+gh workflow run keepalive.yml -f dry_run=true       # reports only
+gh workflow run keepalive.yml -f force=true         # adds one empty commit now
+node scripts/keepalive.js                           # decision locally (reads the last commit date)
+
+# health now includes workflow states; it runs at 12:00 UTC daily
+gh workflow run health.yml && gh workflow list --all
+
+# fonts: replace a file, keep its licence, then
+node scripts/validate-site.js                       # enforces licences, size, rupee coverage, no third-party hosts
+
+# visual comparison, sweep many widths (not three): see section 13; include 621-860 px
+```
+
+Photo: owner unlocks admin → **Change photo** → choose a PNG, JPEG or WebP → **Use this photo** → **Publish changes**. Two commits appear: `cms: update profile photo` and `cms: show profile photo`. To remove the photo, set `content/profile.json` back to `{"photo": null, "updated": null}` (the old image stays in git history).

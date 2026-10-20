@@ -1,3 +1,9 @@
+/* Self-hosted fonts (SIL Open Font Licence; see fonts/). Latin plus Latin Extended (the rupee sign, U+20B9, lives in the Extended file);
+   other scripts use the system fallback. The browser downloads an Extended file only when a page uses one of its characters. */
+@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;src:url(../fonts/inter-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;src:url(../fonts/inter-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:100 800;font-display:swap;src:url(../fonts/jetbrains-mono-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:100 800;font-display:swap;src:url(../fonts/jetbrains-mono-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
 :root{
   --bg:#0D0D0F; --surface:#151519; --surface-2:#1C1C22; --border:#26262E; --field:#6E6E7C;
   --text:#EDEDF0; --muted:#8B8B97; --accent:#6E56CF; --accent-hover:#8470E0; --accent-press:#5B43BB; --accent-soft:rgba(110,86,207,.14);
@@ -26,7 +32,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--b
 header.top .wrap{display:flex;align-items:center;gap:24px;height:60px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:600;text-decoration:none;letter-spacing:-.01em}
 .brand small{font-weight:400;color:var(--muted);font-size:13px;letter-spacing:0}
-.logo{width:26px;height:26px;border-radius:7px;background:var(--accent);display:grid;place-items:center;color:#fff;font:600 13px var(--mono)}
+.logo{width:28px;height:28px;border-radius:7px;display:block}
 nav.links{display:flex;gap:4px;margin-left:auto}
 nav.links a{padding:8px 12px;border-radius:8px;text-decoration:none;color:var(--muted);font-size:14px;font-weight:500}
 nav.links a:hover,nav.links a[aria-current]{color:var(--text);background:var(--surface-2)}
@@ -224,3 +230,24 @@ body.admin .read-head{padding-right:112px}
   .whatsnew{width:44px;height:44px;padding:0;justify-content:center}
   .wn-dot{position:absolute;top:8px;right:8px}
 }
+
+/* profile photo (v1.4) */
+.who{display:flex;align-items:center;gap:16px;margin-bottom:6px}
+.photo{position:relative;width:96px;height:96px;flex:none}
+.photo-img,.photo-mono{width:96px;height:96px;border-radius:50%}
+.photo-img{object-fit:cover;border:2px solid var(--border);background:var(--surface-2)}
+.photo-img[hidden],.photo-mono[hidden]{display:none}
+.photo-mono{display:grid;place-items:center;color:#fff;font:600 40px var(--font);background:hsl(260 45% 30%)}
+.who-text{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.who-text .addbtn{margin:0}
+.photo-preview{display:block;width:160px;height:160px;border-radius:50%;object-fit:cover;margin:6px auto 12px;border:2px solid var(--border)}
+@media (max-width:620px){.photo,.photo-img,.photo-mono{width:72px;height:72px}.photo-mono{font-size:30px}}
+
+/* header fit between the phone and desktop layouts (v1.4): the tagline beside the brand is dropped (the hero says it) and the links are slightly tighter */
+@media (max-width:860px){
+  .brand small{display:none}
+  header.top .wrap{gap:16px}
+  nav.links a{padding:8px 10px}
+}
+.brand{white-space:nowrap}
+.hdr-actions{flex:none}

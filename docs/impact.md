@@ -1,6 +1,91 @@
 # Impact Analysis — Studio
 
-Releases: **v1.3 (shipped 2026-10-19)** · v1.2 (shipped) · v1.1 (shipped)
+Releases: **v1.4 (built and verified locally, branch `release/v1.4`)** · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped)
+
+---
+
+# v1.4 — Self-hosted fonts, protected main, keep-alive, profile photo, logo
+
+Date: 2026-10-20 · Rollback tag: `v1.3` · Order of work: **impact → plan → design → build → test → security checks → update artefacts**
+
+## 1. Change summary
+
+| # | Change | Type |
+|---|--------|------|
+| U1 | **Self-host the fonts** (Inter, JetBrains Mono): `fonts/*.woff2` with their licences; Google Fonts removed from the page and the CSP | Privacy, performance, hardening |
+| U2 | **Branch protection** by two repository rulesets on `main`: history can never be rewritten or deleted; CI (`check`) is a required status check, with the repository admin (the owner's token, which the admin screen uses) and the GitHub Actions app allowed to bypass | Process control |
+| U3 | **Keep-alive** (`keepalive.yml` + `scripts/keepalive.js`): if `main` has had no commit for 30 days, add one empty commit so GitHub does not disable the scheduled workflows; the health check also fails if any workflow is disabled | Reliability |
+| U4 | **Pin Actions by commit hash** in all workflows; **Dependabot** proposes weekly updates | Supply-chain hardening |
+| U5 | Health check moved to **12:00 UTC**: observed scheduled runs start 4–5 hours late (the 03:00 sync ran at 07:26–08:24 UTC), so 06:00 could precede the sync | Fix |
+| U6 | Admin **idle lock** logic moved into the tested module (it was the one untested piece of the session code) | Test coverage |
+| P1 | **Profile photo**: the owner uploads a photo in the admin screen; it is cropped square, resized to 512 px, re-encoded as JPEG (metadata removed) and published to `content/profile.jpg`; the home page shows it, with a monogram when none exists | Feature |
+| L1 | **Studio logo** (abstract "Lattice Ascent", option 2 chosen by the owner) as the header mark and the favicon; the other two concepts are kept in `docs/brand/` | Brand |
+| W1 | Changelog entry v1.4 (visible in **What's new**) and all artefacts updated | Docs |
+
+## 2. What is touched and what is not
+
+| Component | Touched? | Notes |
+|-----------|----------|-------|
+| `index.html`, `css/site.css` | Yes | Fonts, header logo, hero photo area, favicon, preload |
+| `fonts/` | New | Two variable `woff2` files and two licence files |
+| `assets/logo.svg` | New | The chosen logo |
+| `js/app.js` | Yes | Profile upload and display, binary publish, idle-lock use |
+| `js/token-store.js` | Yes | Adds the idle-lock helper (still dependency-free) |
+| `js/image-lib.js` | New | Pure, unit-tested image rules (type, size, crop, quality steps) |
+| `scripts/validate-site.js`, `health-check.js` | Yes | Font and third-party rules, profile image rules, workflow-state check |
+| `scripts/keepalive.js` | New | Decision logic, unit-tested |
+| `.github/workflows/ci.yml`, `health.yml` | Yes | Pinned actions; health: later schedule and `actions: read` |
+| `.github/workflows/sync.yml` | **Yes, one line per action** | Only the pinned action hashes; permissions, triggers and steps unchanged; proved by a dry run on GitHub |
+| `.github/workflows/keepalive.yml`, `.github/dependabot.yml` | New | Keep-alive is the only new workflow with `contents: write` |
+| Repository settings | Yes | Two rulesets on `main` (applied last, tested, with a one-command rollback) |
+| `content/products.json`, `blog.json`, `reads.json`, `cache.json` | No | |
+| `content/profile.jpg` | New (after the owner uploads) | Created by the admin screen, not by this release |
+| Penny and debasis-web repos, notify workflow, tokens, secrets | No | |
+
+## 3. Data and storage compatibility
+
+- No change to any JSON schema. The only new data file is the optional `content/profile.jpg`; the page works without it.
+- No new browser storage keys.
+- Fonts: if a font file ever fails to load, the page falls back to system fonts (layout shifts slightly, nothing breaks).
+
+## 4. Blast radius
+
+- **Visitors:** the same page with a logo, optionally a photo at the top, and fonts from the same address. Net privacy gain: Google no longer sees visits.
+- **Owner:** a new **Change photo** control appears in admin. Publishing already works the same way. The rulesets must not block the admin screen or the nightly sync (see X2).
+- **Pipeline:** `sync.yml` is edited (hash pinning only). A mistake here would stop the sync, so it is verified on GitHub before the change is relied on.
+- **Repository process:** after the rulesets, release changes go through a pull request and wait for CI.
+
+## 5. Risk register (v1.4)
+
+| ID | Risk | Likelihood | Impact | Mitigation | Status |
+|----|------|-----------|--------|-----------|--------|
+| X1 | Self-hosted fonts render differently from Google's | Low | Medium | Same font files; computed-style comparison against v1.3 | **Materialised and closed**: Latin-only changed the rupee sign; both subsets now hosted; 24 cases, 0 differences; CI guards coverage |
+| X2 | A ruleset blocks the admin screen's commits or the sync bot's commits | Medium | High | Admin role and the GitHub Actions app are bypass actors; applied only after merge; tested straight away (a forced keep-alive commit as the Actions app, a direct push as admin); one-command rollback; owner re-checks one real publish | Open until tested |
+| X3 | The owner can still bypass CI (admin bypass is required so the admin screen's direct commits keep working) | Certain | Low | Honest limit, documented. The rulesets block force-push and deletion for **everyone**, and gate pull-request merges for the normal path | Accepted |
+| X4 | Keep-alive adds clutter or permissions | Low | Low | At most one empty commit per 30 days; `contents: write` only in that workflow; decision logic unit-tested | Mitigated |
+| X5 | Pinned hashes go stale | Medium | Low | Dependabot weekly pull requests | Mitigated |
+| X6 | Editing `sync.yml` breaks the sync | Low | High | Pin only (diff is one line); verified hash; dry run on GitHub after merge | Open until the GitHub dry run |
+| X7 | A malicious or huge image is uploaded | Low | Medium | Owner-only; PNG, JPEG, WebP only (no SVG); decoded and re-encoded; size and pixel limits; CI validates `profile.jpg` | **Closed** (TC-P05, TC-V25) |
+| X8 | Photo reveals location or device metadata | Medium | Medium | Re-encoding through a canvas drops all metadata; documented | Mitigated by design |
+| X9 | A changed photo shows stale for a few minutes | High | Low | The manifest's timestamp is part of the photo URL, so a new photo is a new URL | **Closed** (design improved) |
+| X10 | Scheduled-run delays cause false alarms | Medium | Low | Health moved to 12:00 UTC; delays documented | Mitigated |
+| X11 | Logo unreadable at favicon size | Low | Low | Checked at 128, 32 and 16 px | Closed with a note: at 16 px the grid blurs but the amber cell and tile remain |
+
+| X12 | An editing slip leaves the page unstyled | Low | High | CI rule requires the colour tokens and light theme; the visual comparison caught the slip before anything was deployed | Closed (TC-V28) |
+| X13 | The header overflows at widths nobody tested (**live v1.3 does**, 621 to 640 px) | Medium | Low | Fixed; a 26-width sweep is now part of testing | Closed (TC-E01) |
+
+## 6. Rollback
+
+```bash
+# rulesets first (if publishing or sync is ever blocked):
+gh api repos/debasisr66/studio/rulesets --jq '.[]|"\(.id) \(.name)"'
+gh api -X DELETE repos/debasisr66/studio/rulesets/<id>
+
+# then the release itself:
+git revert -m 1 <v1.4-merge-commit> && git push
+```
+
+No data migration: a v1.3 page ignores `content/profile.jpg` and the new files.
 
 ---
 

@@ -260,6 +260,11 @@ gh run list --status failure --limit 10     # what is red right now?
 | `index.html: style= attribute found` or `generates a style attribute` | The strict CSP forbids inline styles | Use a class in `css/site.css`, or `data-*` plus `element.style.setProperty` |
 | `changelog.json[0]: items must be plain text (no markup)` | Release notes contain `<` or `>` | Rewrite as plain text |
 | Admin asks for the token again | The token lives in the tab only | Expected: unlock again after closing the tab, in a new tab, or after 30 minutes idle |
+| `That file isn't a usable image` / `Choose a PNG, JPEG or WebP image up to 10 MB` | The chosen file was refused (SVG, GIF, corrupt, too small, too big) | Pick a normal photo (PNG, JPEG, WebP) of at least 128 px |
+| `content/profile.jpg: is not a valid JPEG` in CI | A non-JPEG was committed under that name | Re-upload through the admin screen |
+| `… is not pinned by a 40-character commit hash` | A workflow uses an action by tag | Pin it by hash (copy the commit of the release) |
+| `workflow "…" is disabled_inactivity` | GitHub switched a scheduled workflow off | `gh workflow enable "<name>"`, then check the keep-alive |
+| Publish fails with a protected-branch or required-status-check message | A ruleset is blocking a direct commit | `build.md` §16: list the rulesets and delete the CI one, then investigate |
 
 **Two things that surprise people**
 1. The sync bot's commits do not start CI (GitHub does not run workflows from `GITHUB_TOKEN` pushes). The daily health check covers them.
@@ -285,6 +290,56 @@ If you forget step 1 nothing breaks; visitors just keep seeing the previous vers
 **Why the strict style rules matter.** The page's CSP no longer allows any inline style. If you add a `style="…"` attribute or a `<style>` block, CI fails with a message telling you to use a class in `css/site.css`. For a value that must be computed at runtime, put it in a `data-` attribute and apply it with `element.style.setProperty(...)` (see `paint()` in `js/app.js`).
 
 **A refactor needs proof, not eyeballing.** For the v1.3 stylesheet move, a harness compared computed styles of every element against the previous release at three widths in two themes (see `build.md` §13). It reported 0 differences for the move itself, and the test was only trusted after it was shown to catch a deliberate 1 px change.
+
+## Step 14 — Fonts and third parties (v1.4)
+
+The page no longer loads anything from another site. Fonts live in `fonts/` and are declared in `css/site.css`.
+
+- **Why:** privacy (Google no longer sees visits), resilience (no outside dependency) and a stricter security policy (`style-src` and `font-src` are `'self'` only).
+- **The lesson from testing:** the first self-hosted attempt included only the Latin subset. A comparison against the previous release found a difference in Penny's release notes: the **rupee sign (₹)** is in the *Latin Extended* subset, so the browser used another font for it. Both subsets are now hosted, and CI refuses a build whose Inter faces do not cover U+20B9.
+- **To change a font:** replace the file in `fonts/`, keep its licence file, run `node scripts/validate-site.js`, and compare the page against the previous release (see `build.md` §13).
+- **Messages you may see:** `CSP style-src allows third-party sources` (someone added a host), `references an external resource` (a link or script from another site), `no licence file` (a font without its licence), `do not cover U+20B9` (Extended subset missing).
+
+## Step 15 — Profile photo (v1.4)
+
+1. Unlock admin (Step 11). A **Change photo** button appears beside "Studio by Debasis Ray".
+2. Choose a PNG, JPEG or WebP image (up to 10 MB). SVG and GIF are refused on purpose.
+3. A preview shows the round crop. The note says it will be public and that location and camera details are removed. Click **Use this photo**.
+4. Click **Publish changes**. Two commits are made: the photo, then the manifest that shows it.
+5. Visitors see it as soon as GitHub Pages rebuilds (a minute or two). Until a photo exists the page shows a monogram.
+
+What the browser does to the file: decodes it, crops a centred square, scales to 512 × 512, and re-encodes it as a JPEG of at most 150 KB. Re-encoding drops all metadata, including GPS. The manifest (`content/profile.json`) carries a timestamp that is part of the photo's address, so a replaced photo is never served stale.
+
+To remove the photo: set `content/profile.json` to `{"photo": null, "updated": null}`. The old image stays in git history, so do not publish a photo you would not want to remain visible there.
+
+## Step 16 — Releasing through a pull request, and the branch rulesets (v1.4)
+
+From v1.4 a release is a pull request, so CI runs before the change reaches `main`.
+
+```bash
+git push -u origin release/vX.Y
+gh pr create --base main --head release/vX.Y --title "vX.Y: summary" --body "…"
+gh pr checks --watch
+gh pr merge --merge --delete-branch
+git checkout main && git pull --rebase
+git tag vX.Y && git push origin refs/tags/vX.Y
+```
+
+Two rulesets protect `main` (files in `docs/rulesets/`):
+
+| Ruleset | Effect | Who can bypass |
+|---------|--------|----------------|
+| **History** | Nobody can force-push or delete `main` | Nobody |
+| **CI required** | A change must pass the `check` job | The repository admin (the owner's token, so the admin screen can publish) and the GitHub Actions app (the sync and keep-alive bots) |
+
+**The honest limit:** because the owner can bypass the CI ruleset, CI is a guard rail for the normal path and for any collaborator, not a lock the owner cannot open. The alternative would stop the admin screen from publishing. If publishing or the sync ever fails with a "protected branch" or "required status check" message, list the rulesets and delete the CI one (`build.md` §16).
+
+## Step 17 — Scheduled work, keep-alive and delays (v1.4)
+
+- **Scheduled runs start late.** The 03:00 UTC sync has run between 07:26 and 08:24 UTC on every day so far. Treat cron times as approximate. The health check therefore runs at 12:00 UTC.
+- **GitHub switches scheduled workflows off after 60 days without repository activity.** The weekly keep-alive adds one empty commit to `main` only when `main` has had no commit for 30 days. You will rarely see it (the sync, the admin screen and your own changes are commits too).
+- **Check by hand:** `gh workflow list --all` (a stopped one shows `disabled_inactivity`), `gh workflow run keepalive.yml -f dry_run=true`. The health check also fails and names any workflow that is not active.
+- **Pinned actions:** workflows refer to actions by commit hash with the version in a comment. Dependabot opens a weekly pull request when a new version exists; CI checks it like any other change.
 
 ## Command cheat sheet
 
