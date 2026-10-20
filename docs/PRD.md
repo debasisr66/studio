@@ -234,18 +234,122 @@ Shape:
 - `scripts/health-check.js` verifies that the live site and cache remain coherent.
 - GitHub Actions CI runs tests and validation on pushes and pull requests.
 
-## 13. Acceptance criteria
+## 13. Release criteria
 
-### Release-ready criteria
-- A product can be added by editing `content/products.json` and running the sync script.
-- Studio displays at least the product name, description, language, stars, and latest release info.
-- The release feed updates automatically from GitHub releases.
-- The site continues to render even when one product or API call fails.
-- Blog and reads content can be published by the owner with admin credentials.
-- The site remains secure under the strict CSP and asset-policy constraints.
-- CI and health checks continue to pass for normal changes.
+Studio is release-ready when all of the following are true:
 
-## 14. Risks and trade-offs
+1. Product onboarding is operational
+   - A new product can be added by editing `content/products.json`.
+   - The sync script can successfully populate the cache without manual correction.
+   - Product cards render with sensible fallbacks for missing metadata.
+
+2. Data freshness is reliable
+   - The sync job completes on schedule or on demand.
+   - Release data and repo metadata are updated without stale or broken output.
+   - A repo failure does not break the entire site or erase previous valid data.
+
+3. Content publishing works for the owner
+   - Blog and reads entries can be created, edited, and deleted through the admin flow.
+   - Publishing preserves content validity and avoids accidental overwrites.
+   - Changes are traceable through commit history.
+
+4. Safety checks are active and enforced
+   - CI validation and health checks complete successfully for routine changes.
+   - The site remains secure under the strict CSP and asset constraints.
+   - The admin token remains browser-scoped and expires or clears as expected.
+
+5. User experience is stable and comprehensible
+   - The site loads cleanly on desktop and mobile.
+   - Product cards, release feed, and reads/blog sections are visible and usable.
+   - Failure states are human-readable and non-blocking.
+
+6. Operational discipline is documented
+   - Sync, token rotation, and recovery steps are documented.
+   - The repository owner can identify the source of an operational issue without ad hoc debugging.
+
+## 14. Security requirements and controls
+
+### 14.1 Threat model
+Studio is a static site with minimal attack surface, but the following risks matter:
+
+- malicious or invalid content being published through the admin flow
+- token theft or token persistence in browser storage
+- unsafe external URLs or content injection through frontend rendering
+- stale or corrupted cache data affecting product presentation
+- accidental writes to product repos or repository history from the hub
+
+### 14.2 Security controls
+- Strict CSP: `default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'none'; form-action 'none'`
+- No inline scripts or inline styles
+- No external trackers or analytics scripts
+- Self-hosted fonts and assets only
+- All user-visible text is HTML-escaped before rendering
+- URL validation allows only `http` and `https` inputs
+- Content schemas are validated before JSON is written or published
+- The sync workflow reads only public product repos; it never writes to them
+- Admin token is checked against the authenticated GitHub user and must match the owner account
+- Token lifetime is scoped to the browser tab/session and cleared on logout or idle timeout
+- Files are updated using a GET-SHA-before-PUT pattern to reduce overwrite risk
+
+### 14.3 Security acceptance bar
+The product should not be considered ready for broader public use until:
+- the owner knows how to rotate the PAT and clear session data
+- validation and health checks fail on invalid content or unsafe changes
+- no remote script or tracker is present in the deployed site
+- the sync workflow remains read-only with respect to product repos
+
+## 15. Success metrics
+
+Success should be measured in both product and operational terms.
+
+### 15.1 User-facing success metrics
+- Product portfolio is discoverable without needing manual navigation or custom tooling
+- Visitors can understand what the owner builds within seconds of landing on the site
+- Release notes and download actions are visible and current for each listed product
+- Blog and reading content remain easy to browse and share
+
+### 15.2 Operational success metrics
+- New product additions take less than one session to complete without engineering help
+- Sync runs complete successfully on schedule or on demand
+- Broken product repos do not impact the rest of the site
+- CI and health check runs remain green after routine changes
+- Content publication errors are caught before data is committed or rendered
+
+### 15.3 Target thresholds
+These thresholds are intentionally modest and practical for a personal product studio:
+- 100% of listed products render a valid card with either live or fallback metadata
+- 100% of sync runs either succeed or fail safely without deleting prior cache data
+- 0 known security policy violations in the deployed site
+- 0 published admin edits that break JSON shape or site rendering
+- 0 product repo writes triggered by the Studio sync job
+
+## 16. Tentative roadmap
+
+### Phase 1: Stabilize the core hub
+- Finalize the product registry and cache contract
+- Improve fallback behavior for missing repo metadata
+- Tighten validation for release assets and changelog presentation
+- Document owner operations: add product, rotate PAT, fix sync issues
+
+### Phase 2: Strengthen product trust and reliability
+- Expand automated checks for schema quality and safe URLs
+- Improve health-check coverage for cache freshness and release parity
+- Add better recovery guidance for failed syncs and stale data
+- Review whether branch protection or required CI should be enforced for this repo
+
+### Phase 3: Editorial and discoverability improvements
+- Add richer blog and reads UX without increasing complexity
+- Improve filtering, search, and shared-link experiences for reads
+- Add lightweight metadata curation for product categories and featured items
+- Review content strategy and presentation for visitor clarity
+
+### Phase 4: Expand the studio as a durable personal platform
+- Add a clearer content roadmap and editorial cadence
+- Evaluate whether additional product categories or collections make sense
+- Consider a more formal release policy for Studio itself
+- Decide whether Studio should remain a highly disciplined static site or grow into a broader portfolio tool
+
+## 17. Risks and trade-offs
 
 ### Risks
 - GitHub Actions scheduled runs can be delayed, so the nightly sync may not align with expected timing.
@@ -258,30 +362,24 @@ Shape:
 - Read-only integration from product repos reduces automation risk but requires disciplined operational practices.
 - One personal admin token in the browser keeps the site simple but makes token handling a product concern.
 
-## 15. Success metrics
-
-- New product entries can be added without custom engineering work.
-- Product information remains current without manual, repetitive updates.
-- Release notes appear promptly after product releases.
-- No major broken site states occur during sync or content publication.
-- Site remains fast, static, and privacy-safe.
-
-## 16. Open questions
+## 18. Open questions
 
 - Should Studio eventually support additional curated content types beyond blog and reads?
 - Does the owner want a more formal branch protection / required CI strategy beyond alerts and validation?
 - Would a more explicit public roadmap improve discoverability and trust for visitors?
 - Should there be stronger product-level release governance, such as required release metadata or quality checks for listed repos?
+- Should the owner add a formal editorial review step for blog and reading content before publication?
 
-## 17. Recommended next steps
+## 19. Recommended next steps
 
 1. Define a clearer product roadmap by theme (products, writing, updates, reading list).
 2. Confirm the public contract for registry and release metadata handling.
 3. Review which acceptance checks should become enforced by branch protection versus advisory CI.
 4. Document the operational runbook for token rotation, sync failures, and manual recovery.
 5. Add a concise maintainer guide for adding or retiring products from the registry.
+6. Formalize the owner’s security checklist for PAT rotation, content validation, and safe deployment changes.
 
-## 18. Appendix: repository evidence used in this PRD
+## 20. Appendix: repository evidence used in this PRD
 
 This PRD is based on the repository’s current docs and implementation, including:
 
@@ -295,8 +393,7 @@ This PRD is based on the repository’s current docs and implementation, includi
 
 These sources confirm the product’s current direction: a static, GitHub-first, content-driven studio hub that prioritizes simplicity, security, privacy, and automation over a traditional backend or complex CMS.
 
-## 19. Short product statement
+## 21. Short product statement
 
 Studio is a lightweight, privacy-first product studio hub that presents a portfolio of projects, keeps release information current automatically, and provides a small editorial layer for writing and reading content, all without a backend or external tracking.
-
 
