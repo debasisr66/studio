@@ -58,7 +58,7 @@ impact (done) → **plan (this document)** → design → build → test → sec
 | 5 | Test: unit, visual diff, browser flows, regression | All pass; results in `test.md` | ✅ 102 unit tests; 24-case comparison; 26-width sweep; photo flows |
 | 6 | Security checks (`security.md`) | No open High findings | ✅ 15 checks pass, S-30 (rulesets) pending until applied |
 | 7 | Update artefacts and changelog | Consistent | ✅ |
-| 8 | Open the pull request; CI green; **owner approves**; merge; Pages, health and sync dry run green | Live smoke checklist | ⏳ 🔒 |
+| 8 | Open the pull request; CI green; **owner approves**; merge; Pages, health and sync dry run green | Live smoke checklist | pull request #1 open, CI green; ⏳ 🔒 approval and merge |
 | 9 | Apply the rulesets; test them (forced keep-alive commit as Actions, direct admin push, force-push rejected, a deliberately failing PR); tag `v1.4` | Rollback tested in principle, command recorded | ⏳ |
 | 10 | Owner: upload a real photo, publish, verify | Commit and live check | ⏳ 🔒 |
 

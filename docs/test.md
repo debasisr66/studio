@@ -37,7 +37,7 @@ Date: 2026-10-20 · Environment: macOS, Node v25.2.1, Claude desktop browser pan
 | REQ-35 | TC-V25–V27 | ✅ |
 | REQ-36 | TC-K20–K23 | ✅ |
 | REQ-37 | TC-A01–A08, TC-A09; **TC-A10** | ✅ logic and dry runs; ⏳ forced run on GitHub |
-| REQ-38 | TC-W10–W13, TC-W14; **TC-W15** | ✅ rule and YAML; ⏳ CI on the pull request |
+| REQ-38 | TC-W10–W14, TC-W15 | ✅ |
 | REQ-39 | TC-H10–H12; **TC-H13** | ✅ logic; ⏳ runs on GitHub |
 | REQ-40 | TC-E01 | ✅ |
 | REQ-41 | **TC-B01–B06** | ⏳ after merge |
@@ -113,6 +113,7 @@ Date: 2026-10-20 · Environment: macOS, Node v25.2.1, Claude desktop browser pan
 | TC-W11 | Every workflow declares top-level permissions | ✅ |
 | TC-W12 | `contents: write` only in the sync and keep-alive workflows; `write-all` and other write scopes rejected | ✅ |
 | TC-W13 | The rule flagged exactly the 5 unpinned lines in the real workflows before pinning, and passes after | ✅ |
+| TC-W15 | CI on pull request #1 (the first release through a pull request): job `check` succeeded on GitHub (Node 22, pinned `checkout` and `setup-node`, 102 tests and the validator); merge state clean | ✅ |
 | TC-W14 | Both pinned hashes verified to be the commits of `v4.4.0` (and of the `v4` tag); all five workflow files and the Dependabot file parse as valid YAML; `sync.yml` differs only by the pinned hash | ✅ |
 | TC-H10 | Health logic: all workflows active is clean; every non-active workflow is named with its state; missing or odd input tolerated | ✅ |
 | TC-H11 | Health schedule moved to 12:00 UTC after observing scheduled runs start 4–5 hours late (03:00 cron ran at 07:26–08:24 UTC); `actions: read` added | ✅ |
@@ -161,7 +162,6 @@ See [security.md](security.md) (v1.4 review log): 18 checks, no open High or Cri
 
 | ID | Test | Why pending |
 |----|------|-------------|
-| TC-W15 | CI run on the pull request is green | Needs the branch pushed and the pull request opened |
 | TC-H13 | Health check run on GitHub (manual, then the first 12:00 UTC scheduled run) | After merge |
 | TC-A10 | Keep-alive: forced run on GitHub adds one empty commit as the Actions bot; a dry run adds none | After merge |
 | TC-B01–B06 | Rulesets: (1) a pull request with green CI merges; (2) a pull request with failing CI is blocked; (3) direct commit as admin works (the admin screen's path); (4) the keep-alive's commit as the Actions app works under the rulesets; (5) force-push to `main` is rejected; (6) deleting `main` is rejected | Applied only after merge; results recorded in this file |
