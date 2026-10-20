@@ -166,6 +166,7 @@ See [security.md](security.md) (v1.4 review log): 18 checks, no open High or Cri
 | TC-H13 | Health check run on GitHub against the v1.4 site: HEALTHY (covers the new files and workflow states) | ✅ run 39384909054 |
 | (sync) | Sync dry run on GitHub with the pinned checkout: both products fetched, "No changes" | ✅ run 39384913785 (X6 closed) |
 | TC-A10 | Keep-alive: dry run says "no heartbeat needed"; **forced run under the final configuration made exactly one empty commit as `github-actions[bot]` (`c580840`, zero files changed)**, run green | ✅ |
+| TC-M08 | **The owner's own admin-screen publish after the final ruleset configuration**: commit `a1210fa` "cms: update reading list" (12:53 IST, one file, a third read added) was accepted straight onto `main`; CI ran green on it; the validator passes with the new read | ✅ real-world proof of the admin path under the history ruleset |
 | TC-W16 | Dependabot opened PRs #2 and #3 at once (setup-node 7.1.0, checkout 7.0.1), keeping hash pins with the version in the comment; CI passed on both; the real sync, keep-alive and health workflows ran **green in dry-run mode on both branches** | ✅ (left open for the owner: major version jumps) |
 
 ### Branch protection experiment (REQ-41)
@@ -180,7 +181,7 @@ Carried out live on 2026-10-20 with immediate rollback available. Run IDs and me
 | TC-B04 | Same temporary ruleset: a pull request with deliberately failing CI shows merge state BLOCKED; `gh pr merge` without `--admin` is **refused** ("the base branch policy prohibits the merge"). PR closed unmerged, branch deleted | ✅ (shows what the ruleset would give for PRs) |
 | TC-B05 | Same temporary ruleset: owner's direct push to `main` is **accepted** with GitHub reporting the bypassed rule (`84b1dd2..6c1173e`), the path the admin screen uses | ✅ |
 | TC-B06 | History rules on a **throwaway branch** (identical rules): a normal push works; amending and force-pushing is rejected ("Cannot force-push to this branch"); deleting the branch is rejected ("Cannot delete this branch"). Throwaway ruleset and branch removed | ✅ |
-| TC-B07 | Final configuration: only the history ruleset exists; bot path re-tested OK (TC-A10); admin path unchanged | ✅ |
+| TC-B07 | Final configuration: only the history ruleset exists; bot path re-tested OK (TC-A10); admin path confirmed by the owner's real publish (TC-M08) | ✅ |
 
 **Conclusion:** a required-CI ruleset cannot coexist with the bots on a personal repository, so it is not applied; history protection is. See `docs/design.md` §11.4 and `docs/rulesets/README.md`.
 
