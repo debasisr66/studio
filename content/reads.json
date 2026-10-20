@@ -1,5 +1,12 @@
 {
-  "books": [],
+  "books": [
+    {
+      "title": "AI Engineering: Building Applications with Foundation Models (Full Colour Indian Edition)",
+      "author": "by Chip Huyen (Author)",
+      "year": "2024-25",
+      "note": "It is a great book. It would give clarity. Of course after this industry and tech changed a lot, but fundamentals count. \nhttps://www.amazon.in/AI-Engineering-Building-Applications-Foundation/dp/9355426666"
+    }
+  ],
   "articles": [
     {
       "id": 1792477883409,
