@@ -239,18 +239,18 @@ GH_TOKEN=$(gh auth token) node scripts/health-check.js    # live site + cache ve
 **On GitHub**
 ```bash
 gh workflow run ci.yml               # CI also runs by itself on every push and pull request
-gh workflow run health.yml           # also runs daily at 06:00 UTC
+gh workflow run health.yml           # also runs daily at 12:00 UTC
 gh run list --workflow ci.yml --limit 3
 gh run list --status failure --limit 10     # what is red right now?
 ```
 
 **Make failures reach you.** GitHub → Settings → Notifications → **Actions** → "Send notifications for failed workflows only" (email and/or web). If you skip this, a red run only shows in the Actions tab.
 
-**Reading a failure**
+**Reading a failure** (the full symptom → fix list is in [RUNBOOK.md](RUNBOOK.md))
 
 | Message | Meaning | Fix |
 |---------|---------|-----|
-| `reads.json articles[3]: url must be a safe http(s) address` | A read has a bad or unsafe link | Edit it in admin (⚙ → Edit) and publish |
+| `reads.json articles[3]: url must be a clean http(s) address …` | A read has a bad, unsafe or oddly spaced link | Edit it in admin (⚙ → Edit) and publish |
 | `blog.json: … is not valid JSON` | A content file was hand-edited badly | `git revert` that commit |
 | `index.html: inline <script> found` | A script was put back into the page | Move it into `js/` (the CSP blocks inline scripts) |
 | `index.html: CSP script-src must not allow 'unsafe-inline'` | CSP was loosened | Restore the strict policy |

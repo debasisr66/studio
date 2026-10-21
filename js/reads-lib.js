@@ -33,6 +33,20 @@
     return out.replace(/\?$/, '');
   }
 
+  /* Strict check for a URL that is stored or published (CI and the admin screen): http(s) only, no whitespace or control
+     characters anywhere (new URL() would silently trim or strip them), no credentials, a host, within the length limit.
+     Unlike normalizeUrl it never repairs its input; it only says yes or no. */
+  function isPublishableUrl(input) {
+    if (typeof input !== 'string' || !input || input.length > LIMITS.url) return false;
+    if (/[\u0000-\u0020\u007f-\u009f]/.test(input)) return false;
+    if (!/^https?:\/\/[^\/?#\\]/i.test(input)) return false;   // the host must be written out (new URL() reads https:///x as host "x")
+    var u;
+    try { u = new URL(input); } catch (e) { return false; }
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
+    if (u.username || u.password) return false;
+    return !!u.hostname;
+  }
+
   function domainOf(url) {
     var n = normalizeUrl(url);
     if (!n) return null;
@@ -141,7 +155,7 @@
     return t.toLocaleDateString('en-GB', o);
   }
 
-  return { KINDS: KINDS, pickAsset: pickAsset, formatDate: formatDate, LIMITS: LIMITS, normalizeUrl: normalizeUrl, domainOf: domainOf, isDuplicate: isDuplicate,
+  return { KINDS: KINDS, pickAsset: pickAsset, formatDate: formatDate, LIMITS: LIMITS, normalizeUrl: normalizeUrl, isPublishableUrl: isPublishableUrl, domainOf: domainOf, isDuplicate: isDuplicate,
     parseTags: parseTags, validateEntry: validateEntry, shareLinks: shareLinks, entryView: entryView,
     filterReads: filterReads, allTags: allTags };
 });

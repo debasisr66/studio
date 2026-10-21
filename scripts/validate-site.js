@@ -13,7 +13,10 @@ const REPO_RE = /^[\w.-]+\/[\w.-]+$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const isObj = v => v && typeof v === 'object' && !Array.isArray(v);
 const isStr = v => typeof v === 'string';
-const httpUrl = u => { try { const x = new URL(u); return x.protocol === 'http:' || x.protocol === 'https:'; } catch { return false; } };
+const httpUrl = RL.isPublishableUrl;   // strict rule, one source (TR-01): http(s) only, no whitespace/control characters, no credentials, <= 2048 chars
+const URL_HINT = 'a clean http(s) address (no spaces, control characters or login details)';
+const ISO_UTC_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
+const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
 
 // size budgets in bytes: generous versus today's sizes, tight enough to catch accidental bloat
 const BUDGETS = { 'index.html': 60 * 1024, 'css/site.css': 30 * 1024, 'js/app.js': 80 * 1024, 'js/reads-lib.js': 20 * 1024, 'js/token-store.js': 10 * 1024, 'js/image-lib.js': 10 * 1024, total: 150 * 1024 };
@@ -29,26 +32,30 @@ function validateProducts(list) {
     else seen.add(p.repo.toLowerCase());
     for (const k of ['slug', 'name', 'tagline', 'category', 'download_asset']) if (p[k] !== undefined && !isStr(p[k])) errors.push(`${at}: ${k} must be a string`);
     for (const k of ['featured', 'hidden']) if (p[k] !== undefined && typeof p[k] !== 'boolean') errors.push(`${at}: ${k} must be true or false`);
-    if (p.url !== undefined && !(isStr(p.url) && httpUrl(p.url))) errors.push(`${at}: url must be an http(s) address`);
+    if (p.url !== undefined && !(isStr(p.url) && httpUrl(p.url))) errors.push(`${at}: url must be ${URL_HINT}`);
   });
   return errors;
 }
 
-function validateCache(cache, registry) {
+function validateCache(cache, registry, now = Date.now()) {
   const errors = [], warnings = [];
   if (!isObj(cache) || !isObj(cache.products)) return { errors: ['cache.json: needs a products object'], warnings };
+  if (!isStr(cache.synced_at) || !ISO_UTC_RE.test(cache.synced_at) || isNaN(Date.parse(cache.synced_at))) errors.push('cache.json: synced_at is required and must be an ISO-8601 UTC time (like 2026-10-21T03:00:00Z)');
+  else if (Date.parse(cache.synced_at) > now + FUTURE_TOLERANCE_MS) errors.push(`cache.json: synced_at (${cache.synced_at}) is in the future`);
+  const visible = new Set(Array.isArray(registry) ? registry.filter(p => p && p.repo && !p.hidden).map(p => p.repo) : []);
   for (const [repo, c] of Object.entries(cache.products)) {
     const at = `cache.json[${repo}]`;
     if (!isObj(c)) { errors.push(`${at}: must be an object`); continue; }
-    if (typeof c.stars !== 'number') errors.push(`${at}: stars must be a number`);
-    if (c.html_url !== undefined && !httpUrl(c.html_url)) errors.push(`${at}: html_url must be an http(s) address`);
+    if (!Number.isInteger(c.stars) || c.stars < 0) errors.push(`${at}: stars must be a whole number, 0 or more`);
+    if (Array.isArray(registry) && !visible.has(repo)) warnings.push(`${at}: cached repo is hidden or not in the registry (remove it from cache.json when convenient)`);
+    if (c.html_url !== undefined && !httpUrl(c.html_url)) errors.push(`${at}: html_url must be ${URL_HINT}`);
     const r = c.latest_release;
     if (r !== null && r !== undefined) {
       if (!isObj(r)) { errors.push(`${at}: latest_release must be an object or null`); continue; }
       if (!isStr(r.tag) || !r.tag) errors.push(`${at}: latest_release.tag is required`);
-      if (!httpUrl(r.download_url)) errors.push(`${at}: latest_release.download_url must be an http(s) address`);
+      if (!httpUrl(r.download_url)) errors.push(`${at}: latest_release.download_url must be ${URL_HINT}`);
       if (!Array.isArray(r.assets)) errors.push(`${at}: latest_release.assets must be an array`);
-      else r.assets.forEach((a, i) => { if (!isObj(a) || !isStr(a.name) || !httpUrl(a.download_url)) errors.push(`${at}: assets[${i}] needs a name and an http(s) download_url`); });
+      else r.assets.forEach((a, i) => { if (!isObj(a) || !isStr(a.name) || !httpUrl(a.download_url)) errors.push(`${at}: assets[${i}] needs a name and a download_url that is ${URL_HINT}`); });
     }
   }
   if (Array.isArray(registry)) registry.filter(p => p && p.repo && !p.hidden && !cache.products[p.repo])
@@ -65,7 +72,7 @@ function validateBlog(blog) {
     if (!DATE_RE.test(String(p.date))) errors.push(`${at}: date must be YYYY-MM-DD`);
     if (!isStr(p.title) || !p.title.trim()) errors.push(`${at}: title is required`);
     if (!isStr(p.body) || !p.body.trim()) errors.push(`${at}: body is required`);
-    if (p.link && !(isStr(p.link) && httpUrl(p.link))) errors.push(`${at}: link must be an http(s) address`);
+    if (p.link && !(isStr(p.link) && httpUrl(p.link))) errors.push(`${at}: link must be ${URL_HINT}`);
   });
   return errors;
 }
@@ -80,7 +87,7 @@ function validateReads(reads) {
     if (!isObj(a)) return errors.push(`${at}: must be an object`);
     if (!isStr(a.title) || !a.title.trim()) errors.push(`${at}: title is required`);
     const clean = isStr(a.url) ? RL.normalizeUrl(a.url) : null;
-    if (!clean) errors.push(`${at}: url must be a safe http(s) address`);
+    if (!clean || !httpUrl(a.url)) errors.push(`${at}: url must be ${URL_HINT}`);
     else { const k = RL.domainOf(clean) + new URL(clean).pathname.replace(/\/+$/, ''); if (urls.has(k)) warnings.push(`${at}: same link as an earlier read`); urls.add(k); }
     if (a.kind !== undefined && !RL.KINDS.includes(a.kind)) errors.push(`${at}: kind must be one of ${RL.KINDS.join(', ')}`);
     if (a.tags !== undefined && (!Array.isArray(a.tags) || a.tags.length > RL.LIMITS.tags || a.tags.some(t => !isStr(t)))) errors.push(`${at}: tags must be an array of at most ${RL.LIMITS.tags} strings`);

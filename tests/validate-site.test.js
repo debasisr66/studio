@@ -28,14 +28,14 @@ test('cache: valid cache passes; null release allowed', () => {
 test('cache: catches missing products object, bad release shape, unsafe download url', () => {
   assert.ok(V.validateCache({}, []).errors.length);
   const bad = cacheEntry({ latest_release: { tag: '', download_url: 'javascript:x', assets: 'no' } });
-  const r = V.validateCache({ products: { 'debasisr66/App': bad } }, [product()]);
+  const r = V.validateCache({ synced_at: '2026-10-19T00:00:00Z', products: { 'debasisr66/App': bad } }, [product()]);
   assert.ok(r.errors.some(e => /tag/.test(e)));
   assert.ok(r.errors.some(e => /download_url/.test(e)));
   assert.ok(r.errors.some(e => /assets/.test(e)));
 });
 
 test('cache: warns (does not fail) for a registry product that is not cached yet', () => {
-  const r = V.validateCache({ products: {} }, [product()]);
+  const r = V.validateCache({ synced_at: '2026-10-19T00:00:00Z', products: {} }, [product()], Date.parse('2026-10-20T00:00:00Z'));
   assert.deepEqual(r.errors, []);
   assert.equal(r.warnings.length, 1);
 });

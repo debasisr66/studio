@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-TR` (requirements `TR-01` … `TR-13`) |
-| Status | **Approved for review (PR open); no implementation started** |
+| Status | **Approved; **Phase A in progress** (B and C not started)** |
 | Owner | Debasis Ray |
 | Created | 2026-10-21 |
 | Parent | [PRD](../../PRD.md) §9.2, §9.6, §10.2, §13 (items 2 and 6), §15.3, Roadmap Phase 2 |
@@ -238,3 +238,4 @@ On release, the matching `REQ-44…` rows are added to `docs/test.md`, `docs/sec
 - 2026-10-21: First draft (generic) created.
 - 2026-10-21: Revised against the code: findings F1-F10, requirement IDs, traceability, decision record for G4. 
 - 2026-10-21: Owner accepted recommendations: Q1 = 48 h, Q2 = red after committing good products. Spec submitted as a pull request for review.
+- 2026-10-21: Spec PR #6 merged. Phase A built test-first on `spec-tr/phase-a`: TR-01 (`isPublishableUrl`, one source in `js/reads-lib.js`), TR-02 (cache envelope), TR-09 (`docs/RUNBOOK.md`), TR-11 (decision record), TR-13 checks. 116 tests pass; real content passes with no new warning.
