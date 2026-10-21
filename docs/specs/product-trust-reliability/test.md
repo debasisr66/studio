@@ -94,7 +94,7 @@ Pure decision logic is unit-tested; the workflow behaviour is proven by a drill 
 | TC-TR-N01 | Existing 102 tests plus new tests pass; CI green on the pull request | ⬜ |
 | TC-TR-N02 | `git diff main -- .github` shows only intended edits; no new `permissions`, secrets or unpinned actions (CI rule already enforces pins) | ✅ |
 | TC-TR-N03 | Browser smoke at 375 and 1280 px: valid data renders; missing release, missing product entry and a stale cache still render with fallbacks; no console or CSP errors | ⬜ |
-| TC-TR-N04 | Admin unlock and publish of a read still works (owner step) | ⬜ |
+| TC-TR-N04 | Admin unlock and publish of a read still works (owner step) | ✅ (owner, 2026-10-21: published a read with the separate `studio-admin` token) |
 | TC-TR-N05 | Existing content passes the stricter validator with no new error (any new warning is listed) | ✅ |
 
 ## Exit criteria
@@ -124,5 +124,5 @@ All P0 rows ✅ (TR-01, 02, 05, 06, 09, 11, 13); P1 rows ✅ or deferred in writ
 - 2026-10-21: Draft created.
 - 2026-10-21: Phase A run: U01-U09, C01-C07, D01/D03/D05/D06, N02, N05 pass. Test U08 caught a real edge (`https:///x` parsed as host `x`); rule fixed. Existing tests that omitted `synced_at` were updated.
 - 2026-10-21: Phase B run: S01-S05 and H01-H03, H05 unit tests pass (12 failed before the code). S06 drill on a throwaway branch with a missing repo: fetch step red, commit step still ran (stale star count 99 → 1 repaired, failed product not added), run red, summary named the repo; branch deleted. Health check ran healthy against the live Actions API.
-- 2026-10-21: Phase C run: R01-R04, X01-X02, D02, H06-H10 pass (7 failed before the code, then 142 total). Negative proofs: a wrong `download_asset` and a missing repo made the live health check red with `Fix:` pointers; removing one fixture made X01/X02 fail. D04: the runbook's dry-run and `gh workflow run sync.yml` were run exactly as written (success). Open: N01 (CI on the PR), N03 and N04 (owner/browser, page code untouched), H04 by inspection.
+- 2026-10-21: Phase C run: R01-R04, X01-X02, D02, H06-H10 pass (7 failed before the code, then 142 total). Negative proofs: a wrong `download_asset` and a missing repo made the live health check red with `Fix:` pointers; removing one fixture made X01/X02 fail. D04: the runbook's dry-run and `gh workflow run sync.yml` were run exactly as written (success). Open: H04 by inspection only. N04 passed (owner published a read); N03 not repeated (page code untouched).
 - 2026-10-21: Rewritten with IDs and cases grounded in findings F1-F10; nothing executed yet.
