@@ -28,7 +28,7 @@ A static GitHub Pages site (no build step, no npm, no frameworks) that showcases
                                                                      ▼
  BROWSER  index.html ── fetches content/{products,cache,blog,reads}.json ── renders
     │
-    └─ Admin (⚙, PAT in localStorage) ── GitHub Contents API ──▶ PUT content/blog.json | reads.json
+    └─ Admin (⚙, PAT in the tab only) ── GitHub Contents API ──▶ PUT content/blog.json | reads.json
 ```
 
 Key property: **data flows one way**. Product repos notify the hub; the hub only *reads* product repos and never writes to them.
