@@ -108,6 +108,7 @@ Every content rule CI enforces, with what to do (each is proven by a failing fix
 | cache.json | `synced_at is required`, `in the future`, `stars must be a whole number`, `latest_release.tag is required` | Restore from the last good commit or re-run the sync |
 | cache.json | `hidden or not in the registry` (warning) | Remove that entry from `content/cache.json` when convenient |
 | blog.json | `date must be YYYY-MM-DD`, `title is required` | Fix the post in admin or the JSON |
+| reads.json | `schema_version must be` | The file's shape version is missing, wrong, or newer than this page. Restore it from the last good commit, or add `"schema_version": 1` as the first key. The admin screen writes it for you on every publish |
 | reads.json | `kind must be one of`, `tags must be an array`, `comment must be text`, `duplicate id` | Edit the read in admin (⚙ → Edit); at most 5 tags, 280-character comment |
 | changelog.json | `version must look like`, `plain text` | Versions like `1.5`; release notes are plain text without `<` or `>` |
 

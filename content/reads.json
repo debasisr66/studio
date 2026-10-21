@@ -1,4 +1,5 @@
 {
+  "schema_version": 1,
   "books": [
     {
       "title": "AI Engineering: Building Applications with Foundation Models (Full Colour Indian Edition)",

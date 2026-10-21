@@ -56,7 +56,7 @@ Reads is one mixed list today. Split it into two sub-items, **Technical** and **
 
 **RC-05 (P0): Migration with no data loss.** One migration commit adds `category` and `schema_version` to `content/reads.json`; proposed classification (owner confirms): all 5 current reads and the 1 book are **technical** (all are AI engineering material). A test proves ids, urls, titles, comments, tags and kinds are unchanged.
 
-**RC-06 (P0): Validation.** CI requires `category` ∈ {technical, other} for every article and book after migration; `schema_version` is required and must be known (SH-04); two rule ids with failing fixtures (`reads-category`, `reads-schema-version`) join `RULES` and the runbook.
+**RC-06 (P0): Validation.** CI requires `category` ∈ {technical, other} for every article and book after migration; `schema_version` is required and must be known (SH-04); the rule `reads-category` joins `RULES`, the runbook and the contract with a failing fixture. The version rule (`reads-schema-version`) and the mechanism already exist from SPEC-SH SH-04 (version `1`); this migration raises the known version to `2` for both the validator and the browser, in the same commit as the data.
 
 **RC-07 (P1): Sharing and counts.** Share on LinkedIn, copy link and native share behave as today, per entry. The count on each switcher button reflects the whole sub-item, not the filtered view.
 

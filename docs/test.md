@@ -4,9 +4,9 @@ Releases: **v2.0 (planned, nothing run)** · **v1.5 (shipped 2026-10-21: SPEC-TR
 
 ---
 
-# v2.0 — Studio 2.0 (in progress: SH Phase A built, rest planned)
+# v2.0 — Studio 2.0 (in progress: SH Phase A merged, SH Phase B built, rest planned)
 
-Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22): **116 new cases**, on top of the existing **142 passing unit tests**. Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12) is run:** see §G.
+Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22): **116 new cases**, on top of the existing **142 passing unit tests**. Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12) and Phase B are run:** see §G and §H.
 
 ## A. Requirements (release level)
 
@@ -29,7 +29,7 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 |-----|-------|--------|
 | REQ-50 | TC-SH-I01–I05, T01–T02 | ✅ (SH Phase A) |
 | REQ-51 | TC-SH-B01–B09 | ✅ B01–B04 · ⬜ B05–B09 (Phase C) |
-| REQ-52 | TC-SH-C01–C03, V01–V04, A01–A03, D01–D02 | ⬜ |
+| REQ-52 | TC-SH-C01–C03, V01–V04, D01–D02 | ✅ (SH Phase B) · ⬜ A01–A03 (Phase C) |
 | REQ-53 | TC-RC-D01–D04, M01–M03, V01–V04, X01 | ⬜ |
 | REQ-54 | TC-RC-U01–U08, L01–L04, E01–E04, S01–S02, B01–B02 | ⬜ |
 | REQ-55 | TC-PC-D01–D03, V01–V07, N01–N02, S01 | ⬜ (S01 owner step 🔒) |
@@ -82,6 +82,20 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | Workflow diff | `ci.yml`: one added step (timeout 2 min); permissions unchanged (`contents: read`) |
 | Regression | Existing smoke B01 on the real content passes; render functions are untouched (diff confined to `boot`, `loadJson`, `renderAll`); products, updates, reads, blog, version, admin gear present |
 | Not done in this phase | Owner admin publish (no publish code changed), visual comparison against frozen v1.5 (render code and CSS unchanged; the smoke test is the check), B05-B09 and the contract, versions and operations work (Phases B and C) |
+
+---
+
+## H. Results: SH Phase B (2026-10-21)
+
+| Check | Result |
+|-------|--------|
+| Unit tests | **164 of 164 pass** (153 + 11 new in `tests/spec-sh-phase-b.test.js`); 8 of the new ones failed first; a spurious pass of the real-file version test was caught and strengthened |
+| Browser smoke | **15 of 15 pass** in 18 s (two new cases: reads without a version renders; reads with a newer version shows the Reads fallback only) |
+| Contract enforcement | CI now fails if a file in `content/` or a rule id is not in `docs/CONTRACT.md` (C01-C03) |
+| Schema version | `reads.json` carries `schema_version: 1`; rule `reads-schema-version` has a fixture and a runbook row (TR-04 guard); the admin publish writes the key through one tested serializer |
+| Operations guide | Add, hide, retire and recategorise a product executed as written; outputs match; docs corrected for one warning |
+| Docs links | A test checks every relative link and heading anchor in README and docs/ |
+| Not done | A stubbed-API test of the admin publish (guard against publishing over a newer file is by code inspection); `podcasts.json` version (arrives with SPEC-PC); Phase C items |
 
 ---
 

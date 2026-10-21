@@ -97,6 +97,8 @@ function validateReads(reads) {
   const errors = [], warnings = [];
   if (!isObj(reads) || !Array.isArray(reads.articles) || !Array.isArray(reads.books))
     return { errors: ['reads.json: needs articles and books arrays'], warnings };
+  if (!Number.isInteger(reads.schema_version) || reads.schema_version !== RL.READS_SCHEMA_VERSION)
+    errors.push(`reads.json: schema_version must be ${RL.READS_SCHEMA_VERSION} (this is the version of the file's shape; got ${JSON.stringify(reads.schema_version)})`);
   const ids = new Set(), urls = new Set();
   reads.articles.forEach((a, i) => {
     const at = `reads.json articles[${i}]`;
@@ -357,6 +359,10 @@ function run() {
   const changelog = json('content/changelog.json');
   if (changelog !== undefined) errors.push(...validateChangelog(changelog));
 
+  if (fs.existsSync(path.join(ROOT, 'docs/CONTRACT.md')))
+    errors.push(...checkContractDoc(read('docs/CONTRACT.md'), fs.readdirSync(path.join(ROOT, 'content')), RULES.map(r => r.id)));
+  else errors.push('docs/CONTRACT.md: missing (SPEC-SH SH-03)');
+
   const html = read('index.html');
   errors.push(...validateIndex(html, ref => fs.existsSync(path.join(ROOT, ref))));
 
@@ -408,6 +414,7 @@ const RULES = [
   { id: 'reads-kind', fn: 'validateReads', level: 'error', match: /kind must be one of/, fix: 'ci-rejects-content', doc: 'kind must be one of' },
   { id: 'reads-tags', fn: 'validateReads', level: 'error', match: /tags must be an array/, fix: 'ci-rejects-content', doc: 'tags must be an array' },
   { id: 'reads-comment', fn: 'validateReads', level: 'error', match: /comment must be text/, fix: 'ci-rejects-content', doc: 'comment must be text' },
+  { id: 'reads-schema-version', fn: 'validateReads', level: 'error', match: /schema_version must be/, fix: 'ci-rejects-content', doc: 'schema_version must be' },
   { id: 'reads-duplicate-id', fn: 'validateReads', level: 'error', match: /duplicate id/, fix: 'ci-rejects-content', doc: 'duplicate id' },
   { id: 'changelog-version', fn: 'validateChangelog', level: 'error', match: /version must look like/, fix: 'ci-rejects-content', doc: 'version must look like' },
   { id: 'changelog-plain-text', fn: 'validateChangelog', level: 'error', match: /plain text/, fix: 'ci-rejects-content', doc: 'plain text' },
@@ -426,9 +433,16 @@ function runRule(rule, fx) {
     default: throw new Error('unknown validator ' + rule.fn);
   }
 }
+/* SH-03: CONTRACT.md must mention every content file and every rule id, so the contract cannot drift from the files and validators. */
+function checkContractDoc(doc, files, ruleIds) {
+  const errors = [];
+  for (const f of files) if (!doc.includes(f)) errors.push(`docs/CONTRACT.md: does not mention content/${f}; document its fields`);
+  for (const id of ruleIds) if (!doc.includes('`' + id + '`')) errors.push(`docs/CONTRACT.md: does not mention the rule \`${id}\`; add it next to its field`);
+  return errors;
+}
 const missingFixtures = (rules, ids) => rules.filter(r => !ids.includes(r.id)).map(r => r.id);
 
-module.exports = { RULES, runRule, missingFixtures, productWarnings, checkWorkflows, validateProfileManifest, validateProfileImage, checkSvg, checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
+module.exports = { RULES, runRule, missingFixtures, checkContractDoc, productWarnings, checkWorkflows, validateProfileManifest, validateProfileImage, checkSvg, checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
 
 if (require.main === module) {
   const { errors, warnings, sizes } = run();

@@ -29,7 +29,7 @@ Spec: [spec.md](spec.md) (`SPEC-RC`). IDs `TC-RC-<group><nn>`. ⬜ not run. Unit
 | TC-RC-M03 | RC-05 | Old (v1.5) code renders migrated data (extra keys ignored) | pass | ⬜ |
 | TC-RC-V01 | RC-06 | Missing category | CI error (`reads-category`) | ⬜ |
 | TC-RC-V02 | RC-06 | Unknown category | CI error | ⬜ |
-| TC-RC-V03 | RC-06 | Missing or unknown `schema_version` | CI error (`reads-schema-version`) | ⬜ |
+| TC-RC-V03 | RC-06 | After the bump: version `1` and a missing version are CI errors; `2` passes (rule `reads-schema-version` exists since SPEC-SH SH-04) | pass | ⬜ |
 | TC-RC-V04 | RC-06 | Both rules have fixtures and runbook rows (TR-04 guard) | pass | ⬜ |
 | TC-RC-S01 | RC-07 | Share, copy, native share unchanged | pass | ⬜ |
 | TC-RC-S02 | RC-07 | Counts stay whole-sub-item while filtering | pass | ⬜ |

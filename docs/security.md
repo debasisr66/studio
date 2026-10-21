@@ -192,7 +192,7 @@ T15 and T16 (visitor usage data and corrupt local data) were dropped on 2026-10-
 | T19 | **Error path injection** (a malformed file puts markup in an exception that is shown) | SH-01 | Fixed fallback text; exception goes to the console only | TC-SH-I03 | ✅ |
 | T20 | **Schema-version bypass** (unknown version silently accepted, or old data mis-read) | SH-04 | Known versions only in CI; runtime defaults documented; failure is a section fallback | TC-SH-V01–V03 | ✅ (SH Phase A) |
 | T21 | **New CI tool risk** (headless Chrome and a local static server on the runner) | SH-02 | Server binds to localhost on a random port for the step only; no secrets in the step; no network egress needed; pinned action versions unchanged | TC-SH-B03, B04; `git diff .github` review | ✅ (SH Phase A) |
-| T22 | **Embedded content creep** (iframes or players for podcasts) | PC-02 | No embeds; CSP `default-src 'none'` and the validator keep third-party hosts out; smoke test asserts no iframe/audio | TC-PC-U07 | ⬜ |
+| T22 | **Embedded content creep** (iframes or players for podcasts) | PC-02 | No embeds; CSP `default-src 'none'` and the validator keep third-party hosts out; smoke test asserts no iframe/audio | TC-PC-U07 | ✅ (SH Phase B, reads) |
 | T23 | **Data loss in migration** | RC-05 | Before/after comparison; additive keys; rollback proof with v1.5 code | TC-RC-M01–M03 | ⬜ |
 | T24 | **Retired blog leaves a dangling path** (old link, stale code with an editor) | PC-05 | Redirect; code removed; archive file unrendered and validated | TC-PC-R01–R04 | ⬜ |
 
@@ -229,3 +229,13 @@ A successful smoke test proves rendering in one browser engine only. CI still ca
 | Token handling | Untouched; smoke injects a clearly fake test token into `sessionStorage` on localhost only to prove admin mode switches on; it is never sent anywhere |
 | Behaviour change to review | `boot()` now tolerates JSON `null` files and never skips `enableAdmin()`; failures are logged to the console only (no remote reporting) |
 | Residual | One browser engine (Chromium) is tested; a hung content file still delays first render by up to 8 s |
+
+### 11.6 SH Phase B results (2026-10-21)
+
+| Check | Result |
+|-------|--------|
+| T20 schema-version bypass | CI accepts only the known version; a browser refuses to show or edit a newer file and the admin publish skips `reads.json` in that state (so a stale page cannot overwrite a newer file); a missing or older version is tolerated with defaults, never a crash |
+| Silent key loss on publish | Found and fixed: the admin built `{books, articles}` by hand; it now uses one tested serializer that always writes the version first |
+| Surface | No new network call, host, storage, secret, dependency or permission; `index.html`, CSP and workflows untouched this phase |
+| Docs as a control | The contract and the runbook can no longer drift silently: CI fails on a missing file, rule id or broken link in the test suite |
+| Residual | The "refuse to publish over a newer file" guard has no stubbed-API test yet (code inspection only) |

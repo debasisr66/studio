@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-SH` (requirements `SH-01` … `SH-08`) |
-| Status | **Approved by the owner (2026-10-21); Phase A built (PR #12), B and C not started** |
+| Status | **Approved by the owner (2026-10-21); Phase A merged (PR #12); Phase B built (this branch); C not started** |
 | Owner | Debasis Ray |
 | Created | 2026-10-21 |
 | Parent | [PRD](../../PRD.md) §9.1, §9.2, §10.2, §11, §13, Roadmap Phase 1 and Phase 2.5; [§22](../../PRD.md) |
@@ -128,3 +128,4 @@ SH Phase A must merge before any RC, PC or UX code.
 - 2026-10-21: Draft created from code findings F1-F7. Awaiting answers to Q1 and approval.
 - 2026-10-21: Approved by the owner with the recommended answers; decisions recorded in section 8-9 above.
 - 2026-10-21: Phase A built on `v2/sh-a` (PR #12): SH-01 (`runGuarded`, fixed fallback line, boot always reaches `enableAdmin`), SH-08 (`fetchJson`, 8 s), SH-02 (`scripts/smoke.js`, 13 cases, CI step, 29 s on the runner). Q1 confirmed by the spike. Also fixed on the way: a content file that is valid JSON `null` used to abort boot before any render (found by the new smoke case, proven failing first).
+- 2026-10-21: Phase A merged (PR #12). Phase B built on `v2/sh-b`: SH-03 (CONTRACT.md enforced by `checkContractDoc` in CI, tests C01-C03), SH-04 (`schema_version` 1 in `reads.json`; rule `reads-schema-version` with fixture and runbook row; browser tolerates missing or older, refuses newer; `RL.serializeReads` so the admin publish keeps the key; `podcasts.json` gets its version with SPEC-PC), SH-07 (OPERATIONS.md: every product procedure executed once and the output recorded). Finding: the admin publish built `{books, articles}` by hand and would have dropped any new key; now one tested serializer.

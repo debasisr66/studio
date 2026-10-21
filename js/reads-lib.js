@@ -33,6 +33,18 @@
     return out.replace(/\?$/, '');
   }
 
+  /* Version of the shape of content/reads.json (SPEC-SH SH-04). The browser tolerates a missing or older version (documented defaults)
+     and refuses only a NEWER one, so it never edits or publishes over a file it does not understand. CI requires the key. */
+  var READS_SCHEMA_VERSION = 1;
+  function isSupportedReadsVersion(v) {
+    return !(typeof v === 'number' && isFinite(v) && Math.floor(v) === v && v > READS_SCHEMA_VERSION);
+  }
+  /* What the admin writes to reads.json: the version first, then the lists. Always the current version, so a publish never drops the key. */
+  function serializeReads(r) {
+    r = r || {};
+    return { schema_version: READS_SCHEMA_VERSION, books: Array.isArray(r.books) ? r.books : [], articles: Array.isArray(r.articles) ? r.articles : [] };
+  }
+
   /* Strict check for a URL that is stored or published (CI and the admin screen): http(s) only, no whitespace or control
      characters anywhere (new URL() would silently trim or strip them), no credentials, a host, within the length limit.
      Unlike normalizeUrl it never repairs its input; it only says yes or no. */
@@ -155,7 +167,7 @@
     return t.toLocaleDateString('en-GB', o);
   }
 
-  return { KINDS: KINDS, pickAsset: pickAsset, formatDate: formatDate, LIMITS: LIMITS, normalizeUrl: normalizeUrl, isPublishableUrl: isPublishableUrl, domainOf: domainOf, isDuplicate: isDuplicate,
+  return { KINDS: KINDS, pickAsset: pickAsset, formatDate: formatDate, LIMITS: LIMITS, normalizeUrl: normalizeUrl, isPublishableUrl: isPublishableUrl, READS_SCHEMA_VERSION: READS_SCHEMA_VERSION, isSupportedReadsVersion: isSupportedReadsVersion, serializeReads: serializeReads, domainOf: domainOf, isDuplicate: isDuplicate,
     parseTags: parseTags, validateEntry: validateEntry, shareLinks: shareLinks, entryView: entryView,
     filterReads: filterReads, allTags: allTags };
 });
