@@ -5,9 +5,9 @@ Last updated: 2026-10-20
 
 ## 1. Product summary
 
-Studio is a static, GitHub-hosted product studio hub for Debasis Ray. It is designed to act as a single front door for a portfolio of projects: showing product cards, recent release notes, a curated reading list, and a lightweight blog, all kept current automatically from product repositories on GitHub.
+Studio is a static, GitHub-hosted product studio hub for Debasis Ray. It is designed to act as a single front door for a portfolio of projects: showing product cards, recent release notes, curated reading and writing content, and a lightweight owner-operated admin layer.
 
-The product is intentionally simple: it avoids a backend, framework, and external dependencies. It runs as a static site on GitHub Pages, reads from GitHub APIs, and relies on a small admin layer to edit content directly in the repository using a GitHub personal access token held only in the browser session.
+The product is intentionally simple: it avoids a backend, framework, and external dependencies. It runs as a static site on GitHub Pages, reads from GitHub APIs, and relies on a small admin layer to publish repo-managed content safely.
 
 ## 2. Problem statement
 
@@ -19,7 +19,7 @@ The owner manages multiple public repositories and wants a single place to:
 - share writing and reading recommendations in the same site
 - maintain privacy and trust by avoiding analytics, trackers, and third-party assets
 
-Before Studio, this information was scattered across repositories, project pages, release notes, and personal content sources. Studio centralizes that experience while preserving a one-way data flow from product repos to the hub.
+Before Studio, this information was scattered across repositories, project pages, release notes, and personal content sources. Studio centralizes that experience while preserving a one-way data flow and static deployment model.
 
 ## 3. Product vision
 
@@ -89,6 +89,7 @@ Needs:
 - Nightly sync and immediate update triggers from product repos
 - Static HTML/CSS/JS architecture on GitHub Pages
 - Validation and health checks
+- Lightweight feature-spec documentation in `docs/specs/`
 
 ### Out of scope for v1
 - Full CMS with role-based permissions
@@ -168,6 +169,13 @@ Needs:
 - Every write should use a GET-SHA-before-PUT pattern to avoid overwriting stale data.
 - The sync job must only read from product repos; it must never write into them.
 
+### 9.7 Feature specs and documentation discipline
+- Studio maintains a lightweight feature-spec workflow in `docs/specs/`.
+- Each feature spec is written before implementation when the change affects behavior, data model, trust, or operational reliability.
+- Specs capture the problem, goal, requirements, acceptance criteria, security considerations, and validation plan.
+- Larger changes may also include feature-level `plan.md`, `design.md`, and `test.md` documents under the same spec folder.
+- Repo-level docs remain the product’s broader history and release record; feature specs are the implementation trace for specific workstreams.
+
 ## 10. Non-functional requirements
 
 ### 10.1 Performance
@@ -233,6 +241,9 @@ Shape:
 - `scripts/validate-site.js` validates JSON, schema, URLs, and CSP-related constraints.
 - `scripts/health-check.js` verifies that the live site and cache remain coherent.
 - GitHub Actions CI runs tests and validation on pushes and pull requests.
+
+### 12.4 Spec-driven delivery
+Studio keeps a lightweight, feature-scoped spec layer in `docs/specs/` to support changes that need clear behavior and acceptance boundaries. This complements the release-level docs and keeps operational decisions easy to trace without creating heavy project overhead.
 
 ## 13. Release criteria
 
@@ -332,6 +343,7 @@ These thresholds are intentionally modest and practical for a personal product s
 - Document owner operations: add product, rotate PAT, fix sync issues
 
 ### Phase 2: Strengthen product trust and reliability
+- Define feature specs for reliability work under `docs/specs/` before implementing schema validation, cache freshness checks, and recovery guidance
 - Expand automated checks for schema quality and safe URLs
 - Improve health-check coverage for cache freshness and release parity
 - Add better recovery guidance for failed syncs and stale data
@@ -391,9 +403,8 @@ This PRD is based on the repository’s current docs and implementation, includi
 - `js/app.js`, `js/reads-lib.js`, `js/token-store.js`, `js/image-lib.js`
 - the project documentation under `docs/`
 
-These sources confirm the product’s current direction: a static, GitHub-first, content-driven studio hub that prioritizes simplicity, security, privacy, and automation over a traditional backend or complex CMS.
+These sources confirm the product’s current direction: a static, GitHub-first, content-driven studio hub that prioritizes simplicity, security, privacy, and automation over a traditional backend-heavy model.
 
 ## 21. Short product statement
 
-Studio is a lightweight, privacy-first product studio hub that presents a portfolio of projects, keeps release information current automatically, and provides a small editorial layer for writing and reading content, all without a backend or external tracking.
-
+Studio is a lightweight, privacy-first product studio hub that presents a portfolio of projects, keeps release information current automatically, and provides a small editorial layer for writing and reading.
