@@ -1,7 +1,8 @@
 # Studio PRD
 
 Status: Draft
-Last updated: 2026-10-20
+Last updated: 2026-10-21
+Specs: see [docs/specs/](specs/README.md) (index and traceability convention)
 
 ## 1. Product summary
 
@@ -175,6 +176,7 @@ Needs:
 - Specs capture the problem, goal, requirements, acceptance criteria, security considerations, and validation plan.
 - Larger changes may also include feature-level `plan.md`, `design.md`, and `test.md` documents under the same spec folder.
 - Repo-level docs remain the product’s broader history and release record; feature specs are the implementation trace for specific workstreams.
+- Every spec requirement has an ID (`TR-01`…), is traced to a PRD section, test cases and release `REQ-nn` rows, and is indexed in [specs/README.md](specs/README.md).
 
 ## 10. Non-functional requirements
 
@@ -343,6 +345,7 @@ These thresholds are intentionally modest and practical for a personal product s
 - Document owner operations: add product, rotate PAT, fix sync issues
 
 ### Phase 2: Strengthen product trust and reliability
+Spec: [SPEC-TR](specs/product-trust-reliability/spec.md) (draft, awaiting approval). Requirements TR-01…TR-13 cover the four items below.
 - Define feature specs for reliability work under `docs/specs/` before implementing schema validation, cache freshness checks, and recovery guidance
 - Expand automated checks for schema quality and safe URLs
 - Improve health-check coverage for cache freshness and release parity
@@ -377,7 +380,7 @@ These thresholds are intentionally modest and practical for a personal product s
 ## 18. Open questions
 
 - Should Studio eventually support additional curated content types beyond blog and reads?
-- Does the owner want a more formal branch protection / required CI strategy beyond alerts and validation?
+- ~~Does the owner want a more formal branch protection / required CI strategy beyond alerts and validation?~~ Answered by the tested decision in [docs/rulesets/README.md](rulesets/README.md): history protected for everyone; CI gating by process, because a CI-required rule blocks the sync and keep-alive bots. The decision record and revisit triggers are TR-11 in the spec.
 - Would a more explicit public roadmap improve discoverability and trust for visitors?
 - Should there be stronger product-level release governance, such as required release metadata or quality checks for listed repos?
 - Should the owner add a formal editorial review step for blog and reading content before publication?
