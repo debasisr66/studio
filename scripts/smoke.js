@@ -175,6 +175,10 @@ const CASES = [
     if (!(await ctx.ev("document.body.classList.contains('admin')"))) f.push('admin mode did not switch on');
     const t = await ctx.ev(text('#articlesFeed')); if (!t || !/Nothing here yet/.test(t)) f.push('Reads did not show its empty state');
     return f; } },
+  { id: 'TC-SH-V03 reads.json without schema_version (an older file) still renders in the browser', width: 1280, fixtures: ['healthy'], noErrors: true, check: ctx => sectionsRendered(ctx) },
+  { id: 'TC-SH-V03 reads.json with a newer schema_version: Reads shows the fallback line, everything else renders', width: 1280, fixtures: ['future-reads-version', 'healthy'], check: async ctx => {
+    const f = []; await isFallback(ctx, '#articlesFeed', 'Reads', f);
+    f.push(...await sectionsRendered(ctx, ['reads'])); await noExceptionText(ctx, f); return f; } },
   { id: 'TC-SH-T01 reads.json never answers: the page still loads (8 s timeout) and the rest renders', width: 1280, fixtures: ['hang-reads', 'healthy'], timeout: 20000, check: async ctx => {
     const f = [...await sectionsRendered(ctx, ['reads'])]; if (ctx.ms > 14000) f.push(`took ${ctx.ms} ms; the timeout should end the wait at about 8 s`); return f; } },
   { id: 'TC-SH-T02 reads.json answers after 2 s: it still renders', width: 1280, fixtures: ['slow-reads', 'healthy'], check: ctx => sectionsRendered(ctx) },

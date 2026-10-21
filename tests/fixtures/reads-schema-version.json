@@ -1,0 +1,19 @@
+{
+  "input": {
+    "schema_version": 2,
+    "books": [],
+    "articles": [
+      {
+        "id": 1,
+        "added": "2026-10-19",
+        "title": "T",
+        "url": "https://example.com/a",
+        "comment": "c",
+        "kind": "article",
+        "tags": [
+          "ai"
+        ]
+      }
+    ]
+  }
+}

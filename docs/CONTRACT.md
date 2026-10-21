@@ -1,6 +1,6 @@
 # Content contract
 
-**Status: draft (SPEC-SH SH-03).** Documents the content files **as of v1.5**, with the Studio 2.0 changes marked *planned*. A test that fails when a file or rule is missing from this page is part of SH Phase B. Rule ids are the `RULES` list in `scripts/validate-site.js` plus the structural rules in the same file. Examples contain no real tokens.
+**Status: enforced (SPEC-SH SH-03, v2.0 SH Phase B).** Documents the content files as of the current build, with later Studio 2.0 changes marked *planned*. CI fails if a file in `content/` or a rule id is missing from this page (`checkContractDoc`). Rule ids are the `RULES` list in `scripts/validate-site.js` plus the structural rules in the same file. Examples contain no real tokens.
 
 | File | Purpose | Written by | Validator |
 |------|---------|-----------|-----------|
@@ -36,7 +36,9 @@ Rules: `synced_at` required, UTC, not in the future (`cache-synced-at`, `cache-s
 
 ## reads.json (object)
 
-`{ "books": [ ... ], "articles": [ ... ] }` — *planned (RC-01, SH-04):* plus `"schema_version": 2`.
+`{ "schema_version": 1, "books": [ ... ], "articles": [ ... ] }`
+
+`schema_version` (rule `reads-schema-version`) is the version of this file's shape: required, an integer, currently `1`. The admin screen writes it first on every publish. A browser tolerates a missing or older value (documented defaults) but refuses to show or edit a **newer** one (Reads shows its fallback line and nothing can be published over the file). *Planned (RC-05):* the Technical / Others migration raises it to `2` together with the `category` field.
 
 Article fields: `id` (unique number), `added` (date), `url` (clean, required), `title` (required, ≤ 140), `comment` (≤ 280), `kind` (`article`, `video`, `paper`, `podcast`, `tool`), `tags` (≤ 5, each ≤ 24). *Planned:* `category` (`technical` or `other`, required after migration; browser default `other`). Rule ids: `reads-url-clean`, `reads-kind`, `reads-tags`, `reads-comment`, `reads-duplicate-id`; planned `reads-category`, `reads-schema-version`. A repeated link warns.
 

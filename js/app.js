@@ -76,7 +76,11 @@ async function boot() {
   if (reg.status === 'fulfilled' && Array.isArray(reg.value)) state.registry = reg.value;
   if (vCache && typeof vCache.products === 'object') state.cache = vCache;
   if (vBlog && Array.isArray(vBlog.posts)) state.blog = vBlog;
-  if (vReads) state.reads = { books: Array.isArray(vReads.books) ? vReads.books : [], articles: Array.isArray(vReads.articles) ? vReads.articles : [] };
+  if (vReads) {
+    // a file newer than this page understands is not shown or edited (Reads falls back, nothing can be published over it)
+    if (!RL.isSupportedReadsVersion(vReads.schema_version)) state.readsUnsupported = true;
+    else state.reads = { books: Array.isArray(vReads.books) ? vReads.books : [], articles: Array.isArray(vReads.articles) ? vReads.articles : [] };
+  }
   if (vLog && Array.isArray(vLog.releases)) {
     // tolerate bad entries at runtime (CI rejects them before they ship): keep only well-formed releases
     state.changelog = vLog.releases.filter(r => r && typeof r.version === 'string' && typeof r.title === 'string' && Array.isArray(r.items));
@@ -185,6 +189,7 @@ function readCard(entry, index, preview) {
 }
 
 function renderReads() {
+  if (state.readsUnsupported) throw new Error('reads.json has a newer schema_version than this page supports');   // guarded: shows the fallback line
   const all = state.reads.articles.map((e, i) => ({e, i}));
   // newest first: dated entries by date, undated keep their original order after them
   all.sort((a, b) => { const da = (a.e && a.e.added) || '', db = (b.e && b.e.added) || ''; return da === db ? a.i - b.i : (da < db ? 1 : -1); });
@@ -516,13 +521,14 @@ document.addEventListener('click', async e => {
 $('#readSearch').addEventListener('input', e => { state.filter.q = e.target.value; renderReads(); });
 
 $('#publishBtn').onclick = async () => {
-  const files = [['blog', 'content/blog.json', () => ({posts: state.blog.posts}), 'blog'], ['reads', 'content/reads.json', () => ({books: state.reads.books, articles: state.reads.articles}), 'reading list']];
+  const files = [['blog', 'content/blog.json', () => ({posts: state.blog.posts}), 'blog'], ['reads', 'content/reads.json', () => RL.serializeReads(state.reads), 'reading list']];
   const todo = files.filter(f => state.dirty[f[0]]);
   const hasPhoto = !!(state.dirty.profile && state.profileDraft);
   if (!todo.length && !hasPhoto) return;
   $('#publishBtn').disabled = true;
   const out = [];
   for (const [key, path, get, label] of todo) {   // one file per commit; a failure leaves the others untouched
+    if (key === 'reads' && state.readsUnsupported) { out.push(path + ': not published: this file is newer than the page understands (reload the page)'); continue; }
     try { const r = await publishFile(path, get(), `cms: update ${label}`); state.dirty[key] = false; out.push(path + ': ' + r); }
     catch (e) { out.push(path + ': ' + e.message); }
   }

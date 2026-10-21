@@ -1,6 +1,6 @@
 # Owner operations guide
 
-**Status: draft (SPEC-SH SH-07).** Written from the procedures already in use. Every command is to be executed once as written at SH Phase B (TC-SH-D01) before this banner is removed. Items marked *planned* depend on Studio 2.0. Tokens: [LEARNING-GUIDE](LEARNING-GUIDE.md) Step 9. When something is red: [RUNBOOK](RUNBOOK.md). Field rules: [CONTRACT](CONTRACT.md).
+**Status: verified 2026-10-21 (SPEC-SH SH-07, TC-SH-D01).** Each product procedure below was executed once as written (with `debasisr66/studio` as a stand-in repository, then undone) and the output matched. Items marked *planned* depend on Studio 2.0. Tokens: [LEARNING-GUIDE](LEARNING-GUIDE.md) Step 9. When something is red: [RUNBOOK](RUNBOOK.md). Field rules: [CONTRACT](CONTRACT.md).
 
 Rules: never rewrite history; fix forward with `git revert`; tokens only at hidden prompts or in the admin tab; dry-run first.
 
@@ -20,17 +20,17 @@ Rules: never rewrite history; fix forward with `git revert`; tokens only at hidd
    { "repo": "debasisr66/MyApp", "slug": "my-app", "name": "My App", "tagline": "One line", "category": "Productivity", "featured": false, "hidden": false, "url": "https://debasisr66.github.io/MyApp/" }
    ```
 2. Make sure the product repo has a published **GitHub Release** (a bare tag does not count).
-3. `gh workflow run sync.yml`, then `gh run list --workflow sync.yml --limit 1` and reload the site.
+3. `node scripts/validate-site.js` prints **OK** with one harmless warning, `no cached data yet for <repo> (the next sync will add it)`. Preview with `DRY_RUN=true GH_TOKEN=$(gh auth token) node scripts/sync-products.js` (it prints `ok <repo>` and `DRY RUN: would write content/cache.json`), then `gh workflow run sync.yml`, `gh run list --workflow sync.yml --limit 1` and reload the site; the warning disappears after the sync.
 4. For instant updates, add `notify-studio.yml` and the `STUDIO_DISPATCH_TOKEN` secret to that repo (Step 9 C).
 
 ## Hide or retire a product
 
-- **Hide for now:** set `"hidden": true`. The card and the sync skip it. Its old cache entry stays and produces a CI *warning* (`cache-orphan`) until removed.
-- **Retire:** remove the entry from `products.json`, then delete its entry from `content/cache.json` in the same pull request (the sync does not delete old entries). Remove the product repo's dispatch secret and workflow if you no longer want it to trigger Studio.
+- **Hide for now:** set `"hidden": true`. The card and the sync skip it. Its old cache entry stays and produces a CI *warning* (`cached repo is hidden or not in the registry`, rule `cache-orphan`) until removed.
+- **Retire:** remove the entry from `products.json`, then delete its entry from `content/cache.json` in the same pull request (the sync does not delete old entries). `node scripts/validate-site.js` then prints `OK: 0 error(s), 0 warning(s)`. Remove the product repo's dispatch secret and workflow if you no longer want it to trigger Studio.
 
 ## Rename or recategorise
 
-Edit `name`, `tagline` or `category` in `products.json`; no sync needed (these are overrides). A renamed repository needs the new `repo` value, and the old cache entry removed as above.
+Edit `name`, `tagline` or `category` in `products.json`; no sync needed (these are overrides). A category outside the known list only warns: `unknown category "X" … (known: Productivity, Information, Tools, …)`; add it to `KNOWN_CATEGORIES` in `scripts/validate-site.js` if it is intentional. A renamed repository needs the new `repo` value, and the old cache entry removed as above.
 
 ## Publish content (admin)
 
