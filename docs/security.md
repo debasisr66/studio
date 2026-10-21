@@ -150,3 +150,17 @@ Scope: strict URL rule (TR-01), cache envelope checks (TR-02), runbook and prote
 | Existing content | Passes the stricter rule with no new error or warning |
 | Browser behaviour | `normalizeUrl` (admin composer) unchanged; the new `isPublishableUrl` is additive |
 | Residual | CI still cannot technically block the owner or the bots (TR-11 decision record) |
+
+## 9. SPEC-TR Phase B review log (2026-10-21)
+
+Scope: partial sync failure is visible (TR-05) and sync freshness check (TR-06).
+
+| Check | Result |
+|-------|--------|
+| Workflow permissions | Unchanged: `sync.yml` still `contents: write` (allowed list), `health.yml` still `contents: read` + `actions: read`. The only workflow edit is the commit step condition |
+| Read-only toward product repos | Unchanged; sync still only GETs |
+| Does "red" skip the safe commit? | No: proven by a drill on a throwaway branch (fetch red, commit step ran, run red). `!cancelled()` skips the commit only on cancellation |
+| Prior data safety | Failed products keep their previous entry; all-fail leaves the file untouched (unit-tested) |
+| Secret exposure | Summary text uses only product names and API status lines; no headers or tokens are echoed (test checks content) |
+| Residual | A successful manual dry run counts as a sync success for the 48 h check (the API does not reveal dry runs). Low impact: the next scheduled run still has to pass |
+| Drill hygiene | Throwaway branch only; `main` and its cache untouched; branch deleted |
