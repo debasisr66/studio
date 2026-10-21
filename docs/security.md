@@ -189,9 +189,9 @@ T15 and T16 (visitor usage data and corrupt local data) were dropped on 2026-10-
 |----|--------|------|--------------------|---------------------|--------|
 | T17 | **Fragment injection via hash routing** (`#reads/<payload>`, `#__proto__`) | RC-03, UX-04 | Fragment matched against closed lists; anything else ignored; never inserted into the DOM | TC-RC-L03, TC-UX-L04 | ⬜ |
 | T18 | **Malicious podcast or read link** (`javascript:`, credentials, control characters, tracking) | PC-01, PC-04, RC-06 | Shared strict URL rule (TR-01) on write and in CI; host-keyed platform label from a closed list | TC-PC-V01, U02, D02 | ⬜ |
-| T19 | **Error path injection** (a malformed file puts markup in an exception that is shown) | SH-01 | Fixed fallback text; exception goes to the console only | TC-SH-I03 | ⬜ |
-| T20 | **Schema-version bypass** (unknown version silently accepted, or old data mis-read) | SH-04 | Known versions only in CI; runtime defaults documented; failure is a section fallback | TC-SH-V01–V03 | ⬜ |
-| T21 | **New CI tool risk** (headless Chrome and a local static server on the runner) | SH-02 | Server binds to localhost on a random port for the step only; no secrets in the step; no network egress needed; pinned action versions unchanged | TC-SH-B03, B04; `git diff .github` review | ⬜ |
+| T19 | **Error path injection** (a malformed file puts markup in an exception that is shown) | SH-01 | Fixed fallback text; exception goes to the console only | TC-SH-I03 | ✅ |
+| T20 | **Schema-version bypass** (unknown version silently accepted, or old data mis-read) | SH-04 | Known versions only in CI; runtime defaults documented; failure is a section fallback | TC-SH-V01–V03 | ✅ (SH Phase A) |
+| T21 | **New CI tool risk** (headless Chrome and a local static server on the runner) | SH-02 | Server binds to localhost on a random port for the step only; no secrets in the step; no network egress needed; pinned action versions unchanged | TC-SH-B03, B04; `git diff .github` review | ✅ (SH Phase A) |
 | T22 | **Embedded content creep** (iframes or players for podcasts) | PC-02 | No embeds; CSP `default-src 'none'` and the validator keep third-party hosts out; smoke test asserts no iframe/audio | TC-PC-U07 | ⬜ |
 | T23 | **Data loss in migration** | RC-05 | Before/after comparison; additive keys; rollback proof with v1.5 code | TC-RC-M01–M03 | ⬜ |
 | T24 | **Retired blog leaves a dangling path** (old link, stale code with an editor) | PC-05 | Redirect; code removed; archive file unrendered and validated | TC-PC-R01–R04 | ⬜ |
@@ -219,3 +219,13 @@ T15 and T16 (visitor usage data and corrupt local data) were dropped on 2026-10-
 
 A successful smoke test proves rendering in one browser engine only. CI still cannot technically block the owner or the bots (TR-11 decision unchanged).
 
+### 11.5 SH Phase A results (2026-10-21)
+
+| Check | Result |
+|-------|--------|
+| T19 error-path injection | The fallback is a constant string (`SafeLib.FALLBACK_TEXT`); unit test passes an error containing `<img onerror>` and `TypeError` and none of it appears; smoke asserts no exception text on the page |
+| T21 CI tool risk | The smoke server binds to `127.0.0.1` on a random port and exists only for the step; the step has no secrets and needs no network beyond localhost; `ci.yml` permissions unchanged (`contents: read`); no new third-party action; Chrome is the runner's preinstalled browser; the step has a 2-minute cap (29 s observed) |
+| CSP / third parties | `index.html` diff is one same-origin script tag; validator OK; no inline code; no new host |
+| Token handling | Untouched; smoke injects a clearly fake test token into `sessionStorage` on localhost only to prove admin mode switches on; it is never sent anywhere |
+| Behaviour change to review | `boot()` now tolerates JSON `null` files and never skips `enableAdmin()`; failures are logged to the console only (no remote reporting) |
+| Residual | One browser engine (Chromium) is tested; a hung content file still delays first render by up to 8 s |

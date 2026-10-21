@@ -468,7 +468,7 @@ This step is written ahead of the build so you know what to expect. It is update
 | Specs and impact | `docs/specs/*`, `docs/impact.md` | read and answer the open questions in `docs/plan.md` |
 | Plan | `docs/plan.md` | follow the ten steps in order |
 | Design | `docs/design.md` §12 | diagrams render on GitHub |
-| Build and test | `docs/build.md` §18, `docs/test.md` v2.0 | `node --test tests/*.test.js`, `node scripts/validate-site.js`, `node scripts/smoke.js` *(planned)* |
+| Build and test | `docs/build.md` §18, `docs/test.md` v2.0 | `node --test tests/*.test.js`, `node scripts/validate-site.js`, `node scripts/smoke.js` (exists since SH Phase A) |
 | Security | `docs/security.md` §11 | the checklist in §11.3 |
 | Release | `docs/build.md` §18.5 | PR, green checks, merge, tag `v2.0`, verify live |
 | Roll back | `docs/build.md` §18.6 | `git revert -m 1 <merge sha>`; tag `v1.5` is the safe point |

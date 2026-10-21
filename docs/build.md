@@ -246,7 +246,7 @@ node scripts/validate-site.js              # OK, 0 errors
 node --test tests/<new>.test.js            # show the new tests failing first
 # build until green, then:
 node --test tests/*.test.js && node scripts/validate-site.js
-node scripts/smoke.js                      # planned (SH Phase A): static server + headless Chrome, ~60 s cap
+node scripts/smoke.js                      # real since SH Phase A: local server + headless Chrome over DevTools, 13 cases, ~16 s (set SMOKE_ONLY="text" to run matching cases; CHROME_BIN to choose a browser)
 python3 -m http.server 8080                # manual look at http://localhost:8080 at 375 and 1280 px, both themes
 ```
 
