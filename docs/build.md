@@ -1,6 +1,6 @@
 # Build and Publish — Command Reference
 
-Current release line: **v1.4** (merged and tagged); v1.3 is tagged. From v1.4 releases go through a **pull request** (see §15). Branch names must differ from tag names: a branch called `v1.1` and a tag `v1.1` made `git push origin v1.1` ambiguous (fix: `git push origin refs/tags/v1.1`).
+Current release line: **v1.5** (v2.0 is planned: §18); v1.4 and v1.3 are tagged. From v1.4 releases go through a **pull request** (see §15). Branch names must differ from tag names: a branch called `v1.1` and a tag `v1.1` made `git push origin v1.1` ambiguous (fix: `git push origin refs/tags/v1.1`).
 
 Reference only. There is no build step: the repository is the site. Pages serves `main`, root `/`. Run from `/Users/debasisray/CoworkProjects/studio-site`.
 
@@ -225,3 +225,80 @@ node scripts/validate-site.js                       # enforces licences, size, r
 ```
 
 Photo: owner unlocks admin → **Change photo** → choose a PNG, JPEG or WebP → **Use this photo** → **Publish changes**. Two commits appear: `cms: update profile photo` and `cms: show profile photo`. To remove the photo, set `content/profile.json` back to `{"photo": null, "updated": null}` (the old image stays in git history).
+
+## 18. Studio 2.0 build and release flow (planned; commands marked "planned" do not exist yet)
+
+Reference for the sequence in [plan.md](plan.md). Rollback tag: `v1.5`. Each phase is one branch and one pull request (§15). Branch names must differ from tag names.
+
+### 18.1 Start of every phase
+
+```bash
+cd /Users/debasisray/CoworkProjects/studio-site
+git checkout main && git pull --rebase
+git checkout -b v2/<spec>-<phase>          # e.g. v2/sh-a, v2/rc-a, v2/pc-b, v2/ux-b
+node --test tests/*.test.js                # baseline must be green (142 today)
+node scripts/validate-site.js              # OK, 0 errors
+```
+
+### 18.2 Test-first loop
+
+```bash
+node --test tests/<new>.test.js            # show the new tests failing first
+# build until green, then:
+node --test tests/*.test.js && node scripts/validate-site.js
+node scripts/smoke.js                      # planned (SH Phase A): static server + headless Chrome, ~60 s cap
+python3 -m http.server 8080                # manual look at http://localhost:8080 at 375 and 1280 px, both themes
+```
+
+### 18.3 One-time data migration (RC Phase A; planned)
+
+```bash
+cp content/reads.json /tmp/reads.before.json
+node scripts/migrate-reads-v2.js           # planned: adds category (owner-confirmed list) and schema_version
+node scripts/compare-reads.js /tmp/reads.before.json content/reads.json   # planned: ids, urls, titles, comments, tags, kinds identical
+git add content/reads.json && git commit -m "content: add category and schema_version to reads (v2 migration)"
+```
+The migration scripts are throwaway tools run once; they live in the PR for review and are removed after the release, or kept under `scripts/` only if the owner wants.
+
+### 18.4 Pull request per phase (same as §15)
+
+```bash
+git push -u origin v2/<spec>-<phase>
+gh pr create --base main --title "v2.0 <spec> <phase>: summary" --body "Spec, requirements covered, tests (counts), what was verified, what is pending"
+gh pr checks --watch
+gh pr merge --merge --delete-branch        # only when green and the owner approved
+git checkout main && git pull --rebase
+```
+After each merge: `gh run list --limit 4`, open the live site, `GH_TOKEN=$(gh auth token) node scripts/health-check.js`.
+
+### 18.5 Release (after step 9 of the plan)
+
+```bash
+git checkout main && git pull --rebase
+node --test tests/*.test.js && node scripts/validate-site.js           # final gate
+git tag -a v2.0 -m "v2.0: stabilised core, Reads split, Podcasts, adaptive layout"
+git push origin refs/tags/v2.0
+gh run list --limit 4
+curl -s https://debasisr66.github.io/studio/content/changelog.json | head -20    # confirms the 2.0 entry is live
+```
+The changelog entry (`content/changelog.json`, version `2.0`) and the artefact updates are part of the final release PR, not earlier phases, so visitors see "What's new" only when 2.0 is real.
+
+### 18.6 Rollback
+
+```bash
+git revert -m 1 <merge-commit-of-the-phase-or-release>    # preferred, keeps history
+git push
+# or inspect the previous release without changing anything:
+git diff v1.5 -- index.html js css content/reads.json
+```
+Because data changes are additive, v1.5 code renders the migrated `reads.json`; `blog.json` is intact; the stored layout key is ignored by old code. Never force-push (ruleset forbids it).
+
+### 18.7 Draft release notes (not committed to content until the release PR)
+
+Changelog entry draft for `content/changelog.json` (plain text, at most 6 items, 160 characters each):
+- "Reads now has two sections, Technical and Others."
+- "The Blog is now Podcasts: links to podcasts and episodes worth hearing."
+- "The page is simpler: Products and Updates first, then what you use most."
+- "Studio remembers what you use on this device only, and you can reset it."
+- "The page is more dependable: one part failing no longer affects the rest."
+

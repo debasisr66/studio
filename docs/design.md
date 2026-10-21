@@ -1,6 +1,6 @@
 # Design — Studio
 
-Releases: v1.4 (fonts, profile photo, logo, protection and keep-alive: §11) · v1.3 (What's new, admin session, strict CSP: §10) · v1.2 (operational flows: §9; no UI change) · v1.1 (UI: §1–8).
+Releases: v2.0 (proposed: §12) · v1.4 (fonts, profile photo, logo, protection and keep-alive: §11) · v1.3 (What's new, admin session, strict CSP: §10) · v1.2 (operational flows: §9; no UI change) · v1.1 (UI: §1–8).
 
 UI sections, HCI best practices applied, and the flows behind the Reads feature. Diagrams are Mermaid and render on GitHub.
 
@@ -562,3 +562,168 @@ Scheduled runs start late: the 03:00 UTC cron ran at 07:42, 07:26, 07:49, 07:55,
 ### 11.7 Header fit (found in testing)
 
 Between the phone and desktop layouts (about 620 to 860 px) the header needed more room than it had: the **live v1.3 page overflowed by 23 px at 621 px and by 4 px at 640 px**, because the What's new button joined the links and the "by Debasis Ray" line beside the brand. My earlier checks used 375, 768 and 1280 px, none of which fall in that band. v1.4 hides the small "by Debasis Ray" line below 861 px (the hero says it) and tightens the link spacing. The rule going forward: **sweep many widths** (26 from 320 to 1920 px), not three.
+
+## 12. v2.0 design (proposed; nothing built)
+
+Specs: [SPEC-SH](specs/stabilize-core-hub/spec.md), [SPEC-RC](specs/reads-categories/spec.md), [SPEC-PC](specs/podcast-links/spec.md), [SPEC-UX](specs/adaptive-layout/spec.md). Constraints carried over: no build step, no npm, strict CSP (no inline code, no third-party host), plain JavaScript, pure logic in small tested modules.
+
+### 12.1 Design principles for 2.0
+
+| Principle | Applied as |
+|-----------|-----------|
+| Simplicity first | Four top-level destinations; one section anatomy; no settings screen |
+| Predictable | Order changes only at load, never while reading; anchors never move meaning |
+| Private by construction | Usage counts are local, tiny, closed-shape, and never leave the device |
+| Fail small | One section failing never affects another or the admin unlock |
+| Reversible | Additive data changes; rollback tag `v1.5` renders the new data |
+
+### 12.2 Page structure and navigation
+
+```mermaid
+flowchart TB
+  H[Header: logo · nav · What's new · theme] --> HERO[Hero + profile photo]
+  HERO --> P[Products]
+  P --> U[Updates]
+  U --> A{Adaptive group, order decided at load}
+  A -->|default| R1[Reads] --> PC1[Podcasts]
+  A -->|Podcasts leads| PC2[Podcasts] --> R2[Reads]
+  PC1 --> F[Footer: version · layout note and reset]
+  R2 --> F
+  PC2 -.-> F
+  BN[Bottom nav on phones: same four links, same order]
+```
+
+Section anatomy (every section): heading · one-line description · content · empty state · (owner only) one add action. Header nav and bottom nav are generated from the same ordered list, so they cannot disagree.
+
+### 12.3 Section isolation (SH-01, SH-08)
+
+```mermaid
+flowchart LR
+  B[boot] --> L[load 6 content files, each with 8 s timeout]
+  L --> G{for each section renderer}
+  G -->|ok| S[section rendered]
+  G -->|throws or file failed| FB[fixed fallback line, console.error only]
+  S --> N[next renderer]
+  FB --> N
+  N --> AD{token present?}
+  AD -->|yes| EN[enableAdmin, always reached]
+  AD -->|no| DONE[done]
+  EN --> DONE
+```
+
+The fallback text is a constant ("This section could not load. The rest of the page is unaffected."); the exception message is never put on the page.
+
+### 12.4 Data model
+
+```mermaid
+erDiagram
+  READS_FILE ||--o{ READ : articles
+  READS_FILE ||--o{ BOOK : books
+  PODCASTS_FILE ||--o{ PODCAST : podcasts
+  READS_FILE { int schema_version }
+  READ { int id string added string url string title string comment string kind string category array tags }
+  BOOK { string title string author string year string note string category }
+  PODCASTS_FILE { int schema_version }
+  PODCAST { int id string added string url string title string show string comment array tags }
+```
+
+`category` ∈ {technical, other}, closed list in `CATEGORIES`. Browser default for a missing or unknown value is `other`; CI rejects it. `kind` stays a format (article, video, paper, podcast, tool) and is independent. `blog.json` is kept unrendered. `cache.json`, `products.json`, `changelog.json` and `profile.json` are unchanged.
+
+Local layout storage (one key, closed shape):
+
+```json
+{ "v": 1, "u": { "reads": {"s": 4.2, "t": 20747}, "podcasts": {"s": 0.9, "t": 20740},
+                 "reads.technical": {"s": 3.8, "t": 20747}, "reads.other": {"s": 0.4, "t": 20733} } }
+```
+
+### 12.5 Reads: two sub-items
+
+```mermaid
+stateDiagram-v2
+  [*] --> Technical: default (or leader by use)
+  [*] --> Others: Technical empty, or #reads/others
+  Technical --> Others: tab click, arrow key, hash change
+  Others --> Technical: tab click, arrow key, hash change
+  Technical: filters and search apply here only
+  Others: filters and search apply here only
+```
+
+Accessible tab pattern: `role="tablist"`, two `role="tab"` buttons with counts, `aria-selected`, `aria-controls`, roving `tabindex`, Left/Right/Home/End keys, one `role="tabpanel"`. Switching clears tag and search and updates the hash (`#reads/technical`, `#reads/others`) without scrolling. Books render below the articles in the same sub-item (single column); the book editor stays for 2.0. A "No match here" state suggests the other section when it has a match.
+
+### 12.6 Podcasts: adding and publishing
+
+```mermaid
+sequenceDiagram
+  actor O as Owner
+  participant UI as Composer (Share a podcast)
+  participant LIB as lib: normalise and validate
+  participant API as GitHub Contents API
+  O->>UI: link, title, optional show / take / tags
+  UI->>LIB: normalizeUrl, isPublishableUrl, limits
+  LIB-->>UI: errors (inline, announced) or clean entry
+  UI-->>O: live preview card
+  O->>UI: Publish changes
+  UI->>API: GET content/podcasts.json (sha)
+  UI->>UI: validate whole file; skip if identical
+  UI->>API: PUT one file, one commit
+  API-->>O: success; Pages updates in about a minute
+```
+
+The card: title link, show, platform label from a closed host list (Spotify, Apple Podcasts, YouTube, else the domain), date, take, tags, **Listen →** (new tab, `noopener noreferrer`), share row. No iframe, audio or third-party image.
+
+### 12.7 Adaptive order: how it decides
+
+```mermaid
+flowchart TD
+  E[Visitor event: nav open, tab switch, filter or search, outbound open, copy or share] --> R[record: s = s·0.5^((today−t)/30) + 1]
+  R --> W[(localStorage, one key, ≤ 1 KB)]
+  LOAD[Next page load] --> RD[read and validate: closed shape, clamp, drop unknown]
+  W --> RD
+  RD --> SC[scores with decay to today]
+  SC --> Q{leader ≥ 3 and ≥ 1.5 × runner-up?}
+  Q -->|yes| ORD[leader first]
+  Q -->|no| DEF[default: Reads, Podcasts]
+  ORD --> APPLY[apply order before first render of the group; nav built from same list]
+  DEF --> APPLY
+```
+
+Worked examples (decay ignored for brevity): Reads 6, Podcasts 2 → Reads first (6 ≥ 3 and 6 ≥ 3). Reads 2, Podcasts 5 → Podcasts first (5 ≥ 3, 5 ≥ 3). Reads 4, Podcasts 3 → default (4 < 4.5). Reads 2, Podcasts 1 → default (below 3). A section unused for about six months retains about 1/64 of its score, so habits fade. The same rule picks the Reads default sub-item from `reads.technical` and `reads.other`. Storage blocked or corrupt → default, silently.
+
+Rejected alternatives: live reordering while the page is open (layout jumps); any server-side or analytics count (forbidden by PRD §10.3); a settings screen (not simple); drag-to-arrange (more UI, not requested).
+
+### 12.8 Browser smoke test in CI (SH-02)
+
+```mermaid
+flowchart LR
+  CI[ci.yml step] --> SRV[node static server on localhost, random port]
+  SRV --> CH[headless Chrome: --dump-dom with fixture content, two window sizes]
+  CH --> AS[Node asserts on the dumped DOM: sections, fallbacks, nav, redirects, no overflow]
+  AS -->|pass| OK[green]
+  AS -->|fail or over 60 s| RED[red with captured output]
+```
+
+Fixture content sets (healthy, cache missing, release missing, one file broken, section forced to throw, very long text, empty sections) are small JSON folders under `tests/fixtures/site/`. Fallback if Chrome is unavailable: Node `vm` render test of the pure render functions plus a manual checklist (decided in the SH design spike, Q1).
+
+### 12.9 Interaction, accessibility and HCI checks specific to 2.0
+
+| Item | Check |
+|------|-------|
+| Tabs | Full keyboard operation, visible focus, 44 px targets, contrast ≥ 4.5:1 in both themes, name and state announced |
+| Hash routing | Back button behaves; no scroll jump on tab switch; unknown hash ignored |
+| Reorder | No visible shift; no animation; reduced-motion honoured; nav order equals page order |
+| Empty and error states | Plain language, never blank, never raw exception text |
+| Podcast card | Link text is the title (not "click here"); platform label is text, not colour only |
+| Footer note | One short sentence; Reset is a real button; confirmation announced via `aria-live` |
+
+### 12.10 Design decisions (with reasons)
+
+| Decision | Why |
+|----------|-----|
+| `category` field, not a second file | One list to search, share and migrate; simplest data change; rollback-safe |
+| Tabs rather than two sections | The request is "two sub-items" inside Reads; keeps four top-level destinations |
+| Podcasts as a separate file, not a Reads `kind` | The request replaces the Blog with its own section; separate file keeps each contract small |
+| Decayed score, not a plain counter | Habits change; old use should fade without any cleanup code |
+| Hysteresis (3 and 1.5×) | Prevents flip-flop between visits; defaults win on any doubt |
+| Order fixed at load | A moving page is the opposite of intuitive |
+| Headless Chrome via `--dump-dom` | The only way to test rendering with no npm dependency; fallback documented |
+

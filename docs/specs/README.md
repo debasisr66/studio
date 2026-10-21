@@ -7,6 +7,10 @@ Spec-based work for Studio. A spec is written **before** any change that affects
 | Spec | Status | Requirements | PRD phase | Folder |
 |------|--------|--------------|-----------|--------|
 | Product trust and reliability (`SPEC-TR`) | Shipped (v1.5) | TR-01 … TR-13 | Phase 2 | [product-trust-reliability/](product-trust-reliability/spec.md) |
+| Stabilize the core hub (`SPEC-SH`) | Draft, awaiting approval | SH-01 … SH-08 | Phase 1 / 2.5, **step 1 of 2.0** | [stabilize-core-hub/](stabilize-core-hub/spec.md) |
+| Reads: Technical and Others (`SPEC-RC`) | Draft, awaiting approval | RC-01 … RC-09 | Phase 2.5, step 2 | [reads-categories/](reads-categories/spec.md) |
+| Podcast links replace the Blog (`SPEC-PC`) | Draft, awaiting approval | PC-01 … PC-09 | Phase 2.5, step 3 | [podcast-links/](podcast-links/spec.md) |
+| Adaptive, simpler layout (`SPEC-UX`) | Draft, awaiting approval | UX-01 … UX-10 | Phase 2.5, step 4 | [adaptive-layout/](adaptive-layout/spec.md) |
 
 ## Traceability convention
 

@@ -1,6 +1,6 @@
 # Security — Studio
 
-Threat model, control inventory and review log. Living document: updated every release. Last review: **v1.4, 2026-10-20** .
+Threat model, control inventory and review log. Living document: updated every release. Last review: **v1.5 (SPEC-TR logs §8-10); v2.0 pre-implementation review §11 (planned)** .
 
 This is a design-and-test review of a small static site, with evidence from the test runs in [test.md](test.md). It is not a penetration test and not a certification.
 
@@ -176,3 +176,46 @@ Scope: registry integrity, fixture-proven rules, asset parity, missing-repo and 
 | Rules can no longer rot silently | 23 enumerated rules each have a failing fixture; a missing fixture fails the suite (proven by removing one) |
 | Output safety | Fix pointers are static runbook anchors; product-controlled text appears only in the GitHub step summary and log as plain text |
 | Residual | `KNOWN_CATEGORIES` is a soft (warning) list; an unknown category never blocks publishing |
+
+## 11. v2.0 pre-implementation security review (2026-10-21; design-level, nothing built)
+
+Scope: [SPEC-SH](specs/stabilize-core-hub/spec.md), [SPEC-RC](specs/reads-categories/spec.md), [SPEC-PC](specs/podcast-links/spec.md), [SPEC-UX](specs/adaptive-layout/spec.md). This is the threat analysis done **before** building so controls are designed in; the results column is filled in during the build, never in advance.
+
+### 11.1 New or changed threats
+
+| ID | Threat | Spec | Control designed in | Test that must pass | Result |
+|----|--------|------|--------------------|---------------------|--------|
+| T15 | **Visitor usage data leaks or becomes tracking** (the layout feature stores what a person uses) | UX-04, UX-05 | Local-only; one key; closed shape; no identifiers; never sent, never in URL or cookie; storage-blocked → defaults; reset | TC-UX-V01–V05, U05, U06, T01–T03 | ⬜ |
+| T16 | **Hostile or corrupt local data** (edited storage, huge value) crashes or skews the page | UX-04 | Validate on read: drop unknown keys, clamp numbers, cap size; any doubt → empty | TC-UX-U05, U06 | ⬜ |
+| T17 | **Fragment injection via hash routing** (`#reads/<payload>`, `#__proto__`) | RC-03, UX-08 | Fragment matched against closed lists; anything else ignored; never inserted into the DOM | TC-RC-L03, TC-UX-L04 | ⬜ |
+| T18 | **Malicious podcast or read link** (`javascript:`, credentials, control characters, tracking) | PC-01, PC-04, RC-06 | Shared strict URL rule (TR-01) on write and in CI; host-keyed platform label from a closed list | TC-PC-V01, U02, D02 | ⬜ |
+| T19 | **Error path injection** (a malformed file puts markup in an exception that is shown) | SH-01 | Fixed fallback text; exception goes to the console only | TC-SH-I03 | ⬜ |
+| T20 | **Schema-version bypass** (unknown version silently accepted, or old data mis-read) | SH-04 | Known versions only in CI; runtime defaults documented; failure is a section fallback | TC-SH-V01–V03 | ⬜ |
+| T21 | **New CI tool risk** (headless Chrome and a local static server on the runner) | SH-02 | Server binds to localhost on a random port for the step only; no secrets in the step; no network egress needed; pinned action versions unchanged | TC-SH-B03, B04; `git diff .github` review | ⬜ |
+| T22 | **Embedded content creep** (iframes or players for podcasts) | PC-02 | No embeds; CSP `default-src 'none'` and the validator keep third-party hosts out; smoke test asserts no iframe/audio | TC-PC-U07 | ⬜ |
+| T23 | **Data loss in migration** | RC-05 | Before/after comparison; additive keys; rollback proof with v1.5 code | TC-RC-M01–M03 | ⬜ |
+| T24 | **Retired blog leaves a dangling path** (old link, stale code with an editor) | PC-05 | Redirect; code removed; archive file unrendered and validated | TC-PC-R01–R04 | ⬜ |
+
+### 11.2 Controls that must remain unchanged (checked at each phase)
+
+| Control | Check |
+|---------|-------|
+| CSP: no inline code, no third-party host, `connect-src` only `self` and `api.github.com` | Validator rule green; diff of the CSP meta empty |
+| Admin token: tab-only, idle lock, never persisted or logged | TC-TR-N04-style owner publish; token-store tests unchanged |
+| Workflow permissions and pins | `git diff main -- .github` shows only the smoke step; CI rule for pins stays green |
+| Sync read-only toward product repos | `sync-products.js` and `sync.yml` not modified in 2.0 |
+| No new dependency, secret or permission | Review of the PRs |
+
+### 11.3 Review checklist to complete during the build
+
+- [ ] For each phase: new input paths listed (URL fields, hash, storage, content files) and each has a validator or closed-list control.
+- [ ] XSS payloads (`<img onerror>`, `javascript:`, `data:`) in every new field render inert (composer preview, cards, tabs, platform label).
+- [ ] Network log shows no new request or host during heavy use.
+- [ ] Storage log shows only the documented keys.
+- [ ] Rollback rehearsed: v1.5 code on migrated data renders correctly.
+- [ ] Residual risks written down at the end of §11 with owner acknowledgement.
+
+### 11.4 Residual risks expected (to confirm after build)
+
+Usage counts can be edited by anyone with access to the visitor's browser (harmless: it only changes that person's own section order). A successful smoke test proves rendering in one browser engine only. CI still cannot technically block the owner or the bots (TR-11 decision unchanged).
+

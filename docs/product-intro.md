@@ -76,3 +76,15 @@ A mobile-friendly personal expense manager in Indian rupees. All data stays in t
 | What does Studio add? | A single credible home that keeps Penny's releases, downloads and story current with no manual work, built to the same engineering standard as the product it presents |
 
 *Sources: Penny's README, release notes, V3.2 verification record and security review (figures as recorded on 19 October 2026); Studio's architecture, test and security documents (figures as recorded on 20 October 2026, v1.4).*
+
+## Roadmap: Studio 2.0 (proposed; not yet built)
+
+| Change | What a visitor or the owner gets |
+|--------|----------------------------------|
+| Stabilised core | One failing section can no longer affect the rest of the page; rendering is tested automatically; every content file has a written contract |
+| Reads: Technical and Others | Two clear sections in Reads, each with its own filters and search, and a direct link to each |
+| Podcasts replace the Blog | The owner shares podcast and episode links with a short take; no embedded players, no third parties |
+| Simpler, adaptive layout | Products and Updates first, then Reads and Podcasts ordered by what the visitor uses most, remembered on that device only, resettable, with no analytics |
+
+Specs, impact, plan and security pre-review: [docs/specs/](specs/README.md), [impact](impact.md), [plan](plan.md), [security](security.md) §11. The current version remains **v1.5** until 2.0 ships.
+

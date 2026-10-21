@@ -178,3 +178,53 @@ No `'unsafe-inline'` or `'unsafe-eval'` anywhere. To make that possible, the sty
 **Scheduled work.** GitHub starts scheduled runs hours late (the 03:00 UTC sync has run between 07:26 and 08:24 UTC), so the health check runs at 12:00 UTC. A weekly keep-alive adds one empty commit to `main` only after 30 days without a commit, so GitHub does not disable the scheduled workflows after 60 days of inactivity. The health check also fails if any workflow is not active.
 
 **Supply chain.** `actions/checkout` and `actions/setup-node` are pinned by commit hash (currently checkout v7.0.1 and setup-node v7.1.0, after Dependabot's first two proposals were merged on 2026-10-20); Dependabot proposes updates weekly; CI rejects unpinned actions, missing permissions blocks and `contents: write` outside the sync and keep-alive workflows.
+
+## 13. Studio 2.0 target architecture (proposed; not built)
+
+Everything in §1-12 stays true until each phase merges; this section describes where the architecture goes. Specs: [SH](specs/stabilize-core-hub/spec.md), [RC](specs/reads-categories/spec.md), [PC](specs/podcast-links/spec.md), [UX](specs/adaptive-layout/spec.md). Design detail: [design.md](design.md) §12.
+
+```mermaid
+flowchart TB
+  subgraph Repo[studio repo, static files]
+    IDX[index.html: sections Products, Updates, Reads, Podcasts]
+    APP[js/app.js: boot, guarded renderers, admin]
+    LIBS[js/reads-lib.js, js/layout-lib.js (new), js/image-lib.js, js/token-store.js: pure, tested]
+    CON[content/: products, cache, reads (v2), podcasts (new), changelog, profile, blog (archive)]
+    CI[CI: unit tests, validator + RULES fixtures, smoke test (new)]
+  end
+  subgraph Browser[Visitor browser]
+    LS[(localStorage: studio-use-v1, studio-seen-version)]
+  end
+  GH[GitHub API: product repos, releases]
+  SYNC[sync.yml: unchanged] --> CON
+  GH --> SYNC
+  APP --> LIBS
+  APP --> CON
+  APP <--> LS
+  CI --> Repo
+```
+
+### 13.1 What changes
+
+| Area | v1.5 | v2.0 |
+|------|------|------|
+| Sections | Products, Updates, Blog, Reads | Products, Updates, then adaptive Reads (Technical, Others) and Podcasts |
+| Content files | products, cache, blog, reads, changelog, profile | + `podcasts.json`; `reads.json` gains `category` and `schema_version`; `blog.json` archived, not loaded |
+| Rendering | `renderAll()` sequential, unguarded | Each section guarded; failure shows a fixed line; admin always reachable |
+| Layout | Fixed order, nav lists differ | One ordered list drives page and both navs; order decided at load from local scores |
+| Local state | `studio-seen-version` only | + `studio-use-v1` (closed shape, ≤ 1 KB, never sent) |
+| Tests | 142 unit tests | + browser smoke test (headless Chrome, no npm) and 136 new cases |
+| Docs | Prose contracts | `docs/CONTRACT.md` per content file, kept in step by a test |
+
+### 13.2 What does not change
+
+The sync and its workflows, product repos and the one-way flow, CSP, token handling, protection rules, keep-alive, health check (plus `podcasts.json` in its list), no build step and no npm.
+
+### 13.3 Module boundaries (to keep `app.js` small)
+
+| Module | Owns | Does not touch |
+|--------|------|----------------|
+| `js/reads-lib.js` | URL rules, categories, filters, platform labels, share links | DOM, storage |
+| `js/layout-lib.js` (new) | Scoring, decay, storage shape and clamping, order decision | DOM, network |
+| `js/app.js` | DOM, events, fetch, admin | Rules that can be pure |
+

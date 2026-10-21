@@ -1,6 +1,6 @@
 # Studio PRD
 
-Status: Draft
+Status: Draft; **Studio 2.0 direction proposed (§22)**
 Last updated: 2026-10-21
 Specs: see [docs/specs/](specs/README.md) (index and traceability convention)
 
@@ -85,7 +85,7 @@ Needs:
 - Product registry with configurable overrides
 - Product cards with metadata and actions
 - Release feed from GitHub Releases
-- Blog content and reading list content
+- Reads, split into **Technical** and **Others** (v2.0), and **Podcast links** (v2.0). The blog is retired in v2.0
 - Owner-only admin editing experience
 - Nightly sync and immediate update triggers from product repos
 - Static HTML/CSS/JS architecture on GitHub Pages
@@ -95,7 +95,7 @@ Needs:
 ### Out of scope for v1
 - Full CMS with role-based permissions
 - Server-side rendering or database-backed infrastructure
-- Analytics dashboards or user personalization
+- Analytics dashboards and any server-side or cross-device personalization. From v2.0 a **local-only, per-device layout preference** is allowed (nothing leaves the visitor's browser; see SPEC-UX)
 - Native mobile app or cross-platform client
 - Public API for external content ingestion
 
@@ -149,10 +149,11 @@ Needs:
 - Download actions must resolve to a specific asset when configured, otherwise fall back to the release page.
 - The footer version and “What’s new” dialog must show changelog content in plain language.
 
-### 9.4 Blog and reads
-- Studio must support a blog and reading list as content files managed in the repo.
-- These files must be editable through the site admin interface.
-- Data model should support posts, articles, and books.
+### 9.4 Reads and podcasts (changes in v2.0)
+- **Reads** are curated links managed as a repo content file, split into two sub-items: **Technical** and **Others** (SPEC-RC). Every read belongs to exactly one.
+- **Podcasts** replace the blog: the owner adds links to podcasts and episodes with a short take (SPEC-PC). The blog section and its admin editor are retired; old `#blog` links continue to work by landing on Podcasts.
+- Both are editable through the admin interface and validated before publishing; both share one set of link rules (clean http(s) addresses only).
+- Section order below Products and Updates adapts to what the visitor uses most, computed and stored only on the visitor's device (SPEC-UX).
 - File updates must be validated before publishing to reduce broken content.
 
 ### 9.5 Admin security model
@@ -195,6 +196,7 @@ Needs:
 - No analytics, trackers, or remote scripts are allowed.
 - Product repos are only read, never mutated by the hub.
 - Personal admin tokens remain browser-scoped and not persisted broadly.
+- A visitor's layout preference (which sections they use most) is stored only in that browser's local storage, contains no personal data, is never sent anywhere, can be reset, and its absence or blockage changes nothing but the default order.
 
 ### 10.4 Maintainability
 - The project must avoid build dependencies and framework overhead.
@@ -339,18 +341,28 @@ These thresholds are intentionally modest and practical for a personal product s
 ## 16. Tentative roadmap
 
 ### Phase 1: Stabilize the core hub
+Status: mostly delivered in v1.1 to v1.5 (registry validation, fallbacks, sync safety, runbook). The remaining work is specified in [SPEC-SH](specs/stabilize-core-hub/spec.md) and is the first step of Studio 2.0.
 - Finalize the product registry and cache contract
 - Improve fallback behavior for missing repo metadata
 - Tighten validation for release assets and changelog presentation
 - Document owner operations: add product, rotate PAT, fix sync issues
 
 ### Phase 2: Strengthen product trust and reliability
+Status: **shipped as v1.5** (SPEC-TR).
 Spec: [SPEC-TR](specs/product-trust-reliability/spec.md) (draft, awaiting approval). Requirements TR-01…TR-13 cover the four items below.
 - Define feature specs for reliability work under `docs/specs/` before implementing schema validation, cache freshness checks, and recovery guidance
 - Expand automated checks for schema quality and safe URLs
 - Improve health-check coverage for cache freshness and release parity
 - Add better recovery guidance for failed syncs and stale data
 - Review whether branch protection or required CI should be enforced for this repo
+
+### Phase 2.5: Studio 2.0 (proposed, this revision)
+Four specs, built in this order (each later one depends on the earlier):
+1. [SPEC-SH](specs/stabilize-core-hub/spec.md): stabilise the core hub (section isolation, browser smoke test, content contract, owner operations, schema versions)
+2. [SPEC-RC](specs/reads-categories/spec.md): Reads split into Technical and Others
+3. [SPEC-PC](specs/podcast-links/spec.md): Podcast links replace the Blog
+4. [SPEC-UX](specs/adaptive-layout/spec.md): simpler layout; sections below Products and Updates ordered by the visitor's own use
+Release: **v2.0** (a major version because navigation and content files change). Rollback tag: `v1.5`. Impact and plan: [docs/impact.md](impact.md), [docs/plan.md](plan.md).
 
 ### Phase 3: Editorial and discoverability improvements
 - Add richer blog and reads UX without increasing complexity
@@ -383,7 +395,10 @@ Spec: [SPEC-TR](specs/product-trust-reliability/spec.md) (draft, awaiting approv
 - ~~Does the owner want a more formal branch protection / required CI strategy beyond alerts and validation?~~ Answered by the tested decision in [docs/rulesets/README.md](rulesets/README.md): history protected for everyone; CI gating by process, because a CI-required rule blocks the sync and keep-alive bots. The decision record and revisit triggers are TR-11 in the spec.
 - Would a more explicit public roadmap improve discoverability and trust for visitors?
 - Should there be stronger product-level release governance, such as required release metadata or quality checks for listed repos?
-- Should the owner add a formal editorial review step for blog and reading content before publication?
+- Should the owner add a formal editorial review step for reading and podcast content before publication?
+- (2.0) Should books follow the Technical / Others split like articles? Recommended: yes (SPEC-RC Q1).
+- (2.0) "Used more" is measured per visitor on their own device, because Studio has no analytics and must not gain any. Is that acceptable, or does the owner want site-wide usage counts? Recommended: per-device only (SPEC-UX Q1).
+- (2.0) Keep `content/blog.json` as an archive after the blog is retired, or delete it? Recommended: keep, unrendered (SPEC-PC Q2).
 
 ## 19. Recommended next steps
 
@@ -411,3 +426,19 @@ These sources confirm the product’s current direction: a static, GitHub-first,
 ## 21. Short product statement
 
 Studio is a lightweight, privacy-first product studio hub that presents a portfolio of projects, keeps release information current automatically, and provides a small editorial layer for writing and reading.
+
+## 22. Studio 2.0 workstreams and traceability
+
+| Owner request | Spec | Requirements | PRD sections it changes | Depends on |
+|---------------|------|--------------|-------------------------|-----------|
+| Stabilize the core hub | [SPEC-SH](specs/stabilize-core-hub/spec.md) | SH-01 … SH-08 | 9.1, 9.2, 10.2, 11, 13, 16 (Phase 1) | none (first) |
+| Reads has two sub-items: Technical and Others | [SPEC-RC](specs/reads-categories/spec.md) | RC-01 … RC-09 | 7, 9.4, 11.3 | SH (schema versions, smoke test) |
+| Blog replaced with Podcast links | [SPEC-PC](specs/podcast-links/spec.md) | PC-01 … PC-09 | 7, 9.4, 11.3 | SH |
+| Simpler, more intuitive layout; most-used sections move below products and updates, by use frequency | [SPEC-UX](specs/adaptive-layout/spec.md) | UX-01 … UX-10 | 7, 8, 10.3 | RC, PC (final section set) |
+
+Release targets for 2.0 (measurable, checked in each spec's test plan):
+- 0 sections that can take the page down: one failing section never stops the others (SH-01)
+- 100% of content files covered by a contract and a validator rule with a fixture (SH-03)
+- 0 broken old links: `#blog`, `#reads` and every existing deep link still land somewhere sensible (PC-05, UX-08)
+- 0 bytes of visitor usage data leave the browser; no new third-party request (UX-05)
+- Page weight stays within the existing budgets (`validate-site.js` `BUDGETS`)

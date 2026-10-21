@@ -1,6 +1,80 @@
 # Test Plan and Traceability — Studio
 
-Releases: **v1.5 (shipped 2026-10-21: SPEC-TR)** · v1.4 (shipped 2026-10-20) · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
+Releases: **v2.0 (planned, nothing run)** · **v1.5 (shipped 2026-10-21: SPEC-TR)** · v1.4 (shipped 2026-10-20) · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
+
+---
+
+# v2.0 — Studio 2.0 (planned; no test has been run)
+
+Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/adaptive-layout/test.md) (42): **136 new cases**, on top of the existing **142 passing unit tests**. Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance.
+
+## A. Requirements (release level)
+
+| REQ | Requirement | Spec requirements |
+|-----|-------------|-------------------|
+| REQ-50 | One failing section or content file never stops another section or the admin unlock; fetches are time-bounded | SH-01, SH-08 |
+| REQ-51 | A dependency-free browser smoke test runs in CI and covers fallbacks, both widths and every section | SH-02, SH-05 |
+| REQ-52 | Every content file has a documented contract and a version where it changed; asset rules; owner operations guide | SH-03, SH-04, SH-06, SH-07 |
+| REQ-53 | Every read and book has a category; migration loses nothing; validator and fixtures enforce it | RC-01, RC-05, RC-06 |
+| REQ-54 | Reads has Technical and Others sub-items: accessible tabs, deep links, composer section, counts, books in the same list | RC-02, RC-03, RC-04, RC-07, RC-08 |
+| REQ-55 | Podcast data, validation, duplicate handling and seed content | PC-01, PC-04, PC-07, PC-08 |
+| REQ-56 | Podcasts section and admin replace the Blog; `#blog` redirect; blog archived; Reads no longer offers the podcast format | PC-02, PC-03, PC-05, PC-06 |
+| REQ-57 | Simple, consistent structure; both navs identical and in page order; all deep links stable | UX-01, UX-02, UX-03, UX-08 |
+| REQ-58 | Local-only usage signals reorder the adaptive sections at load, with hysteresis, no shift, no motion, full privacy; transparency and reset | UX-04, UX-05, UX-06, UX-07, UX-09 |
+| REQ-59 | Nothing else breaks: products, updates, sync, health, keep-alive, profile, What's new, admin publish, CSP, budgets | all |
+| REQ-60 | All artefacts updated and traceable PRD → spec → test → release | all |
+
+## B. Traceability (requirement → spec → cases → status)
+
+| REQ | Cases | Status |
+|-----|-------|--------|
+| REQ-50 | TC-SH-I01–I05, T01–T02 | ⬜ |
+| REQ-51 | TC-SH-B01–B09 | ⬜ |
+| REQ-52 | TC-SH-C01–C03, V01–V04, A01–A03, D01–D02 | ⬜ |
+| REQ-53 | TC-RC-D01–D04, M01–M03, V01–V04, X01 | ⬜ |
+| REQ-54 | TC-RC-U01–U08, L01–L04, E01–E04, S01–S02, B01–B02 | ⬜ |
+| REQ-55 | TC-PC-D01–D03, V01–V07, N01–N02, S01 | ⬜ (S01 owner step 🔒) |
+| REQ-56 | TC-PC-U01–U08, A01–A06, R01–R05, K01–K02 | ⬜ |
+| REQ-57 | TC-UX-S01–S03, P01–P04, N01–N05, L01–L05 | ⬜ |
+| REQ-58 | TC-UX-U01–U06, V01–V05, R01–R08, C01–C03, T01–T03 | ⬜ |
+| REQ-59 | Regression suite (§D) | ⬜ |
+| REQ-60 | Artefact checklist ([plan.md](plan.md) "Artefact update matrix") | ⬜ |
+
+## C. Test strategy by layer
+
+| Layer | What | Where | Written |
+|-------|------|-------|---------|
+| Unit (Node `--test`) | Pure modules: category helpers, platform labels, scoring and storage shape, validators, contract-doc completeness | `tests/*.test.js`, `tests/fixtures/` | Before the code, shown failing |
+| Browser smoke (headless Chrome, no npm) | Rendering, fallbacks, nav, redirects, tabs, overflow at 375 and 1280 px | `scripts/smoke.js` + `tests/fixtures/site/` | Harness first (SH Phase A), cases added with each feature |
+| Stubbed-API publish | Podcast and reads publish writes one valid file, skips identical content | unit with a fake fetch | With PC and RC phases |
+| Visual comparison | Untouched sections identical to frozen v1.5 (computed styles, as in earlier releases) | scratch harness, results recorded here | Each UI phase |
+| Manual/owner | Real admin publish of a read and a podcast; real phone; screen reader pass | owner | Release gate |
+| Live | Post-merge smoke, health check, sync run | GitHub | After each merge |
+
+## D. Regression suite (must stay green at every phase)
+
+| Area | Checks |
+|------|--------|
+| Core | Products grid, Updates feed, version badge, What's new, profile photo, theme toggle, mobile bottom nav |
+| Pipeline | `node scripts/sync-products.js` dry run, sync, health, keep-alive, CI; `git diff main -- .github` shows only the smoke step |
+| Admin | Unlock, lock, idle lock, publish reads, publish podcasts, publish photo; token never persisted |
+| Safety | CSP validator, no inline code, no new third-party host, URL rules, escaping with XSS payloads |
+| Budgets | `validate-site.js` size budgets; `app.js` stays under 80 KB |
+| Accessibility | Keyboard-only pass, focus order, contrast, reduced motion, 200% zoom, 375 px no horizontal scroll |
+| Data | Migration before/after comparison; v1.5 code renders migrated data (rollback proof) |
+
+## E. Release gates for v2.0
+
+1. All P0 cases in the four test plans ✅; P1 ✅ or deferred in writing with the owner's agreement.
+2. 142 existing tests unchanged and green; new unit tests green; smoke test green on the PR.
+3. Visual comparison: Products, Updates, header, footer identical to v1.5 except intended nav and footer changes.
+4. Owner steps done: real publish of a read and a podcast; seed podcasts present; classification confirmed.
+5. Security review log for v2.0 completed ([security.md](security.md) §11 checklist).
+6. Artefacts updated; spec statuses set to Shipped; `v2.0` tag; live smoke and health green.
+
+## F. Not claimed in this plan
+
+Real screen-reader and physical-phone passes are owner steps; usage-driven ordering cannot be measured by the owner (no analytics by design), so it is verified by unit tests and an owner walk-through only.
 
 ---
 

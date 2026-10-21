@@ -1,6 +1,86 @@
 # Impact Analysis — Studio
 
-Releases: **v1.4 (shipped 2026-10-20)** · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped)
+Releases: **v2.0 (proposed)** · v1.5 (shipped 2026-10-21) · v1.4 (shipped 2026-10-20) · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped)
+
+---
+
+# v2.0 — Studio 2.0 (proposed): stabilise, Reads split, Podcasts, adaptive layout
+
+Date: 2026-10-21 · Rollback tag: `v1.5` · Specs: [SPEC-SH](specs/stabilize-core-hub/spec.md), [SPEC-RC](specs/reads-categories/spec.md), [SPEC-PC](specs/podcast-links/spec.md), [SPEC-UX](specs/adaptive-layout/spec.md) · PRD: §22 · Order of work: **PRD → specs → impact (this) → plan → design → build → test → security → artefacts**
+
+## 1. Change summary
+
+| # | Change | Spec | Type |
+|---|--------|------|------|
+| S1 | Section isolation, bounded fetch waits | SH-01, SH-08 | Stability |
+| S2 | Dependency-free browser smoke test in CI (headless Chrome) | SH-02, SH-05 | Test coverage |
+| S3 | Content contract document and `schema_version` on changed files | SH-03, SH-04 | Contract |
+| S4 | Asset host and size rules; owner operations guide | SH-06, SH-07 | Validation, docs |
+| R1 | Reads: `category` (technical or other) on every read and book; two sub-items with deep links; migration | RC-01 … RC-08 | Feature, data |
+| P1 | Podcasts replace Blog: new `podcasts.json`, section, composer, validators; `#blog` redirect; blog archived | PC-01 … PC-07 | Feature, retirement |
+| U1 | One section pattern, matching navs, order Products, Updates, then adaptive Reads and Podcasts | UX-01 … UX-03 | Layout |
+| U2 | Local-only usage counts reorder the adaptive sections at load | UX-04 … UX-09 | Feature, privacy |
+
+## 2. What is touched and what is not
+
+| Component | Touched? | Notes |
+|-----------|----------|-------|
+| `index.html` | **Yes, heavily** | Blog section, nav and bottom nav replaced; Reads markup reworked; footer reset note |
+| `css/site.css` | Yes | Tabs, podcast cards, section pattern; within the size budget (now 18.6 of 30 KB) |
+| `js/app.js` | **Yes, heavily** | Isolation guard, Reads tabs, podcasts renderer and editor, hash routing, layout order; now 37 of 80 KB |
+| `js/reads-lib.js` | Yes | `categoryOf`, filters by category, platform labels; stays pure and tested |
+| `js/layout-lib.js` | **New** | Scoring, storage shape and clamping; pure, unit-tested |
+| `content/reads.json` | **Yes (migration)** | Adds `category` and `schema_version`; ids, urls, titles, comments, tags unchanged |
+| `content/podcasts.json` | **New** | Empty or seeded by the owner |
+| `content/blog.json` | Kept, no longer loaded | Archive (zero posts); still validated and served |
+| `scripts/validate-site.js`, `tests/fixtures/`, `docs/RUNBOOK.md` | Yes | New rules (category, schema version, podcast rules, asset host/size), each with a fixture and runbook row |
+| `scripts/smoke.js`, `.github/workflows/ci.yml` | New step | Only workflow edit: a smoke-test step in `ci.yml`; permissions unchanged |
+| `scripts/health-check.js` | Minor | Still checks `blog.json` is served; add `podcasts.json` |
+| `scripts/sync-products.js`, `sync.yml`, `keepalive.yml`, products, cache, profile, changelog (data except new entry) | **No** | The sync and the Penny/debasis-web flow are untouched |
+| Product repos (Penny, debasis-web) | **No** | Studio only reads them |
+| CSP | **No** | Same policy; no new host, no inline code |
+
+## 3. Blast radius and what could break
+
+| Area | Risk if wrong | Mitigation |
+|------|---------------|-----------|
+| Products grid and Updates (the core) | Regression from heavy `app.js` edits | SH smoke test lands first and runs on every later change; visual comparison against the frozen v1.5 build as in earlier releases |
+| Old links and bookmarks (`#blog`, `#reads`) | Dead links | Redirects and deep-link tests (PC-05, UX-08) |
+| Reads data | Lost or mislabelled reads | Migration test compares before and after; owner confirms classification; additive keys so v1.5 code still renders it |
+| Admin publishing | Publishing path breaks for reads or podcasts | Stubbed-API publish tests plus one real owner publish per release (as TC-TR-N04) |
+| Page jumps or flips order | Confusing layout | Computed at load only, hysteresis, reorder before first paint, defaults on any doubt |
+| Privacy promise | Usage data leaks | Local-only by construction; test asserts no new request, cookie or key; closed data shape |
+| `app.js` growth | Slower or harder to maintain | New logic goes in small pure modules; budgets enforced in CI |
+| CI becomes flaky | Smoke test blocks merges | 60 s timeout; deterministic content; fallback checklist if Chrome proves unstable (SH Q1) |
+| Visitors' habits | Blog readers (none today) lose a section | Blog archive kept; changelog explains the change |
+
+## 4. Data compatibility
+
+| File | Change | Old code (v1.5) on new data | New code on old data |
+|------|--------|-----------------------------|----------------------|
+| `reads.json` | + `category`, + `schema_version` | Ignores extra keys | Missing category → "Others" at runtime (CI rejects it) |
+| `podcasts.json` | New | Ignored | Missing file → section fallback |
+| `blog.json` | Unchanged, unrendered | Still renders (rollback works) | Not loaded |
+| Local storage | + `studio-use-v1` | Ignored | Missing, corrupt or blocked → defaults |
+
+## 5. Risk register
+
+| ID | Risk | Likelihood | Impact | Mitigation | Status |
+|----|------|------------|--------|-----------|--------|
+| V1 | Interpreting "use frequency" as site-wide | Medium | High (would need analytics) | Q1 decision; per-device design; PRD §10.3 | Open: owner answer |
+| V2 | Reordering annoys visitors | Low | Medium | Thresholds, load-time only, reset, footer note | Designed |
+| V3 | Headless Chrome unavailable in CI | Low | Medium | Spike first; documented fallback | Open: spike |
+| V4 | Scope: four specs in one release | Medium | Medium | Phase gates; UX Phase A can ship alone; SH first | Planned |
+| V5 | `podcast` kind in Reads overlaps the new section | Medium | Low | Stop offering it; keep accepting it | Specified (PC-06) |
+| V6 | Old shared `#blog` links | Low | Low | Redirect | Specified |
+
+## 6. Rollback
+
+Tag `v1.5` is the rollback point. Because content changes are additive, `git revert` of the 2.0 merge restores the previous site and it renders the migrated `reads.json` correctly; `blog.json` is intact. The stored layout key is ignored by old code. Health and CI keep running throughout (no workflow permission changes).
+
+## 7. Out of scope for 2.0
+
+Analytics of any kind, site-wide usage counts, embedded audio, RSS or platform lookups, a third Reads sub-item, owner-configurable default order, a rewrite of the renderers.
 
 ---
 
