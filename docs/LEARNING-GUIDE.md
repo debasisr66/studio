@@ -451,3 +451,29 @@ python3 -m http.server 8765
 curl -s -o /dev/null -w "%{http_code}\n" https://debasisr66.github.io/studio/
 curl -s https://debasisr66.github.io/studio/content/cache.json | head -20
 ```
+
+## Step 18 — Studio 2.0: what changes for the owner (planned; nothing here exists yet)
+
+This step is written ahead of the build so you know what to expect. It is updated for real when each phase ships; commands marked *planned* do not work yet.
+
+**What you will see**
+- Reads has two sections, **Technical** and **Others**. When you add a read, the form asks which one. Your five current reads and the book are proposed as Technical; you confirm this before the migration.
+- **Podcasts** replace **Blog**. In the admin, "Share a podcast" asks for a link and a title, with optional show name, short take and tags. The old blog editor goes away.
+- The page order becomes Products, Updates, Reads, Podcasts, the same for everyone. (An earlier idea, ordering sections by what each visitor uses, was dropped: Studio has no analytics and stores nothing about visitors.)
+
+**How each piece is built and checked (the method you already know)**
+
+| Phase | Where to read | What to run (planned where marked) |
+|-------|---------------|------------------------------------|
+| Specs and impact | `docs/specs/*`, `docs/impact.md` | read and answer the open questions in `docs/plan.md` |
+| Plan | `docs/plan.md` | follow the ten steps in order |
+| Design | `docs/design.md` §12 | diagrams render on GitHub |
+| Build and test | `docs/build.md` §18, `docs/test.md` v2.0 | `node --test tests/*.test.js`, `node scripts/validate-site.js`, `node scripts/smoke.js` *(planned)* |
+| Security | `docs/security.md` §11 | the checklist in §11.3 |
+| Release | `docs/build.md` §18.5 | PR, green checks, merge, tag `v2.0`, verify live |
+| Roll back | `docs/build.md` §18.6 | `git revert -m 1 <merge sha>`; tag `v1.5` is the safe point |
+
+**Your decisions before building** are listed in `docs/plan.md` ("Owner decisions needed"). **Your hands-on steps at release:** publish one real read and one real podcast with the admin token (Step 9 B), confirm the seed podcast links, and try the page on a real phone.
+
+**New terms:** *smoke test* (a small automatic check that the page really renders), *schema version* (a number in a content file that says which shape it has), *contract* (the written list of fields each content file may contain).
+

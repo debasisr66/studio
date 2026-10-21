@@ -1,6 +1,6 @@
 # Model and Agent Use — Studio
 
-Recorded 2026-10-19, updated after v1.4 work (2026-10-20). This document reports what could be measured. Where a figure is not exposed by the tooling, it says so instead of guessing.
+Recorded 2026-10-19, updated after v1.4 work (2026-10-20) and the v2.0 planning session (2026-10-21, §7). This document reports what could be measured. Where a figure is not exposed by the tooling, it says so instead of guessing.
 
 ## 1. Session
 
@@ -94,3 +94,18 @@ To get the authoritative billed numbers, use the usage page in the Claude accoun
 ## 6. How to refresh this document
 
 Ask Claude to re-run the session usage tool and update §4. For agent detail on a future multi-agent run, list each agent's name, model, prompt purpose and result summary in §2–3.
+
+## 7. v2.0 planning session (2026-10-21): documents only, no code
+
+| Item | Value |
+|------|-------|
+| Work done | Revised PRD (§22 and related sections); wrote four specs (SH, RC, PC, UX) with test plans; impact and plan; design (§12), test, build, security, architecture, learning-guide and product-intro updates; contract and operations drafts |
+| Main agent and model | Claude Sonnet 5.5 (`claude-sonnet-5-5`), the session's model |
+| Subagents | None spawned |
+| Tool use for facts | Reads and `grep` of the repository (code and docs), `node` one-liners to reproduce findings, `git`, `gh`; no browser; no code changed |
+| Context in use at the time of writing | **281,389 tokens** of 1,000,000 (28%); Messages 215,438 · System tools 29,854 · MCP tools 19,885 · Skills 9,959 · System prompt 5,168 · Memory files 1,085 |
+| Plan limits (account-wide) | 5-hour window **18%** used (resets in 1 h 28 min); weekly all-models **41%** used; extra usage disabled |
+| Per-phase token cost | Not exposed by the tooling; not estimated |
+
+**Practical note for the build:** the 2.0 build is long (ten plan steps, one pull request each). Start each phase, or at least the SH foundation, in a **fresh session** and let the repository documents carry the context: `docs/PRD.md`, `docs/specs/*`, `docs/plan.md`, `docs/design.md` §12 and `docs/test.md` v2.0 contain everything needed. A separate reviewer agent would be worthwhile for the security-sensitive phases (SH-02 CI tool, UX-04/05 privacy) so that the author does not mark their own work; none has been used yet.
+
