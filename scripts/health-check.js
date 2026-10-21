@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Daily health check. Read-only; no dependencies. Exits 1 (red run, GitHub emails the owner) when:
 //   - the live site or its key files do not answer, or
-//   - a product's latest GitHub release differs from what content/cache.json says (broken sync/dispatch).
+//   - a product's latest GitHub release differs from what content/cache.json says (broken sync/dispatch), or
+//   - the sync workflow has not succeeded in the last 48 hours.
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -32,6 +33,20 @@ function findInactiveWorkflows(workflows) {
   return (Array.isArray(workflows) ? workflows : [])
     .filter(w => w && typeof w.name === 'string' && typeof w.state === 'string' && w.state !== 'active')
     .map(w => `workflow "${w.name}" is ${w.state}, so it will not run (re-enable: gh workflow enable "${w.name}")`);
+}
+
+/* Freshness = when the sync last SUCCEEDED, not how old cache.json is: synced_at only moves when data changes, so a quiet,
+   healthy week would look stale. 48 h absorbs hours-late scheduling plus one missed night (SPEC-TR TR-06).
+   runs: workflow runs of sync.yml as the Actions API returns them. A manual dry run that succeeds also counts (documented residual). */
+const SYNC_MAX_AGE_HOURS = 48;
+function findSyncStale(runs, now = Date.now(), maxHours = SYNC_MAX_AGE_HOURS) {
+  const fix = ' Fix: docs/RUNBOOK.md#sync-failed-or-did-not-run';
+  const good = (Array.isArray(runs) ? runs : []).filter(r => r && r.conclusion === 'success' && !isNaN(Date.parse(r.updated_at)))
+    .map(r => Date.parse(r.updated_at));
+  if (!good.length) return ['sync.yml has no successful run on record, so the cache may be stale.' + fix];
+  const last = Math.max(...good), age = (now - last) / 3600e3;
+  if (age > maxHours) return [`last successful sync was ${Math.floor(age)} hours ago (${new Date(last).toISOString()}); the limit is ${maxHours} hours.` + fix];
+  return [];
 }
 
 async function latestTag(repo) {
@@ -75,6 +90,16 @@ async function main() {
     else notes.push(`could not read workflow states: GitHub API ${res.status}`);
   } catch (e) { notes.push('could not read workflow states: ' + e.message); }
 
+  // 4. the sync itself ran successfully recently (cache.json's own age is not a signal)
+  try {
+    const repo = process.env.GITHUB_REPOSITORY || 'debasisr66/studio';
+    const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'studio-health' };
+    if (TOKEN) headers.Authorization = 'Bearer ' + TOKEN;
+    const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/sync.yml/runs?status=success&per_page=5`, { headers });
+    if (res.ok) problems.push(...findSyncStale((await res.json()).workflow_runs));
+    else notes.push(`could not read sync runs: GitHub API ${res.status}`);
+  } catch (e) { notes.push('could not read sync runs: ' + e.message); }
+
   notes.forEach(n => console.log('note  ' + n));
   problems.forEach(p => console.log('ERROR ' + p));
   console.log(problems.length ? `\nUNHEALTHY: ${problems.length} problem(s)` : '\nHEALTHY: site answers and the cache matches GitHub releases');
@@ -83,6 +108,6 @@ async function main() {
   process.exit(problems.length ? 1 : 0);
 }
 
-module.exports = { findDrift, findInactiveWorkflows };
+module.exports = { findDrift, findInactiveWorkflows, findSyncStale, SYNC_MAX_AGE_HOURS };
 
 if (require.main === module) main().catch(e => { console.error('::error::health check crashed: ' + e.message); process.exit(1); });

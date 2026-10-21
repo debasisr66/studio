@@ -33,7 +33,8 @@ jobs:
         run: node scripts/sync-products.js
 
       - name: Commit cache if changed
-        if: steps.fetch.outputs.changed == 'true' && inputs.dry_run != true
+        # !cancelled(): still commit the good products when the fetch step ended red because another product failed (SPEC-TR TR-05)
+        if: ${{ !cancelled() && steps.fetch.outputs.changed == 'true' && inputs.dry_run != true }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

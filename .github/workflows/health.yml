@@ -2,7 +2,7 @@ name: Health check
 
 # Daily at 12:00 UTC. GitHub starts scheduled runs hours late (the 03:00 UTC sync has run between 07:26 and 08:24 UTC), so 12:00 is
 # comfortably after it. Fails (red run, GitHub emails failed-workflow notifications) when the live site is down, the cache has fallen
-# behind the products' latest GitHub releases, or any workflow has been disabled.
+# behind the products' latest GitHub releases, the sync has not succeeded in 48 hours, or any workflow has been disabled.
 on:
   schedule:
     - cron: '0 12 * * *'

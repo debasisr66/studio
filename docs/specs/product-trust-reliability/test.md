@@ -1,6 +1,6 @@
 # Test plan: Product trust and reliability
 
-Spec: [spec.md](spec.md) (`SPEC-TR`). Test IDs are `TC-TR-<group><nn>`. Status values: ⬜ not run · ✅ pass · ❌ fail · ➖ not applicable. Phase A results recorded below (unit tests run locally, 116 pass); Phases B and C not started. N01 and N03 are completed on the pull request / in the browser.
+Spec: [spec.md](spec.md) (`SPEC-TR`). Test IDs are `TC-TR-<group><nn>`. Status values: ⬜ not run · ✅ pass · ❌ fail · ➖ not applicable. Phases A and B results recorded below (128 tests pass locally); Phase C not started. H04 (API unreachable → note only) is by code inspection, not yet unit-tested. N01 and N03 are completed on the pull request / in the browser.
 
 ## Strategy
 
@@ -54,22 +54,22 @@ Pure decision logic is unit-tested; the workflow behaviour is proven by a drill 
 
 | ID | Case | Expected | Status |
 |----|------|----------|--------|
-| TC-TR-S01 | One product fetch fails, prior entry exists | entry kept unchanged; failure listed (repo, reason); outcome = partial failure | ⬜ |
-| TC-TR-S02 | One product fails, others change | others written and committed; run ends red | ⬜ |
-| TC-TR-S03 | Rate-limit guard trips | remaining products reported as skipped by rate limit, prior entries kept | ⬜ |
-| TC-TR-S04 | All products fail | cache file untouched; red | ⬜ |
-| TC-TR-S05 | Nothing changed, nothing failed | "No changes"; green; no commit | ⬜ |
-| TC-TR-S06 | Drill: point a throwaway registry entry at a missing repo, run sync with `DRY_RUN=true`, then for real on a branch | red run, summary names the repo, `main` history unchanged except good entries | ⬜ |
+| TC-TR-S01 | One product fetch fails, prior entry exists | entry kept unchanged; failure listed (repo, reason); outcome = partial failure | ✅ |
+| TC-TR-S02 | One product fails, others change | others written and committed; run ends red | ✅ |
+| TC-TR-S03 | Rate-limit guard trips | remaining products reported as skipped by rate limit, prior entries kept | ✅ |
+| TC-TR-S04 | All products fail | cache file untouched; red | ✅ |
+| TC-TR-S05 | Nothing changed, nothing failed | "No changes"; green; no commit | ✅ |
+| TC-TR-S06 | Drill: point a throwaway registry entry at a missing repo, run sync with `DRY_RUN=true`, then for real on a branch | red run, summary names the repo, `main` history unchanged except good entries | ✅ |
 
 ## Health tests (H), TR-06 to TR-08
 
 | ID | Case | Expected | Status |
 |----|------|----------|--------|
-| TC-TR-H01 | Last successful `sync.yml` run 10 h ago, `synced_at` 20 days old | healthy | ⬜ |
-| TC-TR-H02 | Last successful run 49 h ago | UNHEALTHY, names the run time | ⬜ |
-| TC-TR-H03 | No successful run ever (new repo or all failed) | UNHEALTHY | ⬜ |
+| TC-TR-H01 | Last successful `sync.yml` run 10 h ago, `synced_at` 20 days old | healthy | ✅ |
+| TC-TR-H02 | Last successful run 49 h ago | UNHEALTHY, names the run time | ✅ |
+| TC-TR-H03 | No successful run ever (new repo or all failed) | UNHEALTHY | ✅ |
 | TC-TR-H04 | Actions API unreachable | note only, not a failure | ⬜ |
-| TC-TR-H05 | Threshold constant changed in one place changes the verdict | pass | ⬜ |
+| TC-TR-H05 | Threshold constant changed in one place changes the verdict | pass | ✅ |
 | TC-TR-H06 | `download_asset` configured, latest release lacks a matching asset | parity problem names the product | ⬜ |
 | TC-TR-H07 | Cached `download_url` points at a different asset than GitHub's | parity problem | ⬜ |
 | TC-TR-H08 | Cached repo hidden or not in registry | warning | ⬜ |
@@ -123,4 +123,5 @@ All P0 rows ✅ (TR-01, 02, 05, 06, 09, 11, 13); P1 rows ✅ or deferred in writ
 
 - 2026-10-21: Draft created.
 - 2026-10-21: Phase A run: U01-U09, C01-C07, D01/D03/D05/D06, N02, N05 pass. Test U08 caught a real edge (`https:///x` parsed as host `x`); rule fixed. Existing tests that omitted `synced_at` were updated.
+- 2026-10-21: Phase B run: S01-S05 and H01-H03, H05 unit tests pass (12 failed before the code). S06 drill on a throwaway branch with a missing repo: fetch step red, commit step still ran (stale star count 99 → 1 repaired, failed product not added), run red, summary named the repo; branch deleted. Health check ran healthy against the live Actions API.
 - 2026-10-21: Rewritten with IDs and cases grounded in findings F1-F10; nothing executed yet.

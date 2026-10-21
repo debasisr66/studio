@@ -21,7 +21,7 @@ GH_TOKEN=$(gh auth token) node scripts/health-check.js   # live site and cache a
 | Symptom | Section |
 |---------|---------|
 | Card shows an old version, or `cache says vX, GitHub says vY` | [stale](#stale-or-drifting-cache) |
-| Sync run is red or did not run | [sync](#sync-failed-or-did-not-run) |
+| Sync run is red or did not run; health says `last successful sync was N hours ago` | [sync](#sync-failed-or-did-not-run) |
 | Card has no Download or Updates entry | [release missing](#release-or-download-missing) |
 | Product release did not reach the hub | [dispatch](#product-release-did-not-reach-the-hub) |
 | Sync log says rate limit | [rate limit](#github-rate-limit) |
@@ -45,7 +45,8 @@ gh run watch                                                           # follow 
 
 ## Sync failed or did not run
 
-- **Partial failure** (arrives with Phase B): the run ends red after committing the products that did sync. The step summary names each failed repo and the reason. The failed product keeps its previous card data.
+- **Partial or total failure:** the run ends **red after committing the products that did sync** (GitHub emails you). The run's summary page lists each failed repo, whether it was an error or a rate-limit skip, and the reason. A failed product keeps its previous card data; if every product failed the cache file is left untouched.
+- **Health says `last successful sync was N hours ago` (over 48) or `no successful run on record`:** the sync has not succeeded recently. Open `gh run list --workflow sync.yml --limit 5`: red runs mean fix the named product; no runs mean the workflow is [disabled](#scheduled-workflow-disabled). Note: a manual *dry run* that succeeds also counts as a success.
 - **Did not run:** scheduled runs start late (observed 4-5 hours) and are switched off after 60 inactive days ([disabled](#scheduled-workflow-disabled)). A quiet green history is fine.
 - **Fix:** read the failing step (`gh run view <id> --log-failed`), fix the cause (repo renamed or deleted → edit `content/products.json`; rate limit → wait), then `gh workflow run sync.yml`.
 
