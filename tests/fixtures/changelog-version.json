@@ -1,0 +1,14 @@
+{
+  "input": {
+    "releases": [
+      {
+        "version": "one",
+        "date": "2026-10-19",
+        "title": "T",
+        "items": [
+          "one"
+        ]
+      }
+    ]
+  }
+}

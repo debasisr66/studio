@@ -1,0 +1,69 @@
+{
+  "registry": [
+    {
+      "repo": "o/a"
+    }
+  ],
+  "validateProducts": [
+    {
+      "repo": "o/a",
+      "name": "A",
+      "tagline": "t",
+      "category": "Productivity",
+      "slug": "a"
+    }
+  ],
+  "validateCache": {
+    "synced_at": "2026-10-21T03:00:00Z",
+    "products": {
+      "o/a": {
+        "description": "",
+        "stars": 1,
+        "language": "JS",
+        "topics": [],
+        "pushed_at": "2026-10-19",
+        "html_url": "https://github.com/o/a",
+        "latest_release": null
+      }
+    }
+  },
+  "validateBlog": {
+    "posts": [
+      {
+        "id": 1,
+        "date": "2026-10-19",
+        "title": "T",
+        "body": "B",
+        "link": ""
+      }
+    ]
+  },
+  "validateReads": {
+    "books": [],
+    "articles": [
+      {
+        "id": 1,
+        "added": "2026-10-19",
+        "title": "T",
+        "url": "https://example.com/a",
+        "comment": "c",
+        "kind": "article",
+        "tags": [
+          "ai"
+        ]
+      }
+    ]
+  },
+  "validateChangelog": {
+    "releases": [
+      {
+        "version": "1.0",
+        "date": "2026-10-19",
+        "title": "T",
+        "items": [
+          "one"
+        ]
+      }
+    ]
+  }
+}

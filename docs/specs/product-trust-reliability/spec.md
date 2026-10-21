@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-TR` (requirements `TR-01` … `TR-13`) |
-| Status | **Approved; **Phase A merged (#7); Phase B in review**; C not started** |
+| Status | **Approved; **Phases A and B merged (#7, #8); Phase C in review** |
 | Owner | Debasis Ray |
 | Created | 2026-10-21 |
 | Parent | [PRD](../../PRD.md) §9.2, §9.6, §10.2, §13 (items 2 and 6), §15.3, Roadmap Phase 2 |
@@ -240,3 +240,4 @@ On release, the matching `REQ-44…` rows are added to `docs/test.md`, `docs/sec
 - 2026-10-21: Owner accepted recommendations: Q1 = 48 h, Q2 = red after committing good products. Spec submitted as a pull request for review.
 - 2026-10-21: Spec PR #6 merged. Phase A built test-first on `spec-tr/phase-a`: TR-01 (`isPublishableUrl`, one source in `js/reads-lib.js`), TR-02 (cache envelope), TR-09 (`docs/RUNBOOK.md`), TR-11 (decision record), TR-13 checks. 116 tests pass; real content passes with no new warning.
 - 2026-10-21: Phase A merged (PR #7). Phase B built test-first on `spec-tr/phase-b`: TR-05 (`collect`, `verdict`, `summaryMarkdown`; `sync.yml` commit step now `!cancelled()`), TR-06 (`findSyncStale`, 48 h). 128 tests pass; forced-failure drill passed on a throwaway branch.
+- 2026-10-21: Phase B merged (PR #8). Phase C built test-first on `spec-tr/phase-c`: TR-03/04 (`RULES` list, 23 fixtures, `productWarnings`), TR-07 (`findAssetParity`, `findOrphans`, `findMissingRepos`), TR-08 (`withFix`), TR-10 (runbook commands executed). 142 tests pass. Release docs: `REQ-44…49` in `docs/test.md`, changelog v1.5.

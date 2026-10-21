@@ -164,3 +164,15 @@ Scope: partial sync failure is visible (TR-05) and sync freshness check (TR-06).
 | Secret exposure | Summary text uses only product names and API status lines; no headers or tokens are echoed (test checks content) |
 | Residual | A successful manual dry run counts as a sync success for the 48 h check (the API does not reveal dry runs). Low impact: the next scheduled run still has to pass |
 | Drill hygiene | Throwaway branch only; `main` and its cache untouched; branch deleted |
+
+## 10. SPEC-TR Phase C review log (2026-10-21)
+
+Scope: registry integrity, fixture-proven rules, asset parity, missing-repo and orphan reporting, Fix pointers.
+
+| Check | Result |
+|-------|--------|
+| New attack surface | None. Health makes up to one extra read-only GET per product that has no release (`/repos/<repo>`); same token, same permissions |
+| `scripts/health-check.js` now requires `js/reads-lib.js` | Pure helper, no I/O; same file the page loads |
+| Rules can no longer rot silently | 23 enumerated rules each have a failing fixture; a missing fixture fails the suite (proven by removing one) |
+| Output safety | Fix pointers are static runbook anchors; product-controlled text appears only in the GitHub step summary and log as plain text |
+| Residual | `KNOWN_CATEGORIES` is a soft (warning) list; an unknown category never blocks publishing |

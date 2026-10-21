@@ -1,0 +1,25 @@
+{
+  "input": {
+    "synced_at": "2026-10-21T03:00:00Z",
+    "products": {
+      "o/a": {
+        "description": "",
+        "stars": 1,
+        "language": "JS",
+        "topics": [],
+        "pushed_at": "2026-10-19",
+        "html_url": "https://github.com/o/a",
+        "latest_release": {
+          "tag": "",
+          "download_url": "https://x.dev/r",
+          "assets": []
+        }
+      }
+    }
+  },
+  "registry": [
+    {
+      "repo": "o/a"
+    }
+  ]
+}

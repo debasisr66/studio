@@ -1,0 +1,10 @@
+{
+  "input": [
+    {
+      "repo": "o/a",
+      "name": "A",
+      "tagline": "t",
+      "category": "Wibble"
+    }
+  ]
+}

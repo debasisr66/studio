@@ -43,6 +43,20 @@ gh run watch                                                           # follow 
 ```
 - **If it keeps happening:** see [dispatch](#product-release-did-not-reach-the-hub).
 
+## Health check messages (daily run)
+
+| Message | Section |
+|---------|---------|
+| `returned 404` / site file errors | [live site 404](#live-site-files-404) |
+| `cache says vX, GitHub says vY`, `not in cache.json at all` | [stale](#stale-or-drifting-cache) |
+| `repository not found on GitHub` | [sync](#sync-failed-or-did-not-run): the repo was renamed, made private or deleted; edit `content/products.json` |
+| `configured download_asset … matches no asset`, `cached download … differs from GitHub` | [release or download missing](#release-or-download-missing) |
+| `workflow "…" is …` | [disabled](#scheduled-workflow-disabled) |
+| `last successful sync was N hours ago`, `no successful run on record` | [sync](#sync-failed-or-did-not-run) |
+| `warning: … is in cache.json but hidden or not in the registry` | Note only; remove the entry when convenient |
+
+Each health problem line ends with `Fix: docs/RUNBOOK.md#<section>`.
+
 ## Sync failed or did not run
 
 - **Partial or total failure:** the run ends **red after committing the products that did sync** (GitHub emails you). The run's summary page lists each failed repo, whether it was an error or a rate-limit skip, and the reason. A failed product keeps its previous card data; if every product failed the cache file is left untouched.
@@ -80,6 +94,21 @@ gh run watch                                                           # follow 
 | `cache.json[…]: stars must be a whole number, 0 or more` | Cache hand-edited | Restore or re-run the sync |
 | `warn … cached repo is hidden or not in the registry` | Warning only; a product was hidden or removed | Optional: remove that entry from `content/cache.json` |
 | other messages | | LEARNING-GUIDE Step 12, "Reading a failure" |
+
+Every content rule CI enforces, with what to do (each is proven by a failing fixture in `tests/fixtures/`):
+
+| File | Message contains | Fix |
+|------|------------------|-----|
+| products.json | `repo must look like`, `duplicate repo` | Use `owner/name`; one entry per repository |
+| products.json | `duplicate slug`, `slug must be lowercase` | Slugs are unique and use lowercase letters, digits and hyphens |
+| products.json | `category must not be empty` | Give the product a category or remove the key |
+| products.json | `unknown category` (warning) | Typo, or add the new category to `KNOWN_CATEGORIES` in `scripts/validate-site.js` on purpose |
+| products.json, cache.json, blog.json, reads.json | `clean http(s) address`, `html_url`, `link must be` | Plain `https://` link: no spaces, hidden characters or `user:pass@` |
+| cache.json | `synced_at is required`, `in the future`, `stars must be a whole number`, `latest_release.tag is required` | Restore from the last good commit or re-run the sync |
+| cache.json | `hidden or not in the registry` (warning) | Remove that entry from `content/cache.json` when convenient |
+| blog.json | `date must be YYYY-MM-DD`, `title is required` | Fix the post in admin or the JSON |
+| reads.json | `kind must be one of`, `tags must be an array`, `comment must be text`, `duplicate id` | Edit the read in admin (⚙ → Edit); at most 5 tags, 280-character comment |
+| changelog.json | `version must look like`, `plain text` | Versions like `1.5`; release notes are plain text without `<` or `>` |
 
 ## Bad commit on `main`
 
