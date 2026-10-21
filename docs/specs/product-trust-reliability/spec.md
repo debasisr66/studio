@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-TR` (requirements `TR-01` … `TR-13`) |
-| Status | **Draft: awaiting owner approval** (no implementation started) |
+| Status | **Approved for review (PR open); no implementation started** |
 | Owner | Debasis Ray |
 | Created | 2026-10-21 |
 | Parent | [PRD](../../PRD.md) §9.2, §9.6, §10.2, §13 (items 2 and 6), §15.3, Roadmap Phase 2 |
@@ -192,8 +192,8 @@ Priority: **P0** = ship with the spec; **P1** = fast follow in the same release 
 
 | # | Question | Owner | Blocking? |
 |---|----------|-------|-----------|
-| Q1 | Is **48 h** the right freshness limit, or should one missed night alert (≈36 h)? | Owner | No (constant, default 48 h) |
-| Q2 | Should a partial sync failure turn the run red **after** committing the good products (recommended), or stay green with a warning issue? Red = an email to the owner today | Owner + design | **Yes** before TR-05 design |
+| Q1 | Is **48 h** the right freshness limit, or should one missed night alert (≈36 h)? | Owner | **Closed 2026-10-21: 48 h** |
+| Q2 | Should a partial sync failure turn the run red **after** committing the good products (recommended), or stay green with a warning issue? Red = an email to the owner today | Owner + design | **Closed 2026-10-21: red after committing the good products** |
 | Q3 | Should embedded-credential URLs in existing content be fixed first? (Current content has none; confirmed by the TR-01 fixture run) | Engineering | No |
 | Q4 | Is the 2048-character cap acceptable for reads links with long tracking queries? | Owner | No |
 
@@ -236,4 +236,5 @@ On release, the matching `REQ-44…` rows are added to `docs/test.md`, `docs/sec
 ## 15. Status log
 
 - 2026-10-21: First draft (generic) created.
-- 2026-10-21: Revised against the code: findings F1-F10, requirement IDs, traceability, decision record for G4. Awaiting owner answers to Q2 (blocking) and approval.
+- 2026-10-21: Revised against the code: findings F1-F10, requirement IDs, traceability, decision record for G4. 
+- 2026-10-21: Owner accepted recommendations: Q1 = 48 h, Q2 = red after committing good products. Spec submitted as a pull request for review.
