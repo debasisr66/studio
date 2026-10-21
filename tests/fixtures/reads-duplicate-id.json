@@ -1,0 +1,29 @@
+{
+  "input": {
+    "books": [],
+    "articles": [
+      {
+        "id": 1,
+        "added": "2026-10-19",
+        "title": "T",
+        "url": "https://example.com/a",
+        "comment": "c",
+        "kind": "article",
+        "tags": [
+          "ai"
+        ]
+      },
+      {
+        "id": 1,
+        "added": "2026-10-19",
+        "title": "T",
+        "url": "https://example.com/b",
+        "comment": "c",
+        "kind": "article",
+        "tags": [
+          "ai"
+        ]
+      }
+    ]
+  }
+}

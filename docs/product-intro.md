@@ -1,6 +1,6 @@
 # Studio and Penny — Product Introduction
 
-*Studio by Debasis Ray — learning never ends!* · https://debasisr66.github.io/studio/ · current version **v1.4**
+*Studio by Debasis Ray — learning never ends!* · https://debasisr66.github.io/studio/ · current version **v1.5**
 
 ## In one paragraph
 
@@ -15,7 +15,7 @@
 | **One-way flow** | Products notify the hub; the hub only reads them. The hub can never change a product |
 | **Privacy** | Fonts, logo and every other asset are served by Studio itself: visiting contacts no one else, and there are no trackers or analytics |
 | **Owner tools** | A small admin layer (unlocked with a personal token that lives only in the browser tab) for the blog, reads and profile photo; photos are cropped, resized and stripped of location data before publishing |
-| **Safety net** | Strict security policy (no inline script or style, nothing from other sites), 102 automated tests, CI on every change, a daily health check that also watches the sync and the scheduled jobs, a weekly keep-alive so the nightly updates are never switched off, automation pinned to exact versions with weekly update proposals, and full git history for rollback |
+| **Safety net** | Strict security policy (no inline script or style, nothing from other sites), 142 automated tests, CI on every change, a daily health check that also watches the sync (it must have succeeded in the last 48 hours), release assets and the scheduled jobs, a sync that turns red (while keeping each product's last good data) when any product fails, a runbook for every alert, a weekly keep-alive so the nightly updates are never switched off, automation pinned to exact versions with weekly update proposals, and full git history for rollback |
 | **Release discipline** | Every release goes through impact analysis, plan, design, test-first build, a visual comparison against the previous release, a security review and a pull request with green CI |
 | **Protection of the record** | The main branch's history cannot be rewritten or deleted by anyone, including the owner |
 | **Run cost** | Static hosting on GitHub Pages; no backend to patch or monitor |

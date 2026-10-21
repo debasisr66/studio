@@ -1,6 +1,23 @@
 # Test Plan and Traceability — Studio
 
-Releases: **v1.4 (shipped 2026-10-20)** · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
+Releases: **v1.5 (in review: SPEC-TR)** · v1.4 (shipped 2026-10-20) · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
+
+---
+
+# v1.5 — Trust and reliability (SPEC-TR)
+
+Date: 2026-10-21 · Spec and per-requirement test cases: [docs/specs/product-trust-reliability/](specs/product-trust-reliability/spec.md) (`TR-nn`, `TC-TR-*`). Tests were written first and shown failing before each phase's code.
+
+| REQ | Requirement | Spec | Tests | Result |
+|-----|-------------|------|-------|--------|
+| REQ-44 | One strict URL rule (no whitespace/control characters/credentials, http(s) only, ≤ 2048) for every URL field; `cache.json` envelope checked (`synced_at`, `stars`, orphans) | TR-01, TR-02 | TC-TR-U01–U09, C01–C07 | ✅ |
+| REQ-45 | A failed product keeps its data, is reported by name and reason, and the sync run goes red after committing the good products | TR-05 | TC-TR-S01–S06 (S06 = drill on a throwaway branch) | ✅ |
+| REQ-46 | Sync freshness = last successful sync run within 48 h (not cache age); API failure is a note | TR-06 | TC-TR-H01–H03, H05 (H04 by inspection) | ✅ |
+| REQ-47 | Registry integrity (slug, category), every content rule has a failing fixture, release parity to asset level, missing repos and orphan cache entries reported | TR-03, 04, 07 | TC-TR-R01–R04, X01–X02, H06–H09 | ✅ |
+| REQ-48 | Every health problem has a `Fix:` pointer; one runbook covers every rule and message; runbook commands executed as written | TR-08, 09, 10 | TC-TR-H10, D01–D04 | ✅ |
+| REQ-49 | Protection policy recorded with revisit triggers; nothing else breaks | TR-11, 13 | TC-TR-D05–D06, N01, N02, N05 | ✅ (N01 on the PR) · 🔒 N04 admin publish (owner) · page code untouched, so N03 not repeated |
+
+**Unit tests: `node --test tests/*.test.js`: 142 of 142 pass** (102 before; +14 Phase A, +12 Phase B, +14 Phase C). Validator OK on real content with no new warning; `git diff main -- .github` is one condition line in `sync.yml` (no permission change). Live health check healthy; with a wrong asset pattern and a missing repo injected it went red with Fix pointers (restored afterwards).
 
 ---
 

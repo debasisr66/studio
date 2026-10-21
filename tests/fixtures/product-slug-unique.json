@@ -1,0 +1,18 @@
+{
+  "input": [
+    {
+      "repo": "o/a",
+      "name": "A",
+      "tagline": "t",
+      "category": "Tools",
+      "slug": "a"
+    },
+    {
+      "repo": "o/b",
+      "name": "A",
+      "tagline": "t",
+      "category": "Tools",
+      "slug": "a"
+    }
+  ]
+}

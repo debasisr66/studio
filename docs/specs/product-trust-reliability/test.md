@@ -1,6 +1,6 @@
 # Test plan: Product trust and reliability
 
-Spec: [spec.md](spec.md) (`SPEC-TR`). Test IDs are `TC-TR-<group><nn>`. Status values: ⬜ not run · ✅ pass · ❌ fail · ➖ not applicable. Phases A and B results recorded below (128 tests pass locally); Phase C not started. H04 (API unreachable → note only) is by code inspection, not yet unit-tested. N01 and N03 are completed on the pull request / in the browser.
+Spec: [spec.md](spec.md) (`SPEC-TR`). Test IDs are `TC-TR-<group><nn>`. Status values: ⬜ not run · ✅ pass · ❌ fail · ➖ not applicable. All three phases run (142 tests pass locally). H04 (API unreachable → note only) is by code inspection, not yet unit-tested. N01 and N03 are completed on the pull request / in the browser.
 
 ## Strategy
 
@@ -37,16 +37,16 @@ Spec: [spec.md](spec.md) (`SPEC-TR`). Test IDs are `TC-TR-<group><nn>`. Status v
 ### TR-03 Registry integrity (R)
 | ID | Case | Expected | Status |
 |----|------|----------|--------|
-| TC-TR-R01 | Duplicate `slug` | error | ⬜ |
-| TC-TR-R02 | `slug` with uppercase or spaces | error | ⬜ |
-| TC-TR-R03 | Empty `category` | error | ⬜ |
-| TC-TR-R04 | Unknown `category` | warning listing known values | ⬜ |
+| TC-TR-R01 | Duplicate `slug` | error | ✅ |
+| TC-TR-R02 | `slug` with uppercase or spaces | error | ✅ |
+| TC-TR-R03 | Empty `category` | error | ✅ |
+| TC-TR-R04 | Unknown `category` | warning listing known values | ✅ |
 
 ### TR-04 Every rule can fail (X)
 | ID | Case | Expected | Status |
 |----|------|----------|--------|
-| TC-TR-X01 | Each enumerated rule id has one failing fixture and the validator reports that id | pass | ⬜ |
-| TC-TR-X02 | Removing a fixture makes the meta-test fail (proves the guard works) | pass | ⬜ |
+| TC-TR-X01 | Each enumerated rule id has one failing fixture and the validator reports that id | pass | ✅ |
+| TC-TR-X02 | Removing a fixture makes the meta-test fail (proves the guard works) | pass | ✅ |
 
 ## Sync tests (S), TR-05
 
@@ -70,20 +70,20 @@ Pure decision logic is unit-tested; the workflow behaviour is proven by a drill 
 | TC-TR-H03 | No successful run ever (new repo or all failed) | UNHEALTHY | ✅ |
 | TC-TR-H04 | Actions API unreachable | note only, not a failure | ⬜ |
 | TC-TR-H05 | Threshold constant changed in one place changes the verdict | pass | ✅ |
-| TC-TR-H06 | `download_asset` configured, latest release lacks a matching asset | parity problem names the product | ⬜ |
-| TC-TR-H07 | Cached `download_url` points at a different asset than GitHub's | parity problem | ⬜ |
-| TC-TR-H08 | Cached repo hidden or not in registry | warning | ⬜ |
-| TC-TR-H09 | Product repo returns 404 | named in output, no crash | ⬜ |
-| TC-TR-H10 | Every problem line carries `Fix:` with a RUNBOOK anchor that exists | pass | ⬜ |
+| TC-TR-H06 | `download_asset` configured, latest release lacks a matching asset | parity problem names the product | ✅ |
+| TC-TR-H07 | Cached `download_url` points at a different asset than GitHub's | parity problem | ✅ |
+| TC-TR-H08 | Cached repo hidden or not in registry | warning | ✅ |
+| TC-TR-H09 | Product repo returns 404 | named in output, no crash | ✅ |
+| TC-TR-H10 | Every problem line carries `Fix:` with a RUNBOOK anchor that exists | pass | ✅ |
 
 ## Documentation review (D), TR-09 to TR-11
 
 | ID | Check | Status |
 |----|-------|--------|
 | TC-TR-D01 | `docs/RUNBOOK.md` covers all nine listed situations with commands | ✅ |
-| TC-TR-D02 | Every health and validator message maps to a RUNBOOK row (script-checked) | ⬜ |
+| TC-TR-D02 | Every health and validator message maps to a RUNBOOK row (script-checked) | ✅ |
 | TC-TR-D03 | `LEARNING-GUIDE.md` and README link to RUNBOOK; no duplicated fix steps | ✅ |
-| TC-TR-D04 | Runbook commands for manual re-sync were executed once exactly as written | ⬜ |
+| TC-TR-D04 | Runbook commands for manual re-sync were executed once exactly as written | ✅ |
 | TC-TR-D05 | `docs/rulesets/README.md` has the decision record and revisit triggers | ✅ |
 | TC-TR-D06 | PRD open question 2 closed and linked | ✅ |
 
@@ -124,4 +124,5 @@ All P0 rows ✅ (TR-01, 02, 05, 06, 09, 11, 13); P1 rows ✅ or deferred in writ
 - 2026-10-21: Draft created.
 - 2026-10-21: Phase A run: U01-U09, C01-C07, D01/D03/D05/D06, N02, N05 pass. Test U08 caught a real edge (`https:///x` parsed as host `x`); rule fixed. Existing tests that omitted `synced_at` were updated.
 - 2026-10-21: Phase B run: S01-S05 and H01-H03, H05 unit tests pass (12 failed before the code). S06 drill on a throwaway branch with a missing repo: fetch step red, commit step still ran (stale star count 99 → 1 repaired, failed product not added), run red, summary named the repo; branch deleted. Health check ran healthy against the live Actions API.
+- 2026-10-21: Phase C run: R01-R04, X01-X02, D02, H06-H10 pass (7 failed before the code, then 142 total). Negative proofs: a wrong `download_asset` and a missing repo made the live health check red with `Fix:` pointers; removing one fixture made X01/X02 fail. D04: the runbook's dry-run and `gh workflow run sync.yml` were run exactly as written (success). Open: N01 (CI on the PR), N03 and N04 (owner/browser, page code untouched), H04 by inspection.
 - 2026-10-21: Rewritten with IDs and cases grounded in findings F1-F10; nothing executed yet.

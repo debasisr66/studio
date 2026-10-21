@@ -6,6 +6,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const RL = require('../js/reads-lib.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const SITE = (process.env.HEALTH_URL || 'https://debasisr66.github.io/studio').replace(/\/$/, '');
@@ -49,13 +50,70 @@ function findSyncStale(runs, now = Date.now(), maxHours = SYNC_MAX_AGE_HOURS) {
   return [];
 }
 
-async function latestTag(repo) {
+/* Release parity beyond the tag (TR-07). releasesByRepo: repo -> latest release as GitHub returns it ({assets:[{name, browser_download_url}], tag_name?}) or null;
+   a repo absent from the map was not fetched and is skipped. For products with a download_asset pattern: GitHub's release must contain a match,
+   and the cached download link for that match must be GitHub's. (A different tag is findDrift's job and is not repeated here.) */
+function findAssetParity(registry, cache, releasesByRepo) {
+  const out = [];
+  for (const p of registry || []) {
+    if (!p || !p.repo || p.hidden || !p.download_asset || !(p.repo in releasesByRepo)) continue;
+    const rel = releasesByRepo[p.repo];
+    if (!rel) continue;
+    const live = RL.pickAsset((rel.assets || []).map(a => ({ name: a.name, download_url: a.browser_download_url })), p.download_asset);
+    if (!live) { out.push(`${p.repo}: configured download_asset "${p.download_asset}" matches no asset in the latest release`); continue; }
+    const c = cache && cache.products && cache.products[p.repo] && cache.products[p.repo].latest_release;
+    if (!c || (rel.tag_name !== undefined && c.tag !== rel.tag_name)) continue;
+    const cached = RL.pickAsset(c.assets, p.download_asset);
+    if (!cached || cached.download_url !== live.download_url)
+      out.push(`${p.repo}: cached download for "${p.download_asset}" differs from GitHub (cache: ${cached ? cached.download_url : 'none'}, GitHub: ${live.download_url})`);
+  }
+  return out;
+}
+
+/* Warnings: cached repos that are hidden or no longer in the registry. */
+function findOrphans(registry, cache) {
+  const visible = new Set((registry || []).filter(p => p && p.repo && !p.hidden).map(p => p.repo));
+  return Object.keys((cache && cache.products) || {}).filter(r => !visible.has(r))
+    .map(r => `${r} is in cache.json but hidden or not in the registry (remove it from cache.json when convenient)`);
+}
+
+/* existsByRepo: repo -> true/false from GitHub (false = 404). Names visible products whose repository is gone. */
+function findMissingRepos(registry, existsByRepo) {
+  return (registry || []).filter(p => p && p.repo && !p.hidden && existsByRepo[p.repo] === false)
+    .map(p => `${p.repo}: repository not found on GitHub (renamed, made private or deleted)`);
+}
+
+/* Every problem line carries a pointer to the matching runbook section (TR-08). */
+const FIXES = [
+  [/last successful sync|no successful run/i, 'sync-failed-or-did-not-run'],
+  [/not found on GitHub/i, 'sync-failed-or-did-not-run'],
+  [/download_asset|cached download/i, 'release-or-download-missing'],
+  [/disabled|is not active|will not run/i, 'scheduled-workflow-disabled'],
+  [/cache says|not in cache\.json/i, 'stale-or-drifting-cache'],
+  [/returned \d{3}|: (fetch failed|.*ECONN|.*ENOTFOUND)/i, 'live-site-files-404'],
+];
+function withFix(problem) {
+  if (/Fix: docs\/RUNBOOK/.test(problem)) return problem;
+  const hit = FIXES.find(([re]) => re.test(problem));
+  return `${problem} Fix: docs/RUNBOOK.md#${hit ? hit[1] : 'stale-or-drifting-cache'}`;
+}
+
+async function latestRelease(repo) {
   const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'studio-health' };
   if (TOKEN) headers.Authorization = 'Bearer ' + TOKEN;
   const res = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, { headers });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`GitHub API ${res.status}`);
-  return (await res.json()).tag_name || null;
+  return res.json();
+}
+
+async function repoExists(repo) {
+  const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'studio-health' };
+  if (TOKEN) headers.Authorization = 'Bearer ' + TOKEN;
+  const res = await fetch(`https://api.github.com/repos/${repo}`, { headers });
+  if (res.status === 404) return false;
+  if (!res.ok) throw new Error(`GitHub API ${res.status}`);
+  return true;
 }
 
 async function main() {
@@ -73,12 +131,20 @@ async function main() {
   // 2. cache is in step with GitHub releases
   const registry = readJson('content/products.json');
   const cache = readJson('content/cache.json');
-  const latest = {};
+  const latest = {}, releases = {}, exists = {};
   for (const p of registry.filter(x => x && x.repo && !x.hidden)) {
-    try { latest[p.repo] = await latestTag(p.repo); }
-    catch (e) { notes.push(`could not check ${p.repo}: ${e.message}`); }
+    try {
+      const rel = await latestRelease(p.repo);
+      releases[p.repo] = rel;
+      latest[p.repo] = (rel && rel.tag_name) || null;
+      if (!rel) exists[p.repo] = await repoExists(p.repo);   // no release: is it a missing repo or just unreleased?
+    } catch (e) { notes.push(`could not check ${p.repo}: ${e.message}`); }
   }
+  problems.push(...findMissingRepos(registry, exists));
+  for (const r of Object.keys(exists).filter(r => exists[r] === false)) { delete latest[r]; delete releases[r]; }   // reported above; do not also call it drift
   problems.push(...findDrift(registry, cache, latest));
+  problems.push(...findAssetParity(registry, cache, releases));
+  findOrphans(registry, cache).forEach(w => notes.push('warning: ' + w));
 
   // 3. every workflow is still enabled (scheduled ones are switched off after 60 inactive days)
   try {
@@ -101,13 +167,14 @@ async function main() {
   } catch (e) { notes.push('could not read sync runs: ' + e.message); }
 
   notes.forEach(n => console.log('note  ' + n));
-  problems.forEach(p => console.log('ERROR ' + p));
+  const shown = problems.map(withFix);
+  shown.forEach(p => console.log('ERROR ' + p));
   console.log(problems.length ? `\nUNHEALTHY: ${problems.length} problem(s)` : '\nHEALTHY: site answers and the cache matches GitHub releases');
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
-    `### Studio health: ${problems.length ? 'UNHEALTHY' : 'HEALTHY'}\n${problems.map(p => `- ❌ ${p}`).join('\n')}${notes.map(n => `\n- ℹ️ ${n}`).join('')}\n`);
+    `### Studio health: ${problems.length ? 'UNHEALTHY' : 'HEALTHY'}\n${shown.map(p => `- ❌ ${p}`).join('\n')}${notes.map(n => `\n- ℹ️ ${n}`).join('')}\n`);
   process.exit(problems.length ? 1 : 0);
 }
 
-module.exports = { findDrift, findInactiveWorkflows, findSyncStale, SYNC_MAX_AGE_HOURS };
+module.exports = { findDrift, findInactiveWorkflows, findSyncStale, findAssetParity, findOrphans, findMissingRepos, withFix, SYNC_MAX_AGE_HOURS };
 
 if (require.main === module) main().catch(e => { console.error('::error::health check crashed: ' + e.message); process.exit(1); });

@@ -15,6 +15,8 @@ const isObj = v => v && typeof v === 'object' && !Array.isArray(v);
 const isStr = v => typeof v === 'string';
 const httpUrl = RL.isPublishableUrl;   // strict rule, one source (TR-01): http(s) only, no whitespace/control characters, no credentials, <= 2048 chars
 const URL_HINT = 'a clean http(s) address (no spaces, control characters or login details)';
+const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const KNOWN_CATEGORIES = ['Productivity', 'Information', 'Tools', 'Education', 'Finance', 'Health', 'Developer', 'Writing'];
 const ISO_UTC_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
 
@@ -23,7 +25,7 @@ const BUDGETS = { 'index.html': 60 * 1024, 'css/site.css': 30 * 1024, 'js/app.js
 
 function validateProducts(list) {
   if (!Array.isArray(list)) return ['products.json: must be an array'];
-  const errors = [], seen = new Set();
+  const errors = [], seen = new Set(), slugs = new Set();
   list.forEach((p, i) => {
     const at = `products.json[${i}]`;
     if (!isObj(p)) return errors.push(`${at}: must be an object`);
@@ -33,8 +35,21 @@ function validateProducts(list) {
     for (const k of ['slug', 'name', 'tagline', 'category', 'download_asset']) if (p[k] !== undefined && !isStr(p[k])) errors.push(`${at}: ${k} must be a string`);
     for (const k of ['featured', 'hidden']) if (p[k] !== undefined && typeof p[k] !== 'boolean') errors.push(`${at}: ${k} must be true or false`);
     if (p.url !== undefined && !(isStr(p.url) && httpUrl(p.url))) errors.push(`${at}: url must be ${URL_HINT}`);
+    if (p.slug !== undefined && isStr(p.slug)) {
+      if (!SLUG_RE.test(p.slug)) errors.push(`${at}: slug must be lowercase letters, digits and hyphens only (got "${p.slug}")`);
+      else if (slugs.has(p.slug)) errors.push(`${at}: duplicate slug ${p.slug}`);
+      else slugs.add(p.slug);
+    }
+    if (p.category !== undefined && isStr(p.category) && !p.category.trim()) errors.push(`${at}: category must not be empty`);
   });
   return errors;
+}
+
+/* Soft checks on the registry: never fail CI. */
+function productWarnings(list) {
+  if (!Array.isArray(list)) return [];
+  return list.filter(p => isObj(p) && isStr(p.category) && p.category.trim() && !KNOWN_CATEGORIES.includes(p.category))
+    .map(p => `products.json: unknown category "${p.category}" for ${p.repo} (known: ${KNOWN_CATEGORIES.join(', ')}); add it to KNOWN_CATEGORIES on purpose`);
 }
 
 function validateCache(cache, registry, now = Date.now()) {
@@ -46,8 +61,9 @@ function validateCache(cache, registry, now = Date.now()) {
   for (const [repo, c] of Object.entries(cache.products)) {
     const at = `cache.json[${repo}]`;
     if (!isObj(c)) { errors.push(`${at}: must be an object`); continue; }
-    if (!Number.isInteger(c.stars) || c.stars < 0) errors.push(`${at}: stars must be a whole number, 0 or more`);
     if (Array.isArray(registry) && !visible.has(repo)) warnings.push(`${at}: cached repo is hidden or not in the registry (remove it from cache.json when convenient)`);
+    if (!Number.isInteger(c.stars) || c.stars < 0) errors.push(`${at}: stars must be a whole number, 0 or more`);
+  
     if (c.html_url !== undefined && !httpUrl(c.html_url)) errors.push(`${at}: html_url must be ${URL_HINT}`);
     const r = c.latest_release;
     if (r !== null && r !== undefined) {
@@ -330,7 +346,7 @@ function run() {
   const json = rel => { try { return JSON.parse(read(rel)); } catch (e) { errors.push(`${rel}: ${e.message}`); return undefined; } };
 
   const registry = json('content/products.json');
-  if (registry !== undefined) errors.push(...validateProducts(registry));
+  if (registry !== undefined) { errors.push(...validateProducts(registry)); warnings.push(...productWarnings(registry)); }
   const cache = json('content/cache.json');
   if (cache !== undefined) { const r = validateCache(cache, registry); errors.push(...r.errors); warnings.push(...r.warnings); }
   const blog = json('content/blog.json');
@@ -369,7 +385,50 @@ function run() {
   return { errors, warnings, sizes };
 }
 
-module.exports = { checkWorkflows, validateProfileManifest, validateProfileImage, checkSvg, checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
+/* TR-04: the content rules, enumerated. Each one needs a failing fixture in tests/fixtures/<id>.json ({input, registry?}), a runbook
+   section (fix) and a phrase the runbook must contain (doc). A test fails if any of these is missing, so no rule is untested. */
+const RULES = [
+  { id: 'product-repo-format', fn: 'validateProducts', level: 'error', match: /repo must look like/, fix: 'ci-rejects-content', doc: 'repo must look like' },
+  { id: 'product-repo-duplicate', fn: 'validateProducts', level: 'error', match: /duplicate repo/, fix: 'ci-rejects-content', doc: 'duplicate repo' },
+  { id: 'product-url-clean', fn: 'validateProducts', level: 'error', match: /url must be a clean/, fix: 'ci-rejects-content', doc: 'clean http(s) address' },
+  { id: 'product-slug-format', fn: 'validateProducts', level: 'error', match: /slug must be lowercase/, fix: 'ci-rejects-content', doc: 'slug must be lowercase' },
+  { id: 'product-slug-unique', fn: 'validateProducts', level: 'error', match: /duplicate slug/, fix: 'ci-rejects-content', doc: 'duplicate slug' },
+  { id: 'product-category-empty', fn: 'validateProducts', level: 'error', match: /category must not be empty/, fix: 'ci-rejects-content', doc: 'category must not be empty' },
+  { id: 'product-category-unknown', fn: 'validateProducts', level: 'warning', match: /unknown category/, fix: 'ci-rejects-content', doc: 'unknown category' },
+  { id: 'cache-synced-at', fn: 'validateCache', level: 'error', match: /synced_at is required/, fix: 'ci-rejects-content', doc: 'synced_at is required' },
+  { id: 'cache-synced-future', fn: 'validateCache', level: 'error', match: /in the future/, fix: 'ci-rejects-content', doc: 'in the future' },
+  { id: 'cache-stars', fn: 'validateCache', level: 'error', match: /stars must be a whole number/, fix: 'ci-rejects-content', doc: 'stars must be a whole number' },
+  { id: 'cache-release-tag', fn: 'validateCache', level: 'error', match: /latest_release\.tag is required/, fix: 'ci-rejects-content', doc: 'latest_release.tag is required' },
+  { id: 'cache-url-clean', fn: 'validateCache', level: 'error', match: /html_url must be a clean/, fix: 'ci-rejects-content', doc: 'html_url' },
+  { id: 'cache-orphan', fn: 'validateCache', level: 'warning', match: /hidden or not in the registry/, fix: 'ci-rejects-content', doc: 'hidden or not in the registry' },
+  { id: 'blog-date', fn: 'validateBlog', level: 'error', match: /date must be YYYY-MM-DD/, fix: 'ci-rejects-content', doc: 'date must be YYYY-MM-DD' },
+  { id: 'blog-title', fn: 'validateBlog', level: 'error', match: /title is required/, fix: 'ci-rejects-content', doc: 'title is required' },
+  { id: 'blog-link-clean', fn: 'validateBlog', level: 'error', match: /link must be a clean/, fix: 'ci-rejects-content', doc: 'link must be' },
+  { id: 'reads-url-clean', fn: 'validateReads', level: 'error', match: /url must be a clean/, fix: 'ci-rejects-content', doc: 'clean http(s) address' },
+  { id: 'reads-kind', fn: 'validateReads', level: 'error', match: /kind must be one of/, fix: 'ci-rejects-content', doc: 'kind must be one of' },
+  { id: 'reads-tags', fn: 'validateReads', level: 'error', match: /tags must be an array/, fix: 'ci-rejects-content', doc: 'tags must be an array' },
+  { id: 'reads-comment', fn: 'validateReads', level: 'error', match: /comment must be text/, fix: 'ci-rejects-content', doc: 'comment must be text' },
+  { id: 'reads-duplicate-id', fn: 'validateReads', level: 'error', match: /duplicate id/, fix: 'ci-rejects-content', doc: 'duplicate id' },
+  { id: 'changelog-version', fn: 'validateChangelog', level: 'error', match: /version must look like/, fix: 'ci-rejects-content', doc: 'version must look like' },
+  { id: 'changelog-plain-text', fn: 'validateChangelog', level: 'error', match: /plain text/, fix: 'ci-rejects-content', doc: 'plain text' },
+];
+const RULE_NOW = Date.parse('2026-10-21T12:00:00Z');
+
+/* Runs the validator a rule belongs to on a fixture ({input, registry?}); always returns { errors, warnings }. */
+function runRule(rule, fx) {
+  const arr = a => ({ errors: a, warnings: [] });
+  switch (rule.fn) {
+    case 'validateProducts': return { errors: validateProducts(fx.input), warnings: productWarnings(fx.input) };
+    case 'validateCache': return validateCache(fx.input, fx.registry, RULE_NOW);
+    case 'validateBlog': return arr(validateBlog(fx.input));
+    case 'validateChangelog': return arr(validateChangelog(fx.input));
+    case 'validateReads': return validateReads(fx.input);
+    default: throw new Error('unknown validator ' + rule.fn);
+  }
+}
+const missingFixtures = (rules, ids) => rules.filter(r => !ids.includes(r.id)).map(r => r.id);
+
+module.exports = { RULES, runRule, missingFixtures, productWarnings, checkWorkflows, validateProfileManifest, validateProfileImage, checkSvg, checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
 
 if (require.main === module) {
   const { errors, warnings, sizes } = run();
