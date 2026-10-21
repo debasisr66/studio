@@ -137,3 +137,16 @@ Scope: self-hosted fonts, logo, profile photo upload and publishing, workflow ch
 | F-9 | Low | Scheduled workflows start hours late, so a check scheduled "after" another can run before it | Closed (health moved to 12:00 UTC; delays documented) |
 
 **No open High or Critical findings.** F-6 is a documented process limit, not a vulnerability.
+
+## 8. SPEC-TR Phase A review log (2026-10-21)
+
+Scope: strict URL rule (TR-01), cache envelope checks (TR-02), runbook and protection decision record (TR-09, TR-11). Nothing in the page, the CSP, workflows or permissions changed.
+
+| Check | Result |
+|-------|--------|
+| New attack surface | None: validation only tightens, in CI and in a pure helper; no new request, secret, dependency or permission (`git diff main -- .github` empty) |
+| URL rule | Rejects whitespace and control characters anywhere (`new URL()` silently trims or strips them), embedded credentials (also stops a secret being published inside a link), non-http(s) schemes, `https:///x` (host not written out), over-long strings |
+| Regex safety | Linear, anchored patterns; no nested quantifiers (no ReDoS) |
+| Existing content | Passes the stricter rule with no new error or warning |
+| Browser behaviour | `normalizeUrl` (admin composer) unchanged; the new `isPublishableUrl` is additive |
+| Residual | CI still cannot technically block the owner or the bots (TR-11 decision record) |

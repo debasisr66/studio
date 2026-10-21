@@ -6,7 +6,7 @@ Spec-based work for Studio. A spec is written **before** any change that affects
 
 | Spec | Status | Requirements | PRD phase | Folder |
 |------|--------|--------------|-----------|--------|
-| Product trust and reliability (`SPEC-TR`) | In review (PR) | TR-01 … TR-13 | Phase 2 | [product-trust-reliability/](product-trust-reliability/spec.md) |
+| Product trust and reliability (`SPEC-TR`) | Approved; Phase A in progress | TR-01 … TR-13 | Phase 2 | [product-trust-reliability/](product-trust-reliability/spec.md) |
 
 ## Traceability convention
 
