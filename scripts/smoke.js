@@ -208,8 +208,10 @@ async function main() {
       if (fails.length) failed++;
     }
   } finally {
-    cdp.close(); chrome.proc.kill(); server.closeAllConnections(); server.close();
-    fs.rmSync(chrome.dir, { recursive: true, force: true });
+    cdp.close(); server.closeAllConnections(); server.close();
+    // let Chrome exit before its profile folder is removed (it keeps writing to it for a moment); cleanup is best-effort and never fails the run
+    await new Promise(r => { chrome.proc.once('exit', r); chrome.proc.kill(); setTimeout(r, 5000); });
+    try { fs.rmSync(chrome.dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch (e) { /* temp folder, the OS cleans it */ }
   }
   const secs = ((Date.now() - started) / 1000).toFixed(1);
   console.log(`\n${failed ? 'FAILED' : 'OK'}: ${ran - failed} of ${ran} cases passed in ${secs} s`);
