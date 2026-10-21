@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-SH` (requirements `SH-01` … `SH-08`) |
-| Status | **Approved by the owner (2026-10-21); not started** |
+| Status | **Approved by the owner (2026-10-21); Phase A built (PR #12), B and C not started** |
 | Owner | Debasis Ray |
 | Created | 2026-10-21 |
 | Parent | [PRD](../../PRD.md) §9.1, §9.2, §10.2, §11, §13, Roadmap Phase 1 and Phase 2.5; [§22](../../PRD.md) |
@@ -57,7 +57,7 @@ Priority: **P0** ships first and gates 2.0; **P1** same release if capacity; **P
 - Constraint: no inline handlers, no new global error reporting, CSP unchanged.
 
 **SH-02 (P0): Browser smoke test in CI, dependency-free.**
-- [ ] A script serves the repo statically and loads the page in headless Chrome using `--headless --dump-dom` (Chrome is pre-installed on GitHub's `ubuntu-latest`; to be confirmed in the design spike), then asserts on the resulting DOM. No npm package.
+- [x] A script (`scripts/smoke.js`) serves the repo on localhost and drives headless Chrome over its DevTools protocol using only Node's `http`, `fetch` and `WebSocket`, then asserts on the real DOM. No npm package. (Design correction: the first idea, `--dump-dom`, cannot measure overflow, read console errors or set the viewport; the DevTools protocol can. Chrome is confirmed present on GitHub's `ubuntu-latest`.)
 - [ ] Cases: healthy content; each section forced to fail (SH-01); cache missing; release missing; a content file missing or malformed; very long text; 375 px and 1280 px viewport widths (via `--window-size`).
 - [ ] Runs in `ci.yml` as a separate step; a failure blocks the release process (by PR convention, TR-11).
 - Fallback if headless Chrome proves unavailable or unstable: a documented manual checklist plus a Node `vm`-based render test of the pure render functions (design decides).
@@ -127,3 +127,4 @@ SH Phase A must merge before any RC, PC or UX code.
 
 - 2026-10-21: Draft created from code findings F1-F7. Awaiting answers to Q1 and approval.
 - 2026-10-21: Approved by the owner with the recommended answers; decisions recorded in section 8-9 above.
+- 2026-10-21: Phase A built on `v2/sh-a` (PR #12): SH-01 (`runGuarded`, fixed fallback line, boot always reaches `enableAdmin`), SH-08 (`fetchJson`, 8 s), SH-02 (`scripts/smoke.js`, 13 cases, CI step, 29 s on the runner). Q1 confirmed by the spike. Also fixed on the way: a content file that is valid JSON `null` used to abort boot before any render (found by the new smoke case, proven failing first).

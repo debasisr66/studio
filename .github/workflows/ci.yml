@@ -27,3 +27,8 @@ jobs:
 
       - name: Validate content and site
         run: node scripts/validate-site.js
+
+      # Renders the real page in headless Chrome (preinstalled on ubuntu-latest) against fixture content. No npm packages: SPEC-SH SH-02.
+      - name: Browser smoke test
+        timeout-minutes: 2
+        run: node scripts/smoke.js

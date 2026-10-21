@@ -4,9 +4,9 @@ Releases: **v2.0 (planned, nothing run)** · **v1.5 (shipped 2026-10-21: SPEC-TR
 
 ---
 
-# v2.0 — Studio 2.0 (planned; no test has been run)
+# v2.0 — Studio 2.0 (in progress: SH Phase A built, rest planned)
 
-Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22): **116 new cases**, on top of the existing **142 passing unit tests**. Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance.
+Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22): **116 new cases**, on top of the existing **142 passing unit tests**. Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12) is run:** see §G.
 
 ## A. Requirements (release level)
 
@@ -27,8 +27,8 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 
 | REQ | Cases | Status |
 |-----|-------|--------|
-| REQ-50 | TC-SH-I01–I05, T01–T02 | ⬜ |
-| REQ-51 | TC-SH-B01–B09 | ⬜ |
+| REQ-50 | TC-SH-I01–I05, T01–T02 | ✅ (SH Phase A) |
+| REQ-51 | TC-SH-B01–B09 | ✅ B01–B04 · ⬜ B05–B09 (Phase C) |
 | REQ-52 | TC-SH-C01–C03, V01–V04, A01–A03, D01–D02 | ⬜ |
 | REQ-53 | TC-RC-D01–D04, M01–M03, V01–V04, X01 | ⬜ |
 | REQ-54 | TC-RC-U01–U08, L01–L04, E01–E04, S01–S02, B01–B02 | ⬜ |
@@ -69,6 +69,21 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 4. Owner steps done: real publish of a read and a podcast; seed podcasts present; classification confirmed.
 5. Security review log for v2.0 completed ([security.md](security.md) §11 checklist).
 6. Artefacts updated; spec statuses set to Shipped; `v2.0` tag; live smoke and health green.
+
+## G. Results: SH Phase A (2026-10-21, PR #12)
+
+| Check | Result |
+|-------|--------|
+| Unit tests | **153 of 153 pass** (142 existing + 11 new in `tests/safe-lib.test.js`); the 11 failed first (module missing) |
+| Browser smoke test (`node scripts/smoke.js`) | **13 of 13 pass**: 16 s locally, **29 s on GitHub's runner**, no npm package |
+| Failing first | Against the unguarded v1.5 page 7 of 13 cases failed locally (blank sections after a throwing one, no version badge, admin never switched on, page held forever by a hung file); the `null`-files case also failed on old code |
+| Red proof in CI (TC-SH-B04) | Throwaway branch with the old `app.js`: unit tests and validator green, **only the smoke step red** (6 of 13 passed, 43.8 s); branch deleted |
+| Validator | OK (new `js/safe-lib.js` inside its 10 KB budget); `index.html` diff is one added `<script src="js/safe-lib.js">` |
+| Workflow diff | `ci.yml`: one added step (timeout 2 min); permissions unchanged (`contents: read`) |
+| Regression | Existing smoke B01 on the real content passes; render functions are untouched (diff confined to `boot`, `loadJson`, `renderAll`); products, updates, reads, blog, version, admin gear present |
+| Not done in this phase | Owner admin publish (no publish code changed), visual comparison against frozen v1.5 (render code and CSS unchanged; the smoke test is the check), B05-B09 and the contract, versions and operations work (Phases B and C) |
+
+---
 
 ## F. Not claimed in this plan
 

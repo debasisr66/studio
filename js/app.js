@@ -61,30 +61,30 @@ function md(text) {
 /* ---------- state ---------- */
 const state = { changelog: null, registry: [], cache: null, blog: {posts: []}, reads: {books: [], articles: []}, profile: {photo: null, updated: null}, profileDraft: null, profileShown: null, dirty: {blog:false, reads:false, profile:false}, filter: {tag:'', q:''}, editing: -1 };
 
-async function loadJson(path) {
-  const r = await fetch(path + '?t=' + Date.now(), {cache:'no-store'});
-  if (!r.ok) throw new Error(path + ' ' + r.status);
-  return r.json();
-}
+/* time-limited (SafeLib.FETCH_TIMEOUT_MS): a content file that never answers degrades its section instead of holding the page forever */
+const loadJson = path => window.SafeLib.fetchJson(fetch, path + '?t=' + Date.now(), { init: { cache: 'no-store' } });
 
 async function boot() {
   $('#yr').textContent = new Date().getFullYear();
   const [reg, cache, blog, reads, changelog, profile] = await Promise.allSettled([
     loadJson('content/products.json'), loadJson('content/cache.json'),
     loadJson('content/blog.json'), loadJson('content/reads.json'), loadJson('content/changelog.json'), loadJson('content/profile.json')]);
-  if (profile.status === 'fulfilled' && profile.value && typeof profile.value === 'object') state.profile = profile.value;
+  // a file that loaded as JSON `null` or a bare value must not abort boot: only objects are used
+  const obj = r => (r.status === 'fulfilled' && r.value && typeof r.value === 'object') ? r.value : null;
+  const vProfile = obj(profile), vCache = obj(cache), vBlog = obj(blog), vReads = obj(reads), vLog = obj(changelog);
+  if (vProfile) state.profile = vProfile;
   if (reg.status === 'fulfilled' && Array.isArray(reg.value)) state.registry = reg.value;
-  if (cache.status === 'fulfilled' && cache.value && typeof cache.value.products === 'object') state.cache = cache.value;
-  if (blog.status === 'fulfilled' && Array.isArray(blog.value.posts)) state.blog = blog.value;
-  if (reads.status === 'fulfilled') state.reads = { books: Array.isArray(reads.value.books) ? reads.value.books : [], articles: Array.isArray(reads.value.articles) ? reads.value.articles : [] };
-  if (changelog.status === 'fulfilled' && changelog.value && Array.isArray(changelog.value.releases)) {
+  if (vCache && typeof vCache.products === 'object') state.cache = vCache;
+  if (vBlog && Array.isArray(vBlog.posts)) state.blog = vBlog;
+  if (vReads) state.reads = { books: Array.isArray(vReads.books) ? vReads.books : [], articles: Array.isArray(vReads.articles) ? vReads.articles : [] };
+  if (vLog && Array.isArray(vLog.releases)) {
     // tolerate bad entries at runtime (CI rejects them before they ship): keep only well-formed releases
-    state.changelog = changelog.value.releases.filter(r => r && typeof r.version === 'string' && typeof r.title === 'string' && Array.isArray(r.items));
+    state.changelog = vLog.releases.filter(r => r && typeof r.version === 'string' && typeof r.title === 'string' && Array.isArray(r.items));
     if (!state.changelog.length) state.changelog = null;
   }
   $('#grid').removeAttribute('aria-busy');
   renderAll();
-  if (tokenStore.get()) enableAdmin();
+  if (tokenStore.get()) enableAdmin();   // always reached: renderAll never throws
 }
 
 /* ---------- render: products, updates, blog ---------- */
@@ -221,7 +221,18 @@ function renderProfile() {
   img.hidden = false; mono.hidden = true;
 }
 
-function renderAll() { renderProducts(); renderUpdates(); renderBlog(); renderReads(); renderVersion(); renderProfile(); }
+/* One section failing must never stop another, or the admin unlock (SPEC-SH SH-01). Each renderer runs guarded; a failed one shows the
+   fixed fallback line in its content box and logs the real error to the console only. */
+const SECTION_BOX = { products: ['#grid'], updates: ['#updatesFeed'], blog: ['#blogFeed'], reads: ['#articlesFeed', '#booksFeed'] };
+function renderAll() {
+  window.SafeLib.runGuarded([
+    { name: 'products', run: renderProducts }, { name: 'updates', run: renderUpdates }, { name: 'blog', run: renderBlog },
+    { name: 'reads', run: renderReads }, { name: 'version', run: renderVersion }, { name: 'profile', run: renderProfile },
+  ], (name, err) => {
+    console.error('Studio: the ' + name + ' section failed to render', err);
+    (SECTION_BOX[name] || []).forEach((sel, i) => { const el = $(sel); if (el) el.innerHTML = i === 0 ? window.SafeLib.fallbackHtml() : ''; });
+  });
+}
 
 /* ---------- version + What's new ---------- */
 const storageOk = (() => { try { localStorage.setItem('__probe', '1'); localStorage.removeItem('__probe'); return true; } catch { return false; } })();

@@ -27,6 +27,7 @@ GH_TOKEN=$(gh auth token) node scripts/health-check.js   # live site and cache a
 | Sync log says rate limit | [rate limit](#github-rate-limit) |
 | `workflow "…" is disabled_inactivity` | [disabled](#scheduled-workflow-disabled) |
 | CI red on content (`…url must be a clean http(s) address`, `synced_at …`) | [content](#ci-rejects-content) |
+| CI red at **Browser smoke test** (`FAIL TC-SH-…`) | [smoke](#browser-smoke-test-fails) |
 | A bad commit is on `main` | [bad commit](#bad-commit-on-main) |
 | Token expiring, expired or leaked | [tokens](#token-expired-or-leaked) |
 | `…returned 404` for the live site | [site down](#live-site-files-404) |
@@ -109,6 +110,16 @@ Every content rule CI enforces, with what to do (each is proven by a failing fix
 | blog.json | `date must be YYYY-MM-DD`, `title is required` | Fix the post in admin or the JSON |
 | reads.json | `kind must be one of`, `tags must be an array`, `comment must be text`, `duplicate id` | Edit the read in admin (⚙ → Edit); at most 5 tags, 280-character comment |
 | changelog.json | `version must look like`, `plain text` | Versions like `1.5`; release notes are plain text without `<` or `>` |
+
+## Browser smoke test fails
+
+- **What it is:** CI loads the real page in headless Chrome against small fixture sites and checks that every section renders, that one broken section or file does not affect the rest, and that the page fits a phone. A line `FAIL TC-SH-<id> <case>` names the case and the reason underneath.
+- **Run it yourself:** `node scripts/smoke.js` (needs Google Chrome; `SMOKE_ONLY="Reads"` runs only matching cases; `CHROME_BIN=/path/to/chrome` picks a browser).
+- **A section case fails** (`expected the fallback line…`, `did not render`): a recent change to `js/app.js`, `index.html` or a renderer broke isolation or that section. Fix the renderer; do not weaken the case. The fixtures are in `tests/fixtures/site/`.
+- **`the page never finished loading`:** the page stopped before `boot()` finished, usually a JavaScript error; run the page locally and read the console.
+- **`console errors:`** a new error appeared on a healthy page; fix the cause.
+- **`Chrome not found`:** install Chrome, or set `CHROME_BIN`. On GitHub's runner Chrome is preinstalled; a missing Chrome there means the runner image changed.
+- **Cleanup message such as `ENOTEMPTY`:** harmless temp-folder cleanup; the script ignores it (fixed in v2.0 SH Phase A).
 
 ## Bad commit on `main`
 

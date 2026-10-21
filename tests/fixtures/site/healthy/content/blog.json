@@ -1,0 +1,11 @@
+{
+  "posts": [
+    {
+      "id": 1,
+      "date": "2026-10-01",
+      "title": "Fixture post",
+      "body": "A short body.",
+      "link": ""
+    }
+  ]
+}

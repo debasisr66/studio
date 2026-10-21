@@ -672,7 +672,14 @@ flowchart LR
   AS -->|fail or over 60 s| RED[red with captured output]
 ```
 
-Fixture content sets (healthy, cache missing, release missing, one file broken, section forced to throw, very long text, empty sections) are small JSON folders under `tests/fixtures/site/`. Fallback if Chrome is unavailable: Node `vm` render test of the pure render functions plus a manual checklist (decided in the SH design spike, Q1).
+Fixture content sets are small JSON folders under `tests/fixtures/site/` laid over the real repo files by the local server (a fixture can also make a file answer 404, hang or answer late). **Built in SH Phase A**; remaining cases (cache missing, release missing, very long text, empty sections) arrive with Phase C.
+
+**Corrections found while building (SH Phase A):**
+1. The step is not `--dump-dom`. The runner's Chrome is driven over its DevTools protocol with Node's built-in `WebSocket` (no npm), because that can set the viewport, measure horizontal overflow, read console errors and wait for the page's own `aria-busy` signal.
+2. Chrome's temp profile folder is still being written when the browser is killed; the script now waits for Chrome to exit and treats cleanup as best-effort.
+3. A content file that is valid JSON `null` made `boot()` throw before any rendering (`blog.value.posts` on `null`). Fixed by accepting only objects (found by a smoke case that failed on the old code).
+4. Not every bad input throws: a `null` article renders as "Untitled", so Reads already tolerates it; the Reads isolation case uses a `null` book. The version and profile renderers have no content-reachable throw path, so they are covered by the unit test of `runGuarded` only.
+5. `boot()` still waits for all six files together (`Promise.allSettled`), so a file that hangs delays the first render by up to the 8 s limit (the rest of the page then renders normally). Progressive rendering per file would remove the wait; noted as a later option, not needed to meet SH-08.
 
 ### 12.8 Interaction, accessibility and HCI checks specific to 2.0
 
