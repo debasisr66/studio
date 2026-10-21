@@ -37,7 +37,7 @@ Spec: [spec.md](spec.md) (`SPEC-PC`). IDs `TC-PC-<group><nn>`. ⬜ not run.
 | TC-PC-K02 | PC-06 | A Reads entry with kind `podcast` still validates and renders | pass | ⬜ |
 | TC-PC-N01 | PC-07 | Tracking parameters stripped, host lowercased | pass | ⬜ |
 | TC-PC-N02 | PC-07 | Duplicate warning in composer and CI | pass | ⬜ |
-| TC-PC-S01 | PC-08 | At least 3 seed podcasts published by the owner (owner step) | 🔒 | ⬜ |
+| TC-PC-S01 | PC-08 | At least 3 seed podcasts (Lex Fridman, ThePrimeagen, Yuval Noah Harari) published by the owner with real URLs (owner step) | 🔒 | ⬜ |
 
 Regression: Reads, Products, Updates, What's new, profile photo, theme toggle, admin unlock and publish for reads; 142-test suite green; CSP clean.
 

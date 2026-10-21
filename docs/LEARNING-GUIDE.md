@@ -459,7 +459,7 @@ This step is written ahead of the build so you know what to expect. It is update
 **What you will see**
 - Reads has two sections, **Technical** and **Others**. When you add a read, the form asks which one. Your five current reads and the book are proposed as Technical; you confirm this before the migration.
 - **Podcasts** replace **Blog**. In the admin, "Share a podcast" asks for a link and a title, with optional show name, short take and tags. The old blog editor goes away.
-- The page order becomes Products, Updates, then Reads and Podcasts, with the one visitors use more shown first **on their own device**. You cannot see site-wide usage: Studio has no analytics by design.
+- The page order becomes Products, Updates, Reads, Podcasts, the same for everyone. (An earlier idea, ordering sections by what each visitor uses, was dropped: Studio has no analytics and stores nothing about visitors.)
 
 **How each piece is built and checked (the method you already know)**
 
@@ -475,5 +475,5 @@ This step is written ahead of the build so you know what to expect. It is update
 
 **Your decisions before building** are listed in `docs/plan.md` ("Owner decisions needed"). **Your hands-on steps at release:** publish one real read and one real podcast with the admin token (Step 9 B), confirm the seed podcast links, and try the page on a real phone.
 
-**New terms:** *adaptive order* (sections reorder from your own use, locally), *smoke test* (a small automatic check that the page really renders), *schema version* (a number in a content file that says which shape it has), *contract* (the written list of fields each content file may contain).
+**New terms:** *smoke test* (a small automatic check that the page really renders), *schema version* (a number in a content file that says which shape it has), *contract* (the written list of fields each content file may contain).
 

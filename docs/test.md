@@ -6,7 +6,7 @@ Releases: **v2.0 (planned, nothing run)** · **v1.5 (shipped 2026-10-21: SPEC-TR
 
 # v2.0 — Studio 2.0 (planned; no test has been run)
 
-Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/adaptive-layout/test.md) (42): **136 new cases**, on top of the existing **142 passing unit tests**. Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance.
+Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22): **116 new cases**, on top of the existing **142 passing unit tests**. Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance.
 
 ## A. Requirements (release level)
 
@@ -19,10 +19,9 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | REQ-54 | Reads has Technical and Others sub-items: accessible tabs, deep links, composer section, counts, books in the same list | RC-02, RC-03, RC-04, RC-07, RC-08 |
 | REQ-55 | Podcast data, validation, duplicate handling and seed content | PC-01, PC-04, PC-07, PC-08 |
 | REQ-56 | Podcasts section and admin replace the Blog; `#blog` redirect; blog archived; Reads no longer offers the podcast format | PC-02, PC-03, PC-05, PC-06 |
-| REQ-57 | Simple, consistent structure; both navs identical and in page order; all deep links stable | UX-01, UX-02, UX-03, UX-08 |
-| REQ-58 | Local-only usage signals reorder the adaptive sections at load, with hysteresis, no shift, no motion, full privacy; transparency and reset | UX-04, UX-05, UX-06, UX-07, UX-09 |
-| REQ-59 | Nothing else breaks: products, updates, sync, health, keep-alive, profile, What's new, admin publish, CSP, budgets | all |
-| REQ-60 | All artefacts updated and traceable PRD → spec → test → release | all |
+| REQ-57 | Simpler layout: one fixed order, one section pattern, both navs identical and in page order, all deep links stable, accessibility and first-screen clarity | UX-01 … UX-06 |
+| REQ-58 | Nothing else breaks: products, updates, sync, health, keep-alive, profile, What's new, admin publish, CSP, budgets | all |
+| REQ-59 | All artefacts updated and traceable PRD → spec → test → release | all |
 
 ## B. Traceability (requirement → spec → cases → status)
 
@@ -35,16 +34,15 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | REQ-54 | TC-RC-U01–U08, L01–L04, E01–E04, S01–S02, B01–B02 | ⬜ |
 | REQ-55 | TC-PC-D01–D03, V01–V07, N01–N02, S01 | ⬜ (S01 owner step 🔒) |
 | REQ-56 | TC-PC-U01–U08, A01–A06, R01–R05, K01–K02 | ⬜ |
-| REQ-57 | TC-UX-S01–S03, P01–P04, N01–N05, L01–L05 | ⬜ |
-| REQ-58 | TC-UX-U01–U06, V01–V05, R01–R08, C01–C03, T01–T03 | ⬜ |
-| REQ-59 | Regression suite (§D) | ⬜ |
-| REQ-60 | Artefact checklist ([plan.md](plan.md) "Artefact update matrix") | ⬜ |
+| REQ-57 | TC-UX-S01–S02, P01–P04, N01–N05, L01–L05, A01–A05, F01 | ⬜ (F01 owner step 🔒) |
+| REQ-58 | Regression suite (§D) | ⬜ |
+| REQ-59 | Artefact checklist ([plan.md](plan.md) "Artefact update matrix") | ⬜ |
 
 ## C. Test strategy by layer
 
 | Layer | What | Where | Written |
 |-------|------|-------|---------|
-| Unit (Node `--test`) | Pure modules: category helpers, platform labels, scoring and storage shape, validators, contract-doc completeness | `tests/*.test.js`, `tests/fixtures/` | Before the code, shown failing |
+| Unit (Node `--test`) | Pure modules: category helpers, platform labels, validators, contract-doc completeness | `tests/*.test.js`, `tests/fixtures/` | Before the code, shown failing |
 | Browser smoke (headless Chrome, no npm) | Rendering, fallbacks, nav, redirects, tabs, overflow at 375 and 1280 px | `scripts/smoke.js` + `tests/fixtures/site/` | Harness first (SH Phase A), cases added with each feature |
 | Stubbed-API publish | Podcast and reads publish writes one valid file, skips identical content | unit with a fake fetch | With PC and RC phases |
 | Visual comparison | Untouched sections identical to frozen v1.5 (computed styles, as in earlier releases) | scratch harness, results recorded here | Each UI phase |
@@ -74,7 +72,7 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 
 ## F. Not claimed in this plan
 
-Real screen-reader and physical-phone passes are owner steps; usage-driven ordering cannot be measured by the owner (no analytics by design), so it is verified by unit tests and an owner walk-through only.
+Real screen-reader and physical-phone passes are owner steps; layout clarity is judged by the owner walk-through (no analytics by design).
 
 ---
 

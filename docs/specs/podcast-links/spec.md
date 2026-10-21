@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-PC` (requirements `PC-01` … `PC-09`) |
-| Status | **Draft: awaiting owner approval** |
+| Status | **Approved by the owner (2026-10-21); not started** |
 | Owner | Debasis Ray |
 | Created | 2026-10-21 |
 | Parent | [PRD](../../PRD.md) §7, §9.4, §11.3; [§22](../../PRD.md) |
@@ -65,7 +65,7 @@ The blog has never been used (`content/blog.json` holds zero posts). Replace it 
 
 **PC-07 (P1): Duplicates and normalisation.** Same normalisation as Reads (strip tracking parameters, lowercase host, drop fragments); a duplicate URL gives a warning in the composer and in CI.
 
-**PC-08 (P1): Seed content.** The owner supplies at least 3 podcast links before launch so the section is not empty on day one (Q3). Not a blocker for the code.
+**PC-08 (P1): Seed content.** The owner supplies at least 3 podcast links before launch so the section is not empty on day one. Chosen sources (2026-10-21): **Lex Fridman, ThePrimeagen, Yuval Noah Harari**; the exact show or episode URLs are supplied by the owner at seeding time (a link to a show is valid, Q1). Not a blocker for the code.
 
 **PC-09 (P2): Not now.** RSS or platform lookup, audio previews, per-show pages.
 
@@ -96,6 +96,8 @@ The blog has never been used (`content/blog.json` holds zero posts). Replace it 
 | Q3 | Which podcast links should seed the section at launch? | Owner | Before launch, not before coding |
 | Q4 | Label: "Podcasts" (recommended) or "Podcast links" | Owner | No |
 
+**Decisions (owner, 2026-10-21):** Q1 a show link is as valid as an episode link; Q2 keep `blog.json` as an unrendered archive; Q3 seed content comes from **Lex Fridman, ThePrimeagen and Yuval Noah Harari** (these are people or shows, not links: the owner supplies the exact podcast or episode URLs when seeding, and none are invented here); Q4 label "Podcasts".
+
 ## 9. Rollout and phasing
 
 | Phase | Contents | Gate |
@@ -123,3 +125,4 @@ Rollback: tag `v1.5` restores the Blog section; `podcasts.json` is ignored by ol
 ## 11. Status log
 
 - 2026-10-21: Draft created from code findings F1-F6. Awaiting owner answers to Q1 to Q4.
+- 2026-10-21: Approved by the owner with the recommended answers; decisions recorded in section 8-9 above.

@@ -51,7 +51,7 @@ Follow [build.md](build.md) §15 (and §18 for 2.0): branch, tests, validator, p
 | Card shows an old version or sync is red | [RUNBOOK](RUNBOOK.md) "Stale or drifting cache" and "Sync failed" |
 | A bad commit is on `main` | [RUNBOOK](RUNBOOK.md) "Bad commit on main" (`git revert <sha>`) |
 | A scheduled workflow was disabled | [RUNBOOK](RUNBOOK.md) "Scheduled workflow disabled" |
-| After 2.0: something looks wrong with the new layout | Click **Reset my layout** in the footer; if the page itself is broken, roll back with `build.md` §18.6 (*planned*) |
+| After 2.0: the page itself looks broken | Roll back with `build.md` §18.6 (*planned*); tag `v1.5` is the safe point |
 
 ## Questions this guide must answer
 

@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-SH` (requirements `SH-01` … `SH-08`) |
-| Status | **Draft: awaiting owner approval** |
+| Status | **Approved by the owner (2026-10-21); not started** |
 | Owner | Debasis Ray |
 | Created | 2026-10-21 |
 | Parent | [PRD](../../PRD.md) §9.1, §9.2, §10.2, §11, §13, Roadmap Phase 1 and Phase 2.5; [§22](../../PRD.md) |
@@ -98,6 +98,8 @@ Priority: **P0** ships first and gates 2.0; **P1** same release if capacity; **P
 | Q2 | Show visitors a "section unavailable" line (recommended), or hide a failed section silently? | Owner | No |
 | Q3 | Should the footer show a small "content version" for debugging? (Recommended: no) | Owner | No |
 
+**Decisions (owner, 2026-10-21):** Q1 yes, headless Chrome in CI (design spike still confirms availability and stability); Q2 yes, show a plain "section unavailable" line; Q3 no content-version line.
+
 ## 9. Rollout and phasing
 
 | Phase | Contents | Gate |
@@ -124,3 +126,4 @@ SH Phase A must merge before any RC, PC or UX code.
 ## 11. Status log
 
 - 2026-10-21: Draft created from code findings F1-F7. Awaiting answers to Q1 and approval.
+- 2026-10-21: Approved by the owner with the recommended answers; decisions recorded in section 8-9 above.

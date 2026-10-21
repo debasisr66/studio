@@ -565,15 +565,14 @@ Between the phone and desktop layouts (about 620 to 860 px) the header needed mo
 
 ## 12. v2.0 design (proposed; nothing built)
 
-Specs: [SPEC-SH](specs/stabilize-core-hub/spec.md), [SPEC-RC](specs/reads-categories/spec.md), [SPEC-PC](specs/podcast-links/spec.md), [SPEC-UX](specs/adaptive-layout/spec.md). Constraints carried over: no build step, no npm, strict CSP (no inline code, no third-party host), plain JavaScript, pure logic in small tested modules.
+Specs: [SPEC-SH](specs/stabilize-core-hub/spec.md), [SPEC-RC](specs/reads-categories/spec.md), [SPEC-PC](specs/podcast-links/spec.md), [SPEC-UX](specs/simple-layout/spec.md). Constraints carried over: no build step, no npm, strict CSP (no inline code, no third-party host), plain JavaScript, pure logic in small tested modules.
 
 ### 12.1 Design principles for 2.0
 
 | Principle | Applied as |
 |-----------|-----------|
 | Simplicity first | Four top-level destinations; one section anatomy; no settings screen |
-| Predictable | Order changes only at load, never while reading; anchors never move meaning |
-| Private by construction | Usage counts are local, tiny, closed-shape, and never leave the device |
+| Predictable | One fixed order for every visitor; anchors never change meaning |
 | Fail small | One section failing never affects another or the admin unlock |
 | Reversible | Additive data changes; rollback tag `v1.5` renders the new data |
 
@@ -584,16 +583,13 @@ flowchart TB
   H[Header: logo · nav · What's new · theme] --> HERO[Hero + profile photo]
   HERO --> P[Products]
   P --> U[Updates]
-  U --> A{Adaptive group, order decided at load}
-  A -->|default| R1[Reads] --> PC1[Podcasts]
-  A -->|Podcasts leads| PC2[Podcasts] --> R2[Reads]
-  PC1 --> F[Footer: version · layout note and reset]
-  R2 --> F
-  PC2 -.-> F
+  U --> R[Reads: Technical · Others]
+  R --> PC[Podcasts]
+  PC --> F[Footer: version]
   BN[Bottom nav on phones: same four links, same order]
 ```
 
-Section anatomy (every section): heading · one-line description · content · empty state · (owner only) one add action. Header nav and bottom nav are generated from the same ordered list, so they cannot disagree.
+Section anatomy (every section): heading · one-line description · content · empty state · (owner only) one add action. The order is fixed and the same for every visitor. Header nav and bottom nav are generated from the same ordered list, so they cannot disagree.
 
 ### 12.3 Section isolation (SH-01, SH-08)
 
@@ -629,12 +625,6 @@ erDiagram
 
 `category` ∈ {technical, other}, closed list in `CATEGORIES`. Browser default for a missing or unknown value is `other`; CI rejects it. `kind` stays a format (article, video, paper, podcast, tool) and is independent. `blog.json` is kept unrendered. `cache.json`, `products.json`, `changelog.json` and `profile.json` are unchanged.
 
-Local layout storage (one key, closed shape):
-
-```json
-{ "v": 1, "u": { "reads": {"s": 4.2, "t": 20747}, "podcasts": {"s": 0.9, "t": 20740},
-                 "reads.technical": {"s": 3.8, "t": 20747}, "reads.other": {"s": 0.4, "t": 20733} } }
-```
 
 ### 12.5 Reads: two sub-items
 
@@ -671,27 +661,7 @@ sequenceDiagram
 
 The card: title link, show, platform label from a closed host list (Spotify, Apple Podcasts, YouTube, else the domain), date, take, tags, **Listen →** (new tab, `noopener noreferrer`), share row. No iframe, audio or third-party image.
 
-### 12.7 Adaptive order: how it decides
-
-```mermaid
-flowchart TD
-  E[Visitor event: nav open, tab switch, filter or search, outbound open, copy or share] --> R[record: s = s·0.5^((today−t)/30) + 1]
-  R --> W[(localStorage, one key, ≤ 1 KB)]
-  LOAD[Next page load] --> RD[read and validate: closed shape, clamp, drop unknown]
-  W --> RD
-  RD --> SC[scores with decay to today]
-  SC --> Q{leader ≥ 3 and ≥ 1.5 × runner-up?}
-  Q -->|yes| ORD[leader first]
-  Q -->|no| DEF[default: Reads, Podcasts]
-  ORD --> APPLY[apply order before first render of the group; nav built from same list]
-  DEF --> APPLY
-```
-
-Worked examples (decay ignored for brevity): Reads 6, Podcasts 2 → Reads first (6 ≥ 3 and 6 ≥ 3). Reads 2, Podcasts 5 → Podcasts first (5 ≥ 3, 5 ≥ 3). Reads 4, Podcasts 3 → default (4 < 4.5). Reads 2, Podcasts 1 → default (below 3). A section unused for about six months retains about 1/64 of its score, so habits fade. The same rule picks the Reads default sub-item from `reads.technical` and `reads.other`. Storage blocked or corrupt → default, silently.
-
-Rejected alternatives: live reordering while the page is open (layout jumps); any server-side or analytics count (forbidden by PRD §10.3); a settings screen (not simple); drag-to-arrange (more UI, not requested).
-
-### 12.8 Browser smoke test in CI (SH-02)
+### 12.7 Browser smoke test in CI (SH-02)
 
 ```mermaid
 flowchart LR
@@ -704,26 +674,22 @@ flowchart LR
 
 Fixture content sets (healthy, cache missing, release missing, one file broken, section forced to throw, very long text, empty sections) are small JSON folders under `tests/fixtures/site/`. Fallback if Chrome is unavailable: Node `vm` render test of the pure render functions plus a manual checklist (decided in the SH design spike, Q1).
 
-### 12.9 Interaction, accessibility and HCI checks specific to 2.0
+### 12.8 Interaction, accessibility and HCI checks specific to 2.0
 
 | Item | Check |
 |------|-------|
 | Tabs | Full keyboard operation, visible focus, 44 px targets, contrast ≥ 4.5:1 in both themes, name and state announced |
 | Hash routing | Back button behaves; no scroll jump on tab switch; unknown hash ignored |
-| Reorder | No visible shift; no animation; reduced-motion honoured; nav order equals page order |
 | Empty and error states | Plain language, never blank, never raw exception text |
 | Podcast card | Link text is the title (not "click here"); platform label is text, not colour only |
-| Footer note | One short sentence; Reset is a real button; confirmation announced via `aria-live` |
 
-### 12.10 Design decisions (with reasons)
+### 12.9 Design decisions (with reasons)
 
 | Decision | Why |
 |----------|-----|
 | `category` field, not a second file | One list to search, share and migrate; simplest data change; rollback-safe |
 | Tabs rather than two sections | The request is "two sub-items" inside Reads; keeps four top-level destinations |
 | Podcasts as a separate file, not a Reads `kind` | The request replaces the Blog with its own section; separate file keeps each contract small |
-| Decayed score, not a plain counter | Habits change; old use should fade without any cleanup code |
-| Hysteresis (3 and 1.5×) | Prevents flip-flop between visits; defaults win on any doubt |
-| Order fixed at load | A moving page is the opposite of intuitive |
+| Fixed order, no usage tracking | The owner dropped usage-based ordering; one order for everyone is the simplest and most predictable layout, with nothing stored about visitors |
 | Headless Chrome via `--dump-dom` | The only way to test rendering with no npm dependency; fallback documented |
 

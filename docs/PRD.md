@@ -95,7 +95,7 @@ Needs:
 ### Out of scope for v1
 - Full CMS with role-based permissions
 - Server-side rendering or database-backed infrastructure
-- Analytics dashboards and any server-side or cross-device personalization. From v2.0 a **local-only, per-device layout preference** is allowed (nothing leaves the visitor's browser; see SPEC-UX)
+- Analytics dashboards or user personalization
 - Native mobile app or cross-platform client
 - Public API for external content ingestion
 
@@ -153,7 +153,7 @@ Needs:
 - **Reads** are curated links managed as a repo content file, split into two sub-items: **Technical** and **Others** (SPEC-RC). Every read belongs to exactly one.
 - **Podcasts** replace the blog: the owner adds links to podcasts and episodes with a short take (SPEC-PC). The blog section and its admin editor are retired; old `#blog` links continue to work by landing on Podcasts.
 - Both are editable through the admin interface and validated before publishing; both share one set of link rules (clean http(s) addresses only).
-- Section order below Products and Updates adapts to what the visitor uses most, computed and stored only on the visitor's device (SPEC-UX).
+- Sections appear in one fixed, simple order for every visitor: Products, Updates, Reads, Podcasts (SPEC-UX). There is no usage tracking and no reordering by use.
 - File updates must be validated before publishing to reduce broken content.
 
 ### 9.5 Admin security model
@@ -196,7 +196,6 @@ Needs:
 - No analytics, trackers, or remote scripts are allowed.
 - Product repos are only read, never mutated by the hub.
 - Personal admin tokens remain browser-scoped and not persisted broadly.
-- A visitor's layout preference (which sections they use most) is stored only in that browser's local storage, contains no personal data, is never sent anywhere, can be reset, and its absence or blockage changes nothing but the default order.
 
 ### 10.4 Maintainability
 - The project must avoid build dependencies and framework overhead.
@@ -361,7 +360,7 @@ Four specs, built in this order (each later one depends on the earlier):
 1. [SPEC-SH](specs/stabilize-core-hub/spec.md): stabilise the core hub (section isolation, browser smoke test, content contract, owner operations, schema versions)
 2. [SPEC-RC](specs/reads-categories/spec.md): Reads split into Technical and Others
 3. [SPEC-PC](specs/podcast-links/spec.md): Podcast links replace the Blog
-4. [SPEC-UX](specs/adaptive-layout/spec.md): simpler layout; sections below Products and Updates ordered by the visitor's own use
+4. [SPEC-UX](specs/simple-layout/spec.md): simpler, more intuitive layout in one fixed order (the usage-based ordering idea was dropped by the owner on 2026-10-21)
 Release: **v2.0** (a major version because navigation and content files change). Rollback tag: `v1.5`. Impact and plan: [docs/impact.md](impact.md), [docs/plan.md](plan.md).
 
 ### Phase 3: Editorial and discoverability improvements
@@ -397,7 +396,6 @@ Release: **v2.0** (a major version because navigation and content files change).
 - Should there be stronger product-level release governance, such as required release metadata or quality checks for listed repos?
 - Should the owner add a formal editorial review step for reading and podcast content before publication?
 - (2.0) Should books follow the Technical / Others split like articles? Recommended: yes (SPEC-RC Q1).
-- (2.0) "Used more" is measured per visitor on their own device, because Studio has no analytics and must not gain any. Is that acceptable, or does the owner want site-wide usage counts? Recommended: per-device only (SPEC-UX Q1).
 - (2.0) Keep `content/blog.json` as an archive after the blog is retired, or delete it? Recommended: keep, unrendered (SPEC-PC Q2).
 
 ## 19. Recommended next steps
@@ -434,11 +432,11 @@ Studio is a lightweight, privacy-first product studio hub that presents a portfo
 | Stabilize the core hub | [SPEC-SH](specs/stabilize-core-hub/spec.md) | SH-01 … SH-08 | 9.1, 9.2, 10.2, 11, 13, 16 (Phase 1) | none (first) |
 | Reads has two sub-items: Technical and Others | [SPEC-RC](specs/reads-categories/spec.md) | RC-01 … RC-09 | 7, 9.4, 11.3 | SH (schema versions, smoke test) |
 | Blog replaced with Podcast links | [SPEC-PC](specs/podcast-links/spec.md) | PC-01 … PC-09 | 7, 9.4, 11.3 | SH |
-| Simpler, more intuitive layout; most-used sections move below products and updates, by use frequency | [SPEC-UX](specs/adaptive-layout/spec.md) | UX-01 … UX-10 | 7, 8, 10.3 | RC, PC (final section set) |
+| Simpler, more intuitive layout (usage-based ordering was part of the request and was dropped by the owner on 2026-10-21) | [SPEC-UX](specs/simple-layout/spec.md) | UX-01 … UX-07 | 7, 8 | RC, PC (final section set) |
 
 Release targets for 2.0 (measurable, checked in each spec's test plan):
 - 0 sections that can take the page down: one failing section never stops the others (SH-01)
 - 100% of content files covered by a contract and a validator rule with a fixture (SH-03)
-- 0 broken old links: `#blog`, `#reads` and every existing deep link still land somewhere sensible (PC-05, UX-08)
-- 0 bytes of visitor usage data leave the browser; no new third-party request (UX-05)
+- 0 broken old links: `#blog`, `#reads` and every existing deep link still land somewhere sensible (PC-05, UX-04)
+- No new third-party request, cookie or storage key; nothing about visitors is recorded (CSP unchanged)
 - Page weight stays within the existing budgets (`validate-site.js` `BUDGETS`)

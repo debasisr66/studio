@@ -179,15 +179,15 @@ Scope: registry integrity, fixture-proven rules, asset parity, missing-repo and 
 
 ## 11. v2.0 pre-implementation security review (2026-10-21; design-level, nothing built)
 
-Scope: [SPEC-SH](specs/stabilize-core-hub/spec.md), [SPEC-RC](specs/reads-categories/spec.md), [SPEC-PC](specs/podcast-links/spec.md), [SPEC-UX](specs/adaptive-layout/spec.md). This is the threat analysis done **before** building so controls are designed in; the results column is filled in during the build, never in advance.
+Scope: [SPEC-SH](specs/stabilize-core-hub/spec.md), [SPEC-RC](specs/reads-categories/spec.md), [SPEC-PC](specs/podcast-links/spec.md), [SPEC-UX](specs/simple-layout/spec.md). This is the threat analysis done **before** building so controls are designed in; the results column is filled in during the build, never in advance.
 
 ### 11.1 New or changed threats
 
+T15 and T16 (visitor usage data and corrupt local data) were dropped on 2026-10-21 when the owner removed the usage-based ordering: Studio stores nothing about visitors and adds no storage key, so those threats no longer exist. Ids are left unused so references stay stable.
+
 | ID | Threat | Spec | Control designed in | Test that must pass | Result |
 |----|--------|------|--------------------|---------------------|--------|
-| T15 | **Visitor usage data leaks or becomes tracking** (the layout feature stores what a person uses) | UX-04, UX-05 | Local-only; one key; closed shape; no identifiers; never sent, never in URL or cookie; storage-blocked → defaults; reset | TC-UX-V01–V05, U05, U06, T01–T03 | ⬜ |
-| T16 | **Hostile or corrupt local data** (edited storage, huge value) crashes or skews the page | UX-04 | Validate on read: drop unknown keys, clamp numbers, cap size; any doubt → empty | TC-UX-U05, U06 | ⬜ |
-| T17 | **Fragment injection via hash routing** (`#reads/<payload>`, `#__proto__`) | RC-03, UX-08 | Fragment matched against closed lists; anything else ignored; never inserted into the DOM | TC-RC-L03, TC-UX-L04 | ⬜ |
+| T17 | **Fragment injection via hash routing** (`#reads/<payload>`, `#__proto__`) | RC-03, UX-04 | Fragment matched against closed lists; anything else ignored; never inserted into the DOM | TC-RC-L03, TC-UX-L04 | ⬜ |
 | T18 | **Malicious podcast or read link** (`javascript:`, credentials, control characters, tracking) | PC-01, PC-04, RC-06 | Shared strict URL rule (TR-01) on write and in CI; host-keyed platform label from a closed list | TC-PC-V01, U02, D02 | ⬜ |
 | T19 | **Error path injection** (a malformed file puts markup in an exception that is shown) | SH-01 | Fixed fallback text; exception goes to the console only | TC-SH-I03 | ⬜ |
 | T20 | **Schema-version bypass** (unknown version silently accepted, or old data mis-read) | SH-04 | Known versions only in CI; runtime defaults documented; failure is a section fallback | TC-SH-V01–V03 | ⬜ |
@@ -211,11 +211,11 @@ Scope: [SPEC-SH](specs/stabilize-core-hub/spec.md), [SPEC-RC](specs/reads-catego
 - [ ] For each phase: new input paths listed (URL fields, hash, storage, content files) and each has a validator or closed-list control.
 - [ ] XSS payloads (`<img onerror>`, `javascript:`, `data:`) in every new field render inert (composer preview, cards, tabs, platform label).
 - [ ] Network log shows no new request or host during heavy use.
-- [ ] Storage log shows only the documented keys.
+- [ ] No new storage key or cookie is written (Studio stores nothing about visitors).
 - [ ] Rollback rehearsed: v1.5 code on migrated data renders correctly.
 - [ ] Residual risks written down at the end of §11 with owner acknowledgement.
 
 ### 11.4 Residual risks expected (to confirm after build)
 
-Usage counts can be edited by anyone with access to the visitor's browser (harmless: it only changes that person's own section order). A successful smoke test proves rendering in one browser engine only. CI still cannot technically block the owner or the bots (TR-11 decision unchanged).
+A successful smoke test proves rendering in one browser engine only. CI still cannot technically block the owner or the bots (TR-11 decision unchanged).
 

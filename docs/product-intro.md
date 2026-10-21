@@ -84,7 +84,7 @@ A mobile-friendly personal expense manager in Indian rupees. All data stays in t
 | Stabilised core | One failing section can no longer affect the rest of the page; rendering is tested automatically; every content file has a written contract |
 | Reads: Technical and Others | Two clear sections in Reads, each with its own filters and search, and a direct link to each |
 | Podcasts replace the Blog | The owner shares podcast and episode links with a short take; no embedded players, no third parties |
-| Simpler, adaptive layout | Products and Updates first, then Reads and Podcasts ordered by what the visitor uses most, remembered on that device only, resettable, with no analytics |
+| Simpler layout | One fixed, clear order (Products, Updates, Reads, Podcasts) with the same navigation on every screen; nothing is tracked or stored about visitors |
 
 Specs, impact, plan and security pre-review: [docs/specs/](specs/README.md), [impact](impact.md), [plan](plan.md), [security](security.md) §11. The current version remains **v1.5** until 2.0 ships.
 

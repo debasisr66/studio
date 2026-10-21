@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-RC` (requirements `RC-01` … `RC-09`) |
-| Status | **Draft: awaiting owner approval** |
+| Status | **Approved by the owner (2026-10-21); not started** |
 | Owner | Debasis Ray |
 | Created | 2026-10-21 |
 | Parent | [PRD](../../PRD.md) §7, §9.4, §11.3; [§22](../../PRD.md) |
@@ -47,7 +47,7 @@ Reads is one mixed list today. Split it into two sub-items, **Technical** and **
 **RC-02 (P0): Sub-item switcher.**
 - [ ] Reads shows two choices, **Technical** and **Others**, each with its count, implemented as an accessible tab list (`role="tablist"`, arrow keys, `aria-selected`).
 - [ ] Only the selected sub-item's reads (and books) are listed; tag chips and search apply within it, and clear when switching.
-- [ ] On load the default is Technical, or Others if Technical is empty. (SPEC-UX may change the default to the visitor's most-used sub-item.)
+- [ ] On load the default is Technical, or Others if Technical is empty.
 - [ ] Empty sub-item shows a friendly empty state, not a blank.
 
 **RC-03 (P0): Deep links.** `#reads` opens the default sub-item; `#reads/technical` and `#reads/others` open that sub-item. The existing `#reads` link keeps working.
@@ -89,6 +89,8 @@ Reads is one mixed list today. Split it into two sub-items, **Technical** and **
 | Q2 | Confirm that all 5 current reads and the 1 book are Technical | Owner | Before migration only |
 | Q3 | Label: "Others" (as requested) or "Other"? Recommended: keep "Others" | Owner | No |
 
+**Decisions (owner, 2026-10-21):** Q1 books follow the split; Q2 all 5 current reads and the book are Technical; Q3 label stays "Others". RC-02's default is simply Technical (or Others if Technical is empty): there is no usage-based default.
+
 ## 9. Rollout and phasing
 
 | Phase | Contents | Gate |
@@ -116,3 +118,4 @@ Rollback: tag `v1.5`; `reads.json` is additive (extra keys), so old code still r
 ## 11. Status log
 
 - 2026-10-21: Draft created from code findings F1-F5. Awaiting owner answers to Q1 to Q3.
+- 2026-10-21: Approved by the owner with the recommended answers; decisions recorded in section 8-9 above.

@@ -276,7 +276,7 @@ After each merge: `gh run list --limit 4`, open the live site, `GH_TOKEN=$(gh au
 ```bash
 git checkout main && git pull --rebase
 node --test tests/*.test.js && node scripts/validate-site.js           # final gate
-git tag -a v2.0 -m "v2.0: stabilised core, Reads split, Podcasts, adaptive layout"
+git tag -a v2.0 -m "v2.0: stabilised core, Reads split, Podcasts, simpler layout"
 git push origin refs/tags/v2.0
 gh run list --limit 4
 curl -s https://debasisr66.github.io/studio/content/changelog.json | head -20    # confirms the 2.0 entry is live
@@ -298,7 +298,6 @@ Because data changes are additive, v1.5 code renders the migrated `reads.json`; 
 Changelog entry draft for `content/changelog.json` (plain text, at most 6 items, 160 characters each):
 - "Reads now has two sections, Technical and Others."
 - "The Blog is now Podcasts: links to podcasts and episodes worth hearing."
-- "The page is simpler: Products and Updates first, then what you use most."
-- "Studio remembers what you use on this device only, and you can reset it."
+- "The page is simpler: one clear order and the same navigation on every screen."
 - "The page is more dependable: one part failing no longer affects the rest."
 

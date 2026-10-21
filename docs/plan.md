@@ -10,7 +10,7 @@ Date: 2026-10-21 · Branch per phase: `v2/<spec>-<phase>` · Rollback tag: `v1.5
 
 ## Why
 
-The owner asked for four things: stabilise the hub, split Reads into Technical and Others, replace the Blog with Podcast links, and make the layout simpler and adaptive. They touch the same file (`app.js`) and the same page, so they are sequenced, not parallel, and the safety work goes first.
+The owner asked for four things: stabilise the hub, split Reads into Technical and Others, replace the Blog with Podcast links, and make the layout simpler (the usage-based ordering part was dropped by the owner on 2026-10-21). They touch the same file (`app.js`) and the same page, so they are sequenced, not parallel, and the safety work goes first.
 
 ## Method
 
@@ -27,9 +27,9 @@ PRD updated (done) → four specs (done, this PR) → impact (done) → **plan (
 | 4 | PC | A | `podcasts.json`, validator, fixtures (section not visible) | Fixtures and contract green |
 | 5 | RC | B | Reads tabs, deep links, composer section | Smoke test covers both sub-items |
 | 6 | PC | B | Podcasts section and admin; Blog removed; `#blog` redirect | Smoke test; owner publishes a podcast link |
-| 7 | UX | A | Section pattern, matching navs, default order | Navs identical; anchors verified |
-| 8 | UX | B | Layout scoring, privacy tests, reorder at load | Unit tests plus network and storage assertions |
-| 9 | SH, RC, PC, UX | C | Fallback proofs, asset rules, books in sub-items, seed podcasts, reset link | P1 rows ✅ or deferred in writing |
+| 7 | UX | A | Fixed order, section pattern, matching navs, stable links | Navs identical; anchors verified |
+| 8 | UX | B | Accessibility and responsiveness pass, first-screen clarity | Keyboard, contrast, zoom, 375 px; owner walk-through |
+| 9 | SH, RC, PC, UX | C | Fallback proofs, asset rules, books in sub-items, seed podcasts | P1 rows ✅ or deferred in writing |
 | 10 | all | Release | Changelog 2.0, REQ rows, security log, architecture, learning guide, product intro; tag `v2.0` | Exit criteria in all four test plans |
 
 Steps 3-4 can run in either order; steps 5 and 6 can swap; everything else is sequential.
@@ -44,16 +44,17 @@ Steps 3-4 can run in either order; steps 5 and 6 can swap; everything else is se
 6. Update artefacts: spec status and traceability, `docs/test.md`, contract and runbook rows for any new rule.
 7. Pull request; CI green; owner approval; merge; verify the live site and the health check.
 
-## Owner decisions needed (recommendations in brackets)
+## Owner decisions (answered 2026-10-21)
 
-| # | Decision | Needed before |
-|---|----------|---------------|
-| SH Q1 | Headless Chrome in CI for the smoke test (yes) | Step 1 design |
-| UX Q1 | Per-device usage only, no analytics (yes) | Step 8 design |
-| UX Q2 | Products and Updates fixed on top; only the rest adapts (yes) | Step 7 |
-| RC Q1, Q2 | Books follow the split (yes); all 5 reads and the book are Technical (yes) | Step 3 migration |
-| PC Q2, Q3 | Keep `blog.json` as archive (yes); supply 3 or more seed podcast links | Step 6 / release |
-| Labels | "Others", "Podcasts" (as written) | Step 5-6 |
+| # | Decision | Answer |
+|---|----------|--------|
+| SH Q1 | Headless Chrome in CI for the smoke test | **Yes** (the SH design spike still confirms it is available and stable) |
+| UX | Usage-based ordering of sections | **Dropped** by the owner ("not adding any value"): no usage tracking, no stored preference, no reordering. SPEC-UX is now a fixed-order, simpler layout |
+| UX Q2 | Products and Updates stay on top | **Yes**: fixed order Products, Updates, Reads, Podcasts |
+| RC Q1, Q2 | Books follow the split; all 5 reads and the book are Technical | **Yes, yes** |
+| PC Q2 | Keep `blog.json` as an archive | **Yes** |
+| PC Q3 | Seed podcasts | **Lex Fridman, ThePrimeagen, Yuval Noah Harari.** These are people or shows: the owner supplies the exact podcast or episode URLs when seeding (none are invented in the documents) |
+| Labels | "Others", "Podcasts" | **As written** |
 
 ## Milestones
 
@@ -62,7 +63,7 @@ Steps 3-4 can run in either order; steps 5 and 6 can swap; everything else is se
 | M1 Safe base | Steps 1-2 merged; the existing page passes the new smoke test |
 | M2 Data ready | Steps 3-4 merged; no visible change |
 | M3 Content split | Steps 5-6 merged; Reads has two sub-items; Podcasts replaces Blog |
-| M4 Layout | Steps 7-8 merged |
+| M4 Layout | Steps 7-8 merged: fixed order, matching navs, stable links, accessibility pass |
 | M5 Release | Steps 9-10; `v2.0` tagged; live smoke checklist and health green |
 
 ## Risks and watch points
@@ -101,7 +102,7 @@ Heavy edits to `js/app.js`: keep new logic in small tested modules and watch the
 
 ## Not in this plan
 
-Analytics, embedded audio, RSS import, owner-configurable layout order, a third Reads sub-item (all P2 or non-goals in the specs).
+Analytics, usage-based ordering, embedded audio, RSS import, owner-configurable section order, a third Reads sub-item (all P2 or non-goals in the specs).
 
 ---
 

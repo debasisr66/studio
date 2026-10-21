@@ -181,26 +181,22 @@ No `'unsafe-inline'` or `'unsafe-eval'` anywhere. To make that possible, the sty
 
 ## 13. Studio 2.0 target architecture (proposed; not built)
 
-Everything in §1-12 stays true until each phase merges; this section describes where the architecture goes. Specs: [SH](specs/stabilize-core-hub/spec.md), [RC](specs/reads-categories/spec.md), [PC](specs/podcast-links/spec.md), [UX](specs/adaptive-layout/spec.md). Design detail: [design.md](design.md) §12.
+Everything in §1-12 stays true until each phase merges; this section describes where the architecture goes. Specs: [SH](specs/stabilize-core-hub/spec.md), [RC](specs/reads-categories/spec.md), [PC](specs/podcast-links/spec.md), [UX](specs/simple-layout/spec.md). Design detail: [design.md](design.md) §12.
 
 ```mermaid
 flowchart TB
   subgraph Repo[studio repo, static files]
     IDX[index.html: sections Products, Updates, Reads, Podcasts]
     APP[js/app.js: boot, guarded renderers, admin]
-    LIBS[js/reads-lib.js, js/layout-lib.js (new), js/image-lib.js, js/token-store.js: pure, tested]
+    LIBS[js/reads-lib.js, js/image-lib.js, js/token-store.js: pure, tested]
     CON[content/: products, cache, reads (v2), podcasts (new), changelog, profile, blog (archive)]
     CI[CI: unit tests, validator + RULES fixtures, smoke test (new)]
-  end
-  subgraph Browser[Visitor browser]
-    LS[(localStorage: studio-use-v1, studio-seen-version)]
   end
   GH[GitHub API: product repos, releases]
   SYNC[sync.yml: unchanged] --> CON
   GH --> SYNC
   APP --> LIBS
   APP --> CON
-  APP <--> LS
   CI --> Repo
 ```
 
@@ -208,12 +204,11 @@ flowchart TB
 
 | Area | v1.5 | v2.0 |
 |------|------|------|
-| Sections | Products, Updates, Blog, Reads | Products, Updates, then adaptive Reads (Technical, Others) and Podcasts |
+| Sections | Products, Updates, Blog, Reads | Products, Updates, Reads (Technical, Others), Podcasts: one fixed order |
 | Content files | products, cache, blog, reads, changelog, profile | + `podcasts.json`; `reads.json` gains `category` and `schema_version`; `blog.json` archived, not loaded |
 | Rendering | `renderAll()` sequential, unguarded | Each section guarded; failure shows a fixed line; admin always reachable |
-| Layout | Fixed order, nav lists differ | One ordered list drives page and both navs; order decided at load from local scores |
-| Local state | `studio-seen-version` only | + `studio-use-v1` (closed shape, ≤ 1 KB, never sent) |
-| Tests | 142 unit tests | + browser smoke test (headless Chrome, no npm) and 136 new cases |
+| Layout | Fixed order, nav lists differ | One fixed ordered list drives the page and both navs (no usage tracking, nothing stored about visitors) |
+| Tests | 142 unit tests | + browser smoke test (headless Chrome, no npm) and 116 new cases |
 | Docs | Prose contracts | `docs/CONTRACT.md` per content file, kept in step by a test |
 
 ### 13.2 What does not change
@@ -225,6 +220,5 @@ The sync and its workflows, product repos and the one-way flow, CSP, token handl
 | Module | Owns | Does not touch |
 |--------|------|----------------|
 | `js/reads-lib.js` | URL rules, categories, filters, platform labels, share links | DOM, storage |
-| `js/layout-lib.js` (new) | Scoring, decay, storage shape and clamping, order decision | DOM, network |
 | `js/app.js` | DOM, events, fetch, admin | Rules that can be pure |
 
