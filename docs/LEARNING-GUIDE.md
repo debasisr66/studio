@@ -128,30 +128,92 @@ git add . && git commit -m "Add notify-studio workflow" && git push
 
 ## Step 9 — Tokens
 
-Two tokens, deliberately separate:
+Studio uses **two tokens, one per job**. Create them separately, name them differently, store each in one place only.
 
-| Token | Purpose | Where created | Scope | Stored where |
-|-------|---------|---------------|-------|--------------|
-| **Dispatch token** → secret name `STUDIO_DISPATCH_TOKEN` | Lets a product repo trigger the hub sync | Fine-grained PAT | Repository access: **only `debasisr66/studio`**; permission **Contents: Read and write** (Metadata read is automatic) | GitHub Actions secret in **each product repo** |
-| **Admin (CMS) token** | Lets the ⚙ admin publish blog/reads | Fine-grained PAT | Only `debasisr66/studio`; **Contents: Read and write** | Browser `localStorage('studio-admin-pat')` only |
+| | **Admin token** (`studio-admin`) | **Dispatch token** (`studio-dispatch`) |
+|---|---|---|
+| Job | You publish blog posts, reads and your photo from the ⚙ screen | A product repo (Penny) tells Studio "I released something, sync now" |
+| Used by | You, by hand, in the browser | A GitHub Actions workflow in the product repo, unattended |
+| Stored | **Nowhere.** Pasted into the open tab; forgotten when the tab closes or after 30 minutes idle | GitHub Actions secret `STUDIO_DISPATCH_TOKEN` in **each product repo** |
+| Suggested expiry | 30–90 days (you will paste a fresh one from your password manager) | 90 days to 1 year (it runs unattended) |
+| Resource owner / repo | `debasisr66` / **only `studio`** | `debasisr66` / **only `studio`** |
+| Permission | Repository → **Contents: Read and write** | Repository → **Contents: Read and write** |
 
-Important correction: the permission is **Contents**, not "Actions". GitHub's dispatch API (`POST /repos/{owner}/{repo}/dispatches`) requires Contents write. If the permission dialog has no "Actions" entry that is why.
+**Be clear about what separation gives you.** Both tokens need the same permission, because GitHub's dispatch call (`POST /repos/debasisr66/studio/dispatches`) requires *Contents: write*, and a fine-grained token cannot be narrowed to one file or to dispatch only. So the separation is about **where each lives and how long it lasts**, not about power. Either one leaking lets someone change Studio's content files, which is why each is limited to the `studio` repo, kept short-lived, and revocable on its own. If you ever do not need instant updates, delete the dispatch token and secret: the nightly sync still catches releases within a day, and no long-lived secret sits in another repo.
 
-**Create a token:** profile picture → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token (https://github.com/settings/personal-access-tokens/new).
-1. Token name, e.g. `studio-dispatch`; Expiration (e.g. 1 year).
-2. Resource owner `debasisr66`.
-3. Repository access: **Only select repositories** → tick `studio`.
-4. Permissions → Add permissions → **Contents** → Read and write.
-5. Generate token. **The value is shown once.** Copy it straight into the next command's prompt.
+If the permission list has no "Actions" entry: correct, the permission you need is **Contents**.
 
-**If Generate does nothing:** scroll to the top for a validation error (name, expiry, repo not actually selected, no permission added); hard-refresh; try a private window or disable extensions; check for a hidden password/2FA prompt.
+### A. Create a token (same form for both; only name and expiry differ)
 
-**Store the dispatch secret** (paste at the prompt so it never enters shell history):
+Open https://github.com/settings/personal-access-tokens/new (profile picture → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token).
+
+Worked example for the admin token:
+
+| Field | Enter |
+|-------|-------|
+| Token name | `studio-admin` |
+| Description | `Publish from the Studio admin screen` |
+| Expiration | Custom → a date about 60 days away |
+| Resource owner | `debasisr66` |
+| Repository access | **Only select repositories** → tick `debasisr66/studio` (nothing else) |
+| Permissions → Repository permissions | **Contents** → *Read and write* (Metadata: Read-only appears by itself; leave it) |
+| Account permissions | none |
+
+Click **Generate token**. The value (it starts with `github_pat_`, for example `github_pat_11ABCDEF0…`, a long string) is **shown once**: copy it into your password manager straight away. For the dispatch token repeat with name `studio-dispatch` and a longer expiry.
+
+Before you leave the page, check the summary lists **1 repository: debasisr66/studio** and **Contents: Read and write**. A token that names the wrong repository is the most common mistake (see the errors below).
+
+**If Generate does nothing:** scroll to the top for a validation message (name, expiry, repository not actually selected, no permission added); hard-refresh; try a private window or disable extensions; check for a hidden password or 2FA prompt.
+
+### B. Use the admin token (Studio publishing)
+
+1. Open https://debasisr66.github.io/studio/ and click **⚙**.
+2. Paste the token and click **Unlock**. The site asks GitHub who you are and unlocks only for `debasisr66`.
+3. Add or edit a read, post or your photo, then click **Publish changes**. Each file becomes one commit on `main`.
+4. Wait about a minute for Pages, then refresh to see it.
+5. Click **Lock & sign out**.
+
+Where the token lives: in the browser tab's memory only (`sessionStorage`). Close the tab and it is gone; a new tab asks again; 30 minutes idle locks it. It is never in `localStorage`, cookies, the page, a commit or a log. Do **not** paste it into `gh secret set`, a file or a chat.
+
+### C. Store the dispatch token (once per product repo)
+
+Paste at the prompt, so it never enters your shell history and never appears on screen:
 ```bash
 gh secret set STUDIO_DISPATCH_TOKEN --repo debasisr66/PennyExpenseManager
+# expect: ✓ Set Actions secret STUDIO_DISPATCH_TOKEN for debasisr66/PennyExpenseManager
 gh secret list --repo debasisr66/PennyExpenseManager      # shows the name and updated time, never the value
 ```
-Secrets UI: repo → Settings → Secrets and variables → Actions.
+Wait for the ✓ line before testing: the time in `gh secret list` must change. The same secret is under repo → Settings → Secrets and variables → Actions.
+
+### D. Test each token
+
+**Dispatch token:** (this is Step 10 A)
+```bash
+gh workflow run notify-studio.yml --repo debasisr66/PennyExpenseManager
+gh run list --repo debasisr66/studio --workflow sync.yml --limit 2
+```
+Pass = the Penny run is green and Studio shows a new run with event `repository_dispatch`.
+
+**Admin token:** unlock ⚙ with it and publish one small change (for example edit a read's comment). Pass = "Published successfully" and the change appears after a refresh.
+
+### E. Expiry, rotation and cleanup
+
+| When | Do |
+|------|----|
+| One week before expiry (set a calendar reminder for each token) | Create the replacement as in A, switch to it (B or C), test (D), then delete the old one |
+| After creating a replacement | Delete the old token: Settings → Developer settings → Fine-grained tokens → the token → Delete |
+| You once used one token for both jobs | Create the second token, move each job to its own, then delete the shared one |
+| A token may have leaked | Revoke it first, then replace it, then audit `git log --oneline -20` and `gh run list --limit 10` (see "Runbook: rotation, expiry and incidents") |
+
+### F. Token errors seen in practice
+
+| Message | Cause | Fix |
+|---------|-------|-----|
+| `Resource not accessible by personal access token` (dispatch step in the product repo) | The token is not allowed to touch `studio`: wrong repository ticked, Contents missing or read-only, or the wrong resource owner | Edit the token (same value is kept) so it lists only `debasisr66/studio` with *Contents: Read and write*; if you replaced it, run `gh secret set` again |
+| The product-repo run is red and `gh secret list` shows the old time | The secret was never saved: the `gh secret set` prompt is still waiting for the paste | Finish the prompt, wait for the ✓ line, then test again |
+| `HTTP 422: Workflow does not have 'workflow_dispatch' trigger` | The workflow only listens for release or push | Add `workflow_dispatch:` under `on:` and push |
+| 401 or "Bad credentials" at unlock or publish | Token expired, revoked or mistyped | Create a new token (A) and paste it again |
+| Unlock works but Publish fails with 403 or 404 | The admin token lacks Contents write on `studio` | Edit the token as above |
 
 ## Step 10 — End-to-end test
 
@@ -180,7 +242,7 @@ A bare tag or a pre-release will **not** show: only a published GitHub Release c
 
 ## Step 11 — Using the admin CMS
 
-1. Create the admin token (Step 9, name e.g. `studio-admin`).
+1. Create the admin token (Step 9 A, name `studio-admin`; full walk-through in Step 9 B).
 2. Open the site → click ⚙ → paste the token → Unlock (it is validated against `GET /user`). **Since v1.3 the token lives in that tab only**: it is forgotten when you close the tab, in a new tab you unlock again, and the old stored token from earlier versions was deleted, so you unlock once after upgrading.
 3. Add/edit/delete posts, articles, books. Changes stay local until **Publish changes**.
 4. Publish commits one file at a time. Wait for Pages, then refresh. **Lock & sign out** removes the token from the browser.
