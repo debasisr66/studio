@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-TR` (requirements `TR-01` … `TR-13`) |
-| Status | **Approved; **Phases A and B merged (#7, #8); Phase C in review** |
+| Status | **Approved; **All phases merged (#7, #8, #9); shipped as v1.5** |
 | Owner | Debasis Ray |
 | Created | 2026-10-21 |
 | Parent | [PRD](../../PRD.md) §9.2, §9.6, §10.2, §13 (items 2 and 6), §15.3, Roadmap Phase 2 |
