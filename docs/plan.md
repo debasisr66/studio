@@ -23,8 +23,8 @@ PRD updated (done) → four specs (done, this PR) → impact (done) → **plan (
 | 0 | all | Approval | Owner answers (below) and approves the specs | Q1 (SPEC-UX), Q1 (SPEC-SH) answered |
 | 1 | SH | A | Section isolation, bounded fetch, smoke-test harness on the **unchanged** page | Smoke test green on v1.5 behaviour. **Merged (PR #12)** ✅ |
 | 2 | SH | B | CONTRACT.md, schema versions, OPERATIONS.md | Contract tests green, commands executed. **Merged (PR #13)** ✅ |
-| 3 | RC | A | `category` in data, validator, migration (no UI) | Migration proves no loss; owner confirms classification. **Built on `v2/rc-a`: awaiting approval** ✅ (classification confirmed 2026-10-21) |
-| 4 | PC | A | `podcasts.json`, validator, fixtures (section not visible) | Fixtures and contract green |
+| 3 | RC | A | `category` in data, validator, migration (no UI) | Migration proves no loss; owner confirms classification. **Merged (PR #14)** ✅ (classification confirmed 2026-10-21) |
+| 4 | PC | A | `podcasts.json`, validator, fixtures (section not visible) | Fixtures and contract green. **Built on `v2/pc-a`: awaiting approval** ✅ |
 | 5 | RC | B | Reads tabs, deep links, composer section | Smoke test covers both sub-items |
 | 6 | PC | B | Podcasts section and admin; Blog removed; `#blog` redirect | Smoke test; owner publishes a podcast link |
 | 7 | UX | A | Fixed order, section pattern, matching navs, stable links | Navs identical; anchors verified |

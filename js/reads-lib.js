@@ -171,6 +171,32 @@
     return Object.keys(count).sort(function (a, b) { return count[b] - count[a] || (a < b ? -1 : 1); });
   }
 
+  /* Podcasts (SPEC-PC PC-01). Version of the shape of content/podcasts.json; same tolerance rule as reads (missing or older is fine, newer is refused). */
+  var PODCASTS_SCHEMA_VERSION = 1;
+  var PODCAST_LIMITS = { show: 80 };   // title, comment and tags share LIMITS with Reads
+  function isSupportedPodcastsVersion(v) {
+    return !(typeof v === 'number' && isFinite(v) && Math.floor(v) === v && v > PODCASTS_SCHEMA_VERSION);
+  }
+  /* Closed list keyed on the host: the host itself or a subdomain of it (never a substring, so evilspotify.com is not Spotify). */
+  var PLATFORMS = [['spotify.com', 'Spotify'], ['podcasts.apple.com', 'Apple Podcasts'], ['youtube.com', 'YouTube'], ['youtu.be', 'YouTube']];
+  /* Label for a card: a platform name, else the plain domain (text only, escaped by the page). '' when the URL is unusable. */
+  function platformOf(url) {
+    var n = normalizeUrl(url);
+    if (!n) return '';
+    var host = new URL(n).hostname.toLowerCase();
+    for (var i = 0; i < PLATFORMS.length; i++) {
+      var d = PLATFORMS[i][0];
+      if (host === d || host.slice(-d.length - 1) === '.' + d) return PLATFORMS[i][1];
+    }
+    return host.replace(/^www\./, '');
+  }
+  /* One shape for rendering, whatever optional fields are missing. */
+  function podcastView(e) {
+    e = e && typeof e === 'object' ? e : {};
+    var s = function (v) { return typeof v === 'string' ? v : ''; };
+    return { title: s(e.title), url: s(e.url), show: s(e.show), comment: s(e.comment), tags: Array.isArray(e.tags) ? e.tags : [], added: s(e.added), platform: platformOf(e.url) };
+  }
+
   /* Chooses the release file for a card's Download button (used by the products grid, not Reads).
      pattern: optional wildcard such as "PennyExpenseManager-*.zip" ('*' = any characters, case-insensitive).
      No pattern -> first asset (previous behavior). Pattern with no match -> null, so the card falls back
@@ -192,7 +218,7 @@
     return t.toLocaleDateString('en-GB', o);
   }
 
-  return { KINDS: KINDS, CATEGORIES: CATEGORIES, DEFAULT_NEW_CATEGORY: DEFAULT_NEW_CATEGORY, categoryOf: categoryOf, categoryCounts: categoryCounts, pickAsset: pickAsset, formatDate: formatDate, LIMITS: LIMITS, normalizeUrl: normalizeUrl, isPublishableUrl: isPublishableUrl, READS_SCHEMA_VERSION: READS_SCHEMA_VERSION, isSupportedReadsVersion: isSupportedReadsVersion, serializeReads: serializeReads, domainOf: domainOf, isDuplicate: isDuplicate,
+  return { KINDS: KINDS, CATEGORIES: CATEGORIES, DEFAULT_NEW_CATEGORY: DEFAULT_NEW_CATEGORY, categoryOf: categoryOf, categoryCounts: categoryCounts, pickAsset: pickAsset, formatDate: formatDate, LIMITS: LIMITS, normalizeUrl: normalizeUrl, isPublishableUrl: isPublishableUrl, READS_SCHEMA_VERSION: READS_SCHEMA_VERSION, PODCASTS_SCHEMA_VERSION: PODCASTS_SCHEMA_VERSION, PODCAST_LIMITS: PODCAST_LIMITS, isSupportedPodcastsVersion: isSupportedPodcastsVersion, platformOf: platformOf, podcastView: podcastView, isSupportedReadsVersion: isSupportedReadsVersion, serializeReads: serializeReads, domainOf: domainOf, keyOf: keyOf, isDuplicate: isDuplicate,
     parseTags: parseTags, validateEntry: validateEntry, shareLinks: shareLinks, entryView: entryView,
     filterReads: filterReads, allTags: allTags };
 });

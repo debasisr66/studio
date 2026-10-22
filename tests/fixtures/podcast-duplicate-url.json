@@ -1,0 +1,29 @@
+{
+  "input": {
+    "schema_version": 1,
+    "podcasts": [
+      {
+        "id": 1,
+        "added": "2026-10-22",
+        "title": "Ep 1",
+        "url": "https://example.com/ep1",
+        "show": "Show",
+        "comment": "c",
+        "tags": [
+          "ai"
+        ]
+      },
+      {
+        "id": 2,
+        "added": "2026-10-22",
+        "title": "Ep 1",
+        "url": "https://www.example.com/ep1/",
+        "show": "Show",
+        "comment": "c",
+        "tags": [
+          "ai"
+        ]
+      }
+    ]
+  }
+}

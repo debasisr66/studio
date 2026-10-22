@@ -111,6 +111,12 @@ Every content rule CI enforces, with what to do (each is proven by a failing fix
 | reads.json | `schema_version must be` | The file's shape version is missing, wrong, or newer than this page. Restore it from the last good commit, or set `"schema_version": 2` as the first key. The admin screen writes it for you on every publish |
 | reads.json | `category must be one of` | A read or book has no `category`, or a value other than `technical` or `other` (typo, capital letter). Set it in the JSON (`"category": "technical"`) or edit the entry in admin and publish; the admin fills it for new entries |
 | reads.json | `kind must be one of`, `tags must be an array`, `comment must be text`, `duplicate id` | Edit the read in admin (⚙ → Edit); at most 5 tags, 280-character comment |
+| podcasts.json | `podcasts.json: schema_version must be` | The file's shape version is missing, wrong or newer than this page. Restore from the last good commit or set `"schema_version": 1` as the first key |
+| podcasts.json | `podcast url must be a clean` | A podcast link has a space, hidden character, `user:pass@`, a non-http(s) scheme or is over 2048 characters; make it a plain `https://…` link |
+| podcasts.json | `podcast title is required` | Every podcast needs a title of 1 to 140 characters |
+| podcasts.json | `podcast tags must be`, `podcast comment must be`, `podcast show must be` | At most 5 tags of 24 characters, a take of at most 280 characters, a show name of at most 80 |
+| podcasts.json | `podcast duplicate id` | Two entries share an `id`; change one |
+| podcasts.json | `same link as an earlier podcast` (warning) | The same link appears twice; remove one when convenient |
 | changelog.json | `version must look like`, `plain text` | Versions like `1.5`; release notes are plain text without `<` or `>` |
 
 ## Browser smoke test fails

@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-PC` (requirements `PC-01` … `PC-09`) |
-| Status | **Approved by the owner (2026-10-21); not started** |
+| Status | **Approved by the owner (2026-10-21); Phase A built on `v2/pc-a` (PR open, awaiting merge approval); B and C not started** |
 | Owner | Debasis Ray |
 | Created | 2026-10-21 |
 | Parent | [PRD](../../PRD.md) §7, §9.4, §11.3; [§22](../../PRD.md) |
@@ -126,3 +126,4 @@ Rollback: tag `v1.5` restores the Blog section; `podcasts.json` is ignored by ol
 
 - 2026-10-21: Draft created from code findings F1-F6. Awaiting owner answers to Q1 to Q4.
 - 2026-10-21: Approved by the owner with the recommended answers; decisions recorded in section 8-9 above.
+- 2026-10-22: Phase A built on `v2/pc-a`: PC-01 (`content/podcasts.json` with `schema_version` 1 and no entries; `platformOf`, `podcastView` and the version helpers in `js/reads-lib.js`) and PC-04 (`validatePodcasts`, run by `validate-site.js`; eight rules with fixtures, RUNBOOK rows and CONTRACT entries: the six listed plus `podcast-show` and `podcast-duplicate-id`). The duplicate-link check keeps the query string so different YouTube videos are different links. No visible change: `index.html`, `app.js`, CSS, workflows, health check and the changelog are untouched. Results: [test.md](test.md).
