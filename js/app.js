@@ -59,7 +59,7 @@ function md(text) {
 }
 
 /* ---------- state ---------- */
-const state = { changelog: null, registry: [], cache: null, blog: {posts: []}, reads: {books: [], articles: []}, profile: {photo: null, updated: null}, profileDraft: null, profileShown: null, dirty: {blog:false, reads:false, profile:false}, filter: {tag:'', q:''}, editing: -1 };
+const state = { changelog: null, registry: [], cache: null, blog: {posts: []}, reads: {books: [], articles: []}, profile: {photo: null, updated: null}, profileDraft: null, profileShown: null, dirty: {blog:false, reads:false, profile:false}, filter: {tag:'', q:''}, editing: -1, cat: null, lastSection: null };
 
 /* time-limited (SafeLib.FETCH_TIMEOUT_MS): a content file that never answers degrades its section instead of holding the page forever */
 const loadJson = path => window.SafeLib.fetchJson(fetch, path + '?t=' + Date.now(), { init: { cache: 'no-store' } });
@@ -87,7 +87,9 @@ async function boot() {
     if (!state.changelog.length) state.changelog = null;
   }
   $('#grid').removeAttribute('aria-busy');
+  state.cat = RL.categoryFromHash(location.hash) || RL.defaultCategory(RL.categoryCounts(state.reads.articles.concat(state.reads.books)));
   renderAll();
+  if (RL.isReadsHash(location.hash) && location.hash !== '#reads') showReads();   // '#reads/others' matches no element id, so the browser cannot scroll to it
   if (tokenStore.get()) enableAdmin();   // always reached: renderAll never throws
 }
 
@@ -188,27 +190,53 @@ function readCard(entry, index, preview) {
   </article>`;
 }
 
+/* Section shown in Reads (RC-02): state.cat is set from the deep link or the default at boot and changed only by selectCategory. */
+const sectionSlug = c => RL.categorySlug(c);
+function renderTabs(tabs) {
+  $('#readTabs').innerHTML = tabs.map(t => {
+    const on = t.category === state.cat;
+    return `<button type="button" role="tab" class="tab" id="tab-${esc(t.slug)}" data-cat="${esc(t.category)}" aria-selected="${on}" aria-controls="readsPanel" tabindex="${on ? 0 : -1}">${esc(t.label)} <span class="tab-count">${t.count}</span></button>`;
+  }).join('');
+  $('#readsPanel').setAttribute('aria-labelledby', 'tab-' + sectionSlug(state.cat));
+}
+/* '#reads/others' matches no element id, so the browser cannot scroll to it: bring the section into view ourselves, instantly (smooth scrolling is cancelled by layout changes during load). */
+const showReads = () => $('#reads').scrollIntoView({behavior: 'instant', block: 'start'});
+function selectCategory(c, focusTab) {
+  if (!RL.CATEGORIES.includes(c)) return;
+  state.cat = c; state.filter = {tag: '', q: ''}; $('#readSearch').value = '';
+  try { history.replaceState(null, '', RL.categoryHash(c)); } catch {}   // updates the hash without scrolling or adding a history entry
+  renderReads();
+  if (focusTab) { const t = $('#tab-' + sectionSlug(c)); if (t) t.focus(); }
+}
+
 function renderReads() {
   if (state.readsUnsupported) throw new Error('reads.json has a newer schema_version than this page supports');   // guarded: shows the fallback line
-  const all = state.reads.articles.map((e, i) => ({e, i}));
+  const tabs = RL.categoryTabs(state.reads.articles, state.reads.books);
+  if (!RL.CATEGORIES.includes(state.cat)) state.cat = RL.defaultCategory(Object.fromEntries(tabs.map(t => [t.category, t.count])));
+  renderTabs(tabs);
+  const cat = state.cat, label = RL.categoryLabel(cat);
+  const mine = state.reads.articles.map((e, i) => ({e, i})).filter(x => RL.categoryOf(x.e) === cat);
   // newest first: dated entries by date, undated keep their original order after them
-  all.sort((a, b) => { const da = (a.e && a.e.added) || '', db = (b.e && b.e.added) || ''; return da === db ? a.i - b.i : (da < db ? 1 : -1); });
-  const shown = new Set(RL.filterReads(all.map(x => x.e), state.filter));
-  const rows = all.filter(x => shown.has(x.e));
+  mine.sort((a, b) => { const da = (a.e && a.e.added) || '', db = (b.e && b.e.added) || ''; return da === db ? a.i - b.i : (da < db ? 1 : -1); });
+  const shown = new Set(RL.filterReads(mine.map(x => x.e), state.filter));
+  const rows = mine.filter(x => shown.has(x.e));
 
-  const tags = RL.allTags(state.reads.articles);
-  $('#toolbar').hidden = state.reads.articles.length < 4;
-  $('#tagChips').innerHTML = tags.length ? [['', 'All'], ...tags.map(t => [t, '#' + t])].map(([t, label]) =>
-    `<button type="button" class="chip" data-filter="${esc(t)}" aria-pressed="${state.filter.tag === t}">${esc(label)}</button>`).join('') : '';
-  $('#readCount').textContent = state.reads.articles.length && (state.filter.tag || state.filter.q) ? `Showing ${rows.length} of ${state.reads.articles.length}` : '';
+  const tags = RL.allTags(mine.map(x => x.e));
+  $('#toolbar').hidden = mine.length < 4;
+  $('#tagChips').innerHTML = tags.length ? [['', 'All'], ...tags.map(t => [t, '#' + t])].map(([t, lab]) =>
+    `<button type="button" class="chip" data-filter="${esc(t)}" aria-pressed="${state.filter.tag === t}">${esc(lab)}</button>`).join('') : '';
+  $('#readCount').textContent = mine.length && (state.filter.tag || state.filter.q) ? `Showing ${rows.length} of ${mine.length}` : '';
 
+  // a search that finds nothing here may find something in another section: say so
+  const elsewhere = RL.CATEGORIES.filter(c => c !== cat && RL.filterReads(state.reads.articles.filter(e => RL.categoryOf(e) === c), state.filter).length);
   $('#articlesFeed').innerHTML = rows.length ? rows.map(x => readCard(x.e, x.i, false)).join('')
-    : state.reads.articles.length ? '<div class="empty">No reads match. <button type="button" class="chip" data-filter="">Clear filters</button></div>'
-    : '<div class="empty">Nothing here yet. Check back soon.</div>';
+    : mine.length ? '<div class="empty">No reads match here. <button type="button" class="chip" data-filter="">Clear filters</button>' +
+        elsewhere.map(c => ` <button type="button" class="chip" data-cat="${esc(c)}">Try ${esc(RL.categoryLabel(c))}</button>`).join('') + '</div>'
+    : tabs.some(t => t.count) ? `<div class="empty">Nothing in ${esc(label)} yet. Check back soon.</div>` : '<div class="empty">Nothing here yet. Check back soon.</div>';
   paint($('#articlesFeed'));
 
-  const b = state.reads.books;
-  $('#booksFeed').innerHTML = b.length ? b.map((x, i) => `
+  const b = state.reads.books.map((x, i) => ({x, i})).filter(r => RL.categoryOf(r.x) === cat);
+  $('#booksFeed').innerHTML = b.length ? b.map(({x, i}) => `
     <article class="item">${tools('book', i, 'book ' + (x.title || ''))}<h3>${esc(x.title)}</h3><div class="when">${esc(x.author)}${x.year ? ' · ' + esc(x.year) : ''}</div>${x.note ? `<div class="body">${esc(x.note)}</div>` : ''}</article>`).join('') : '<div class="empty">Nothing here yet.</div>';
 }
 
@@ -394,13 +422,22 @@ $('#lockBtn').onclick = () => {
 
 /* ---------- reads composer (LinkedIn-style "Share a read") ---------- */
 const cf = id => $('#cf-' + id);
-const COMPOSER_FIELDS = ['url', 'title', 'comment'];
+const COMPOSER_FIELDS = ['url', 'title', 'comment', 'category'];
+
+/* The Section a new read or book starts with: the last one chosen this session, else the section being viewed (RC-04). */
+const defaultSection = () => RL.CATEGORIES.includes(state.lastSection) ? state.lastSection : RL.CATEGORIES.includes(state.cat) ? state.cat : RL.DEFAULT_NEW_CATEGORY;
+function renderSectionRadios(value) {
+  $('#cf-category-opts').innerHTML = RL.CATEGORIES.map(c =>
+    `<label class="radio"><input type="radio" name="category" value="${esc(c)}"${c === value ? ' checked' : ''}> ${esc(RL.categoryLabel(c))}</label>`).join('');
+}
+const chosenSection = () => { const r = $('#cf-category input:checked'); return r ? r.value : ''; };
 
 function openComposer(editIndex = -1) {
   state.editing = editIndex;
   const e = editIndex >= 0 ? RL.entryView(state.reads.articles[editIndex]) : {url:'', title:'', comment:'', kind:'article', tags:[]};
   cf('url').value = e.url; cf('title').value = e.title; cf('comment').value = e.comment;
   cf('kind').value = e.kind; cf('tags').value = e.tags.join(', ');
+  renderSectionRadios(editIndex >= 0 ? RL.categoryOf(state.reads.articles[editIndex]) : defaultSection());
   $('#composerTitle').textContent = editIndex >= 0 ? 'Edit read' : 'Share a read';
   cf('submit').textContent = editIndex >= 0 ? 'Save changes' : 'Post';
   clearErrors(); updateCount(); updatePreview();
@@ -418,10 +455,10 @@ function clearErrors() {
 function showErrors(errors) {
   clearErrors();
   COMPOSER_FIELDS.forEach(f => { if (errors[f]) { cf(f + '-err').textContent = errors[f]; cf(f).setAttribute('aria-invalid', 'true'); } });
-  const first = COMPOSER_FIELDS.find(f => errors[f]); if (first) cf(first).focus();
+  const first = COMPOSER_FIELDS.find(f => errors[f]); if (first) (first === 'category' ? cf(first).querySelector('input') || cf(first) : cf(first)).focus();
 }
 function composerValue() {
-  return {url: cf('url').value, title: cf('title').value, comment: cf('comment').value, kind: cf('kind').value, tags: cf('tags').value};
+  return {url: cf('url').value, title: cf('title').value, comment: cf('comment').value, kind: cf('kind').value, tags: cf('tags').value, category: chosenSection()};
 }
 function updateCount() {
   const n = cf('comment').value.length, c = $('#cf-count');
@@ -429,6 +466,7 @@ function updateCount() {
 }
 function updatePreview() {
   const v = composerValue(), n = RL.normalizeUrl(v.url);
+  $('#cf-preview-section').textContent = v.category ? 'Will appear under ' + RL.categoryLabel(v.category) + '.' : '';
   $('#cf-preview').innerHTML = (n || v.title) ? readCard({url: n || '', title: v.title.trim(), comment: v.comment.trim(), kind: v.kind, tags: RL.parseTags(v.tags), added: new Date().toISOString().slice(0, 10)}, -1, true)
     : '<div class="empty">Your post will appear here as you type.</div>';
   paint($('#cf-preview'));
@@ -441,7 +479,7 @@ $('#composerForm').addEventListener('keydown', e => { if (e.key === 'Escape') { 
 $('#composerForm').addEventListener('submit', ev => {
   ev.preventDefault();
   if (!document.body.classList.contains('admin')) return;
-  const r = RL.validateEntry(composerValue());
+  const r = RL.validateEntry(composerValue(), {requireCategory: true});
   const errors = {...r.errors};
   if (r.ok && RL.isDuplicate(state.reads.articles, r.value.url, state.editing >= 0 ? state.reads.articles[state.editing].id : undefined) &&
       !(state.editing >= 0 && RL.normalizeUrl(state.reads.articles[state.editing].url) === r.value.url)) errors.url = 'This link is already in your reading list.';
@@ -453,11 +491,12 @@ $('#composerForm').addEventListener('submit', ev => {
     delete next.note;   // legacy field replaced by "comment"
     if (!next.id) next.id = Date.now();
     state.reads.articles[state.editing] = next;
-    say('Changes saved. Publish to make them public.');
+    say(next.category !== state.cat ? `Changes saved. Moved to ${RL.categoryLabel(next.category)}. Publish to make them public.` : 'Changes saved. Publish to make them public.');
   } else {
-    state.reads.articles.unshift({id: Date.now(), added: new Date().toISOString().slice(0, 10), category: RL.DEFAULT_NEW_CATEGORY, ...r.value});   // Section choice arrives in RC Phase B
-    say('Added. Publish to make it public.');
+    state.reads.articles.unshift({id: Date.now(), added: new Date().toISOString().slice(0, 10), ...r.value});
+    say(r.value.category !== state.cat ? `Added to ${RL.categoryLabel(r.value.category)}. Publish to make it public.` : 'Added. Publish to make it public.');
   }
+  state.lastSection = r.value.category;
   state.dirty.reads = true; updateDirty(); closeComposer(); renderAll(); $('#composerOpen').focus();
 });
 
@@ -465,13 +504,13 @@ $('#composerForm').addEventListener('submit', ev => {
 const SCHEMAS = {
   post: {title:'Blog post', fields:[['title','Title','input',1],['date','Date (YYYY-MM-DD)','input',1],['body','Body (supports - bullets, **bold**)','textarea',1],['link','Link (optional)','input']], list:()=>state.blog.posts, file:'blog', make:()=>({id:Date.now(), date:new Date().toISOString().slice(0,10), title:'', body:'', link:''})},
   article: {title:'Read', list:()=>state.reads.articles, file:'reads'},
-  book: {title:'Book', fields:[['title','Title','input',1],['author','Author','input',1],['year','Year','input'],['note','Note','textarea']], list:()=>state.reads.books, file:'reads', make:()=>({title:'', author:'', year:'', note:'', category:RL.DEFAULT_NEW_CATEGORY})},
+  book: {title:'Book', fields:[['title','Title','input',1],['author','Author','input',1],['year','Year','input'],['note','Note','textarea'],['category','Section','select',1]], list:()=>state.reads.books, file:'reads', make:()=>({title:'', author:'', year:'', note:'', category:defaultSection()})},
 };
 function editItem(kind, idx) {
   if (kind === 'article') return openComposer(idx);
   const s = SCHEMAS[kind], list = s.list(), isNew = idx < 0, item = isNew ? s.make() : {...list[idx]};
   modal.open(`<h3 id="modalTitle">${isNew ? 'Add' : 'Edit'} ${s.title.toLowerCase()}</h3>` + s.fields.map(([k,l,t]) =>
-    `<label for="f-${k}">${esc(l)}</label>${t === 'textarea' ? `<textarea id="f-${k}" data-k="${k}">${esc(item[k])}</textarea>` : `<input id="f-${k}" data-k="${k}" value="${esc(item[k])}">`}`).join('') +
+    `<label for="f-${k}">${esc(l)}</label>${t === 'select' ? `<select id="f-${k}" data-k="${k}">${RL.CATEGORIES.map(c => `<option value="${esc(c)}"${c === RL.categoryOf(item) ? ' selected' : ''}>${esc(RL.categoryLabel(c))}</option>`).join('')}</select>` : t === 'textarea' ? `<textarea id="f-${k}" data-k="${k}">${esc(item[k])}</textarea>` : `<input id="f-${k}" data-k="${k}" value="${esc(item[k])}">`}`).join('') +
     `<div class="btns"><button type="button" class="cta ghost" id="mc">Cancel</button><button type="button" class="cta" id="ms">Save</button></div>`);
   $('#mc').onclick = modal.close;
   $('#ms').onclick = () => {
@@ -483,6 +522,7 @@ function editItem(kind, idx) {
     if (kind === 'post' && !/^\d{4}-\d{2}-\d{2}$/.test(item.date)) return modal.err('Date must be YYYY-MM-DD');
     if (kind === 'post' && item.link && !safeUrl(item.link)) return modal.err('Link must start with http:// or https://');
     if (kind === 'book') item.year = item.year && /^\d+$/.test(item.year) ? Number(item.year) : item.year;
+    if (kind === 'book') state.lastSection = item.category;
     if (isNew) list.push(item); else list[idx] = item;
     state.dirty[s.file] = true; updateDirty(); renderAll(); modal.close();
   };
@@ -497,6 +537,8 @@ async function copyText(text) {
   document.body.appendChild(t); t.select(); let ok = false; try { ok = document.execCommand('copy'); } catch {} t.remove(); return ok;
 }
 document.addEventListener('click', async e => {
+  const sec = e.target.closest('[data-cat]');
+  if (sec) { selectCategory(sec.dataset.cat); return; }
   const ed = e.target.closest('[data-edit]'), del = e.target.closest('[data-del]');
   if (ed) { const [k,i] = ed.dataset.edit.split(':'); editItem(k, +i); return; }
   if (del) {
@@ -591,3 +633,17 @@ $('#photoFile').addEventListener('change', async e => {
 });
 
 boot();
+
+/* ---------- reads sections: keyboard and deep links (RC-02, RC-03) ---------- */
+$('#readTabs').addEventListener('keydown', e => {
+  const tabs = [...$('#readTabs').querySelectorAll('[role=tab]')], cur = e.target.closest('[role=tab]');
+  const n = RL.nextTabIndex(e.key, tabs.indexOf(cur), tabs.length);
+  if (n < 0) return;
+  e.preventDefault(); selectCategory(tabs[n].dataset.cat, true);
+});
+window.addEventListener('hashchange', () => {
+  if (!RL.isReadsHash(location.hash) || state.readsUnsupported) return;
+  const c = RL.categoryFromHash(location.hash);
+  if (c && c !== state.cat) selectCategory(c);
+  if (location.hash !== '#reads') showReads();
+});

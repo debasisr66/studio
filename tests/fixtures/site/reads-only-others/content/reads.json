@@ -1,0 +1,30 @@
+{
+  "schema_version": 2,
+  "books": [],
+  "articles": [
+    {
+      "id": 201,
+      "added": "2026-10-20",
+      "url": "https://example.com/201",
+      "title": "Other zebra",
+      "comment": "About Other zebra",
+      "kind": "article",
+      "category": "other",
+      "tags": [
+        "travel"
+      ]
+    },
+    {
+      "id": 202,
+      "added": "2026-10-20",
+      "url": "https://example.com/202",
+      "title": "Other yak",
+      "comment": "About Other yak",
+      "kind": "article",
+      "category": "other",
+      "tags": [
+        "travel"
+      ]
+    }
+  ]
+}

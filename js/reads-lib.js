@@ -21,6 +21,45 @@
     (list || []).forEach(function (e) { var c = categoryOf(e); if (c in out) out[c]++; });
     return out;
   }
+  /* Section tabs (SPEC-RC RC-02, RC-03). Labels and URL slugs for the closed list; a value added to CATEGORIES works without further edits
+     (label = capitalised value, slug = the value itself). */
+  var CATEGORY_LABELS = { technical: 'Technical', other: 'Others' };
+  var CATEGORY_SLUGS = { technical: 'technical', other: 'others' };
+  var own = function (o, k) { return Object.prototype.hasOwnProperty.call(o, k); };
+  function categoryLabel(c) { return own(CATEGORY_LABELS, c) ? CATEGORY_LABELS[c] : String(c).charAt(0).toUpperCase() + String(c).slice(1); }
+  function categorySlug(c) { return own(CATEGORY_SLUGS, c) ? CATEGORY_SLUGS[c] : String(c); }
+  function categoryFromSlug(s) {
+    if (typeof s !== 'string') return '';
+    for (var i = 0; i < CATEGORIES.length; i++) if (categorySlug(CATEGORIES[i]) === s) return CATEGORIES[i];
+    return '';
+  }
+  /* '#reads/others' -> 'other'. '' for '#reads', anything unknown, or anything that is not a reads link (never an error). */
+  function categoryFromHash(hash) {
+    var m = typeof hash === 'string' && hash.length < 200 ? /^#reads\/([^\/?#]*)$/.exec(hash) : null;
+    return m ? categoryFromSlug(m[1]) : '';
+  }
+  function isReadsHash(hash) { return typeof hash === 'string' && /^#reads(\/.*)?$/.test(hash); }
+  function categoryHash(c) { return '#reads/' + categorySlug(c); }
+  /* One entry per section for the tab list: counts cover the whole section (reads and books), never a filtered view. */
+  function categoryTabs(articles, books) {
+    var counts = categoryCounts((articles || []).concat(books || []));
+    return CATEGORIES.map(function (c) { return { category: c, label: categoryLabel(c), slug: categorySlug(c), count: counts[c] }; });
+  }
+  /* Technical, or the first section that has entries when Technical is empty; Technical when everything is empty. */
+  function defaultCategory(counts) {
+    counts = counts || {};
+    for (var i = 0; i < CATEGORIES.length; i++) if (counts[CATEGORIES[i]] > 0) return CATEGORIES[i];
+    return CATEGORIES[0];
+  }
+  /* Roving-tabindex keys for a tab list: index to move to, or -1 when the key is not ours. */
+  function nextTabIndex(key, current, count) {
+    if (!(count > 0)) return -1;
+    if (key === 'ArrowRight') return (current + 1) % count;
+    if (key === 'ArrowLeft') return (current - 1 + count) % count;
+    if (key === 'Home') return 0;
+    if (key === 'End') return count - 1;
+    return -1;
+  }
   var LIMITS = { url: 2048, title: 140, comment: 280, tags: 5, tag: 24 };
   var TRACKING = /^(utm_[a-z0-9_]+|fbclid|gclid|mc_cid|mc_eid|igshid)$/i;
 
@@ -114,7 +153,7 @@
   }
 
   /* -> { ok, errors:{field:msg}, value } ; value is only meaningful when ok. */
-  function validateEntry(e) {
+  function validateEntry(e, opts) {
     e = e || {};
     var errors = {};
     var url = normalizeUrl(e.url);
@@ -127,7 +166,7 @@
     var kind = e.kind == null || e.kind === '' ? 'article' : String(e.kind);
     if (KINDS.indexOf(kind) < 0) errors.kind = 'Choose a type from the list';
     var hasCat = e.category !== undefined && e.category !== null && e.category !== '';
-    if (hasCat && CATEGORIES.indexOf(e.category) < 0) errors.category = 'Choose a section from the list';
+    if ((hasCat && CATEGORIES.indexOf(e.category) < 0) || (!hasCat && opts && opts.requireCategory)) errors.category = 'Choose a section';
     var ok = Object.keys(errors).length === 0, value = null;
     if (ok) { value = { url: url, title: title, comment: comment, kind: kind, tags: parseTags(e.tags) }; if (hasCat) value.category = e.category; }   // no category given: an edit keeps the entry's own
     return { ok: ok, errors: errors, value: value };
@@ -218,7 +257,7 @@
     return t.toLocaleDateString('en-GB', o);
   }
 
-  return { KINDS: KINDS, CATEGORIES: CATEGORIES, DEFAULT_NEW_CATEGORY: DEFAULT_NEW_CATEGORY, categoryOf: categoryOf, categoryCounts: categoryCounts, pickAsset: pickAsset, formatDate: formatDate, LIMITS: LIMITS, normalizeUrl: normalizeUrl, isPublishableUrl: isPublishableUrl, READS_SCHEMA_VERSION: READS_SCHEMA_VERSION, PODCASTS_SCHEMA_VERSION: PODCASTS_SCHEMA_VERSION, PODCAST_LIMITS: PODCAST_LIMITS, isSupportedPodcastsVersion: isSupportedPodcastsVersion, platformOf: platformOf, podcastView: podcastView, isSupportedReadsVersion: isSupportedReadsVersion, serializeReads: serializeReads, domainOf: domainOf, keyOf: keyOf, isDuplicate: isDuplicate,
+  return { KINDS: KINDS, CATEGORIES: CATEGORIES, categoryLabel: categoryLabel, categorySlug: categorySlug, categoryFromHash: categoryFromHash, isReadsHash: isReadsHash, categoryHash: categoryHash, categoryTabs: categoryTabs, defaultCategory: defaultCategory, nextTabIndex: nextTabIndex, DEFAULT_NEW_CATEGORY: DEFAULT_NEW_CATEGORY, categoryOf: categoryOf, categoryCounts: categoryCounts, pickAsset: pickAsset, formatDate: formatDate, LIMITS: LIMITS, normalizeUrl: normalizeUrl, isPublishableUrl: isPublishableUrl, READS_SCHEMA_VERSION: READS_SCHEMA_VERSION, PODCASTS_SCHEMA_VERSION: PODCASTS_SCHEMA_VERSION, PODCAST_LIMITS: PODCAST_LIMITS, isSupportedPodcastsVersion: isSupportedPodcastsVersion, platformOf: platformOf, podcastView: podcastView, isSupportedReadsVersion: isSupportedReadsVersion, serializeReads: serializeReads, domainOf: domainOf, keyOf: keyOf, isDuplicate: isDuplicate,
     parseTags: parseTags, validateEntry: validateEntry, shareLinks: shareLinks, entryView: entryView,
     filterReads: filterReads, allTags: allTags };
 });

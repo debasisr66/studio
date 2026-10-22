@@ -1,0 +1,92 @@
+{
+  "schema_version": 2,
+  "books": [
+    {
+      "title": "Tech book",
+      "author": "A",
+      "category": "technical"
+    },
+    {
+      "title": "Other book",
+      "author": "B",
+      "category": "other"
+    }
+  ],
+  "articles": [
+    {
+      "id": 101,
+      "added": "2026-10-20",
+      "url": "https://example.com/101",
+      "title": "Tech alpha",
+      "comment": "About Tech alpha",
+      "kind": "article",
+      "category": "technical",
+      "tags": [
+        "ai",
+        "claude"
+      ]
+    },
+    {
+      "id": 102,
+      "added": "2026-10-20",
+      "url": "https://example.com/102",
+      "title": "Tech bravo",
+      "comment": "About Tech bravo",
+      "kind": "article",
+      "category": "technical",
+      "tags": [
+        "ai"
+      ]
+    },
+    {
+      "id": 103,
+      "added": "2026-10-20",
+      "url": "https://example.com/103",
+      "title": "Tech charlie",
+      "comment": "About Tech charlie",
+      "kind": "article",
+      "category": "technical",
+      "tags": [
+        "ai",
+        "sdlc"
+      ]
+    },
+    {
+      "id": 104,
+      "added": "2026-10-20",
+      "url": "https://example.com/104",
+      "title": "Tech delta",
+      "comment": "About Tech delta",
+      "kind": "article",
+      "category": "technical",
+      "tags": [
+        "claude"
+      ]
+    },
+    {
+      "id": 201,
+      "added": "2026-10-20",
+      "url": "https://example.com/201",
+      "title": "Other zebra",
+      "comment": "About Other zebra",
+      "kind": "article",
+      "category": "other",
+      "tags": [
+        "travel",
+        "ai"
+      ]
+    },
+    {
+      "id": 202,
+      "added": "2026-10-20",
+      "url": "https://example.com/202",
+      "title": "Other yak",
+      "comment": "About Other yak",
+      "kind": "article",
+      "category": "other",
+      "tags": [
+        "travel"
+      ]
+    }
+  ]
+}
