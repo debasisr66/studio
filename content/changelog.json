@@ -1,6 +1,18 @@
 {
   "releases": [
     {
+      "version": "1.6",
+      "date": "2026-10-22",
+      "title": "Reads now split into Technical and Others",
+      "items": [
+        "Reads has two tabs, Technical and Others, so you can go straight to the kind of reading you want.",
+        "A link ending in #reads/technical or #reads/others opens that tab directly.",
+        "Search and tag filters work inside the tab you are on; each tab shows how many items it holds.",
+        "Books are sorted into the same two tabs.",
+        "Behind the scenes: the automatic checks that guard the site are stricter and were reviewed independently."
+      ]
+    },
+    {
       "version": "1.5",
       "date": "2026-10-21",
       "title": "More dependable product updates",

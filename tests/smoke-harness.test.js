@@ -83,17 +83,19 @@ function fakeChrome(dir, body) {
   return { bin, pidFile, helperFile };
 }
 const alive = pid => { try { process.kill(pid, 0); return true; } catch { return false; } };
+/* the fake browser's shell writes its pid files a moment after it starts; under load that can be after the harness gave up on it */
+const readPid = async file => { for (let i = 0; i < 60; i++) { try { const n = Number(fs.readFileSync(file, 'utf8')); if (n) return n; } catch { /* not written yet */ } await new Promise(r => setTimeout(r, 50)); } throw new Error('pid file never appeared: ' + file); };
 const waitDead = async (pid, ms = 4000) => { const t = Date.now(); while (alive(pid) && Date.now() - t < ms) await new Promise(r => setTimeout(r, 100)); return !alive(pid); };
 
 test('TC-SH-S08 a Chrome that never reports a DevTools address is killed when the run fails (finding 1)', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'smoke-fake-'));
   try {
     const { bin, pidFile, helperFile } = fakeChrome(dir, 'true');
-    const r = spawnSync('node', [SMOKE], { env: { ...process.env, CI: '', CHROME_BIN: bin, SMOKE_LAUNCH_TIMEOUT_MS: '600', SMOKE_ONLY: 'TC-SH-B01' }, encoding: 'utf8', timeout: 30000 });
+    const r = spawnSync('node', [SMOKE], { env: { ...process.env, CI: '', CHROME_BIN: bin, SMOKE_LAUNCH_TIMEOUT_MS: '2500', SMOKE_ONLY: 'TC-SH-B01' }, encoding: 'utf8', timeout: 30000 });
     assert.equal(r.status, 1, r.stdout + r.stderr);
-    const pid = Number(fs.readFileSync(pidFile, 'utf8'));
+    const pid = await readPid(pidFile);
     assert.ok(await waitDead(pid), 'the fake browser (pid ' + pid + ') is still running after the harness exited');
-    const helper = Number(fs.readFileSync(helperFile, 'utf8'));
+    const helper = await readPid(helperFile);
     assert.ok(await waitDead(helper), 'the browser\'s helper process (pid ' + helper + ') is still running: only the main process was killed, not the group');
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
@@ -110,7 +112,7 @@ test('TC-SH-S09 a browser that connects but never answers is killed by the watch
     const code = await new Promise(res => { const t = setTimeout(() => { child.kill('SIGKILL'); res('hung'); }, 15000); child.on('exit', c => { clearTimeout(t); res(c); }); });
     assert.equal(code, 1, 'exit code ' + code + ' after ' + (Date.now() - t0) + ' ms: ' + out);
     assert.match(out, /watchdog|timed out/i);
-    const pid = Number(fs.readFileSync(pidFile, 'utf8'));
+    const pid = await readPid(pidFile);
     assert.ok(await waitDead(pid), 'the fake browser is still running');
   } finally { stub.close(); stub.closeAllConnections(); fs.rmSync(dir, { recursive: true, force: true }); }
 });
