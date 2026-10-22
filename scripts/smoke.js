@@ -18,9 +18,16 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
 /* ---------- local static server with fixture overlay ---------- */
 let overlay = { dirs: [], manifest: {} };
 function startServer() {
+  let ownPort = 0;   // fixed at listen time: server.address() is null once the server is closed (review SH-02, N1)
   const server = http.createServer((req, res) => {
-    const rel = path.posix.normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/^\/+/, '') || 'index.html');
-    if (rel.startsWith('..') || rel.includes('\0')) { res.writeHead(403); return res.end(); }
+    // review SH-02: read-only methods, this server's own Host only (DNS rebinding), no dot-files, and a bad URL answers 400 instead of throwing
+    if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(405, { Allow: 'GET, HEAD' }); return res.end(); }
+    const host = String(req.headers.host || ''), port = ownPort;
+    if (host !== `127.0.0.1:${port}` && host !== `localhost:${port}`) { res.writeHead(403); return res.end('wrong host'); }
+    let decoded;
+    try { decoded = decodeURIComponent(new URL(req.url, 'http://x').pathname); } catch { res.writeHead(400); return res.end('bad url'); }
+    const rel = path.posix.normalize(decoded.replace(/^\/+/, '') || 'index.html');
+    if (rel.startsWith('..') || rel.includes('\0') || rel.split('/').some(seg => seg.startsWith('.'))) { res.writeHead(403); return res.end(); }
     const target = rel.endsWith('/') ? rel + 'index.html' : rel;
     const m = overlay.manifest;
     if ((m.missing || []).includes(target)) { res.writeHead(404); return res.end('missing (fixture)'); }
@@ -28,7 +35,7 @@ function startServer() {
     const send = () => {
       for (const base of [...overlay.dirs, ROOT]) {
         const f = path.join(base, target);
-        if (f.startsWith(base) && fs.existsSync(f) && fs.statSync(f).isFile()) {
+        if (f.startsWith(base + path.sep) && fs.existsSync(f) && fs.statSync(f).isFile() && fs.realpathSync(f).startsWith(fs.realpathSync(base) + path.sep)) {
           res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
           return res.end(fs.readFileSync(f));
         }
@@ -38,7 +45,7 @@ function startServer() {
     const d = (m.delay || {})[target];
     d ? setTimeout(send, d) : send();
   });
-  return new Promise(r => server.listen(0, '127.0.0.1', () => r(server)));
+  return new Promise(r => server.listen(0, '127.0.0.1', () => { ownPort = server.address().port; r(server); }));
 }
 
 /* ---------- Chrome and a minimal DevTools-protocol client ---------- */
@@ -50,14 +57,31 @@ function findChrome() {
   return null;
 }
 
+/* Whatever happens (a throw, a signal, the watchdog), the browser and its profile folder go with the run: a leftover headless Chrome keeps
+   its DevTools port open to every process on the machine (review SH-02, finding 1). Chrome runs in its own process group so its helpers die too. */
+const live = { proc: null, dir: null };
+function killBrowser() {
+  try { if (live.proc && live.proc.pid && live.proc.exitCode === null && live.proc.signalCode === null) process.kill(-live.proc.pid, 'SIGKILL'); } catch (e) { try { live.proc.kill('SIGKILL'); } catch (e2) { /* already gone */ } }
+  try { if (live.dir) fs.rmSync(live.dir, { recursive: true, force: true }); } catch (e) { /* temp folder, the OS cleans it */ }
+}
+/* installed by main() only, so merely requiring this file (the unit tests do) changes nothing process-wide (review SH-02, N3) */
+function installCleanup() {
+  process.on('exit', killBrowser);
+  for (const [sig, code] of [['SIGINT', 130], ['SIGTERM', 143], ['SIGHUP', 129]]) process.on(sig, () => process.exit(code));
+  process.on('uncaughtException', e => { console.error('smoke crashed: ' + (e && e.stack || e)); process.exit(1); });
+  process.on('unhandledRejection', e => { console.error('smoke crashed: ' + (e && e.stack || e)); process.exit(1); });
+}
+
 async function launchChrome(bin) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'studio-smoke-'));
+  live.dir = dir;
   const args = ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--mute-audio', '--hide-scrollbars',
     '--remote-debugging-port=0', `--user-data-dir=${dir}`, ...(process.env.CI ? ['--no-sandbox'] : []), 'about:blank'];
-  const proc = spawn(bin, args, { stdio: ['ignore', 'ignore', 'pipe'] });
+  const proc = spawn(bin, args, { stdio: ['ignore', 'ignore', 'pipe'], detached: true });
+  live.proc = proc;
   const wsUrl = await new Promise((resolve, reject) => {
     let buf = '';
-    const t = setTimeout(() => reject(new Error('Chrome did not report a DevTools address within 20 s\n' + buf)), 20000);
+    const t = setTimeout(() => reject(new Error('Chrome did not report a DevTools address in time\n' + buf)), Number(process.env.SMOKE_LAUNCH_TIMEOUT_MS) || 20000);
     proc.stderr.on('data', d => { buf += d; const m = buf.match(/DevTools listening on (ws:\/\/\S+)/); if (m) { clearTimeout(t); resolve(m[1]); } });
     proc.on('exit', c => reject(new Error('Chrome exited early (' + c + ')\n' + buf)));
   });
@@ -75,13 +99,16 @@ async function launchChrome(bin) {
 function connect(url) {
   const ws = new WebSocket(url);
   let id = 0; const pending = new Map(); const listeners = [];
+  const failAll = why => { for (const p of pending.values()) { clearTimeout(p.t); p.rej(new Error(why)); } pending.clear(); };
   ws.onmessage = e => {
     const m = JSON.parse(e.data);
-    if (m.id && pending.has(m.id)) { const p = pending.get(m.id); pending.delete(m.id); m.error ? p.rej(new Error(m.error.message)) : p.res(m.result); }
+    if (m.id && pending.has(m.id)) { const p = pending.get(m.id); pending.delete(m.id); clearTimeout(p.t); m.error ? p.rej(new Error(m.error.message)) : p.res(m.result); }
     else listeners.forEach(l => l(m));
   };
-  const ready = new Promise((res, rej) => { ws.onopen = res; ws.onerror = () => rej(new Error('DevTools connection failed')); });
-  const send = (method, params = {}) => new Promise((res, rej) => { pending.set(++id, { res, rej }); ws.send(JSON.stringify({ id, method, params })); });
+  ws.onclose = () => failAll('DevTools connection closed');
+  const ready = new Promise((res, rej) => { ws.onopen = res; ws.onerror = () => rej(new Error('DevTools connection failed')); setTimeout(() => rej(new Error('DevTools connection timed out')), 15000).unref(); });
+  // a call Chrome never answers rejects instead of hanging the run (review SH-02)
+  const send = (method, params = {}) => new Promise((res, rej) => { const n = ++id; pending.set(n, { res, rej, t: setTimeout(() => { pending.delete(n); rej(new Error('DevTools call ' + method + ' timed out')); }, 30000) }); ws.send(JSON.stringify({ id: n, method, params })); });
   return { ready, send, on: l => listeners.push(l), close: () => ws.close() };
 }
 
@@ -349,6 +376,14 @@ const CASES = [
 ];
 
 async function main() {
+  installCleanup();
+  // a filter must never turn the run into a silent no-op (review SH-02): refused in CI, and an empty selection is an error
+  const only = process.env.SMOKE_ONLY;
+  if (only && process.env.CI) { console.error('smoke: SMOKE_ONLY must not be set in CI (it would skip cases)'); process.exit(1); }
+  if (!CASES.some(c => !only || c.id.includes(only))) { console.error(`smoke: no case matches SMOKE_ONLY=${only}`); process.exit(1); }
+  // the whole run is bounded, below the CI step's 2-minute limit, so cleanup and a clear message happen before the runner cuts it off
+  const wd = Number(process.env.SMOKE_WATCHDOG_MS) || 100000;
+  setTimeout(() => { console.error(`smoke: watchdog: the run did not finish within ${Math.round(wd / 1000)} s and was stopped`); process.exit(1); }, wd).unref();
   const bin = findChrome();
   if (!bin) { console.error('smoke: Chrome not found. Install Google Chrome or set CHROME_BIN.'); process.exit(1); }
   const started = Date.now();
@@ -366,7 +401,6 @@ async function main() {
       if (m.method === 'Log.entryAdded' && m.params.entry.level === 'error') errors.push(m.params.entry.text + ' ' + (m.params.entry.url || ''));
     });
     for (const d of ['Page', 'Runtime', 'Log']) await cdp.send(d + '.enable');
-    const only = process.env.SMOKE_ONLY;
     for (const c of CASES) {
       if (only && !c.id.includes(only)) continue;
       const fails = await runCase(cdp, base, c, errors);
@@ -379,6 +413,7 @@ async function main() {
     cdp.close(); server.closeAllConnections(); server.close();
     // let Chrome exit before its profile folder is removed (it keeps writing to it for a moment); cleanup is best-effort and never fails the run
     await new Promise(r => { chrome.proc.once('exit', r); chrome.proc.kill(); setTimeout(r, 5000); });
+    killBrowser();   // no-op when Chrome already exited; otherwise it is stopped for certain
     try { fs.rmSync(chrome.dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch (e) { /* temp folder, the OS cleans it */ }
   }
   const secs = ((Date.now() - started) / 1000).toFixed(1);
@@ -387,4 +422,5 @@ async function main() {
   process.exit(failed ? 1 : 0);
 }
 
-main().catch(e => { console.error('smoke crashed: ' + e.message); process.exit(1); });
+module.exports = { startServer, setOverlay: o => { overlay = o; } };   // for tests/smoke-harness.test.js
+if (require.main === module) main().catch(e => { console.error('smoke crashed: ' + e.message); process.exit(1); });

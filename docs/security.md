@@ -229,6 +229,7 @@ A successful smoke test proves rendering in one browser engine only. CI still ca
 | Token handling | Untouched; smoke injects a clearly fake test token into `sessionStorage` on localhost only to prove admin mode switches on; it is never sent anywhere |
 | Behaviour change to review | `boot()` now tolerates JSON `null` files and never skips `enableAdmin()`; failures are logged to the console only (no remote reporting) |
 | Residual | One browser engine (Chromium) is tested; a hung content file still delays first render by up to 8 s |
+| Independent review (added 2026-10-22) | [reviews/SH-02.md](reviews/SH-02.md): reviewer Claude Opus 5.5, first verdict APPROVE WITH CONDITIONS, after fixes **APPROVE**. The author does not grade this item; see the record for findings, the accepted risk N2 and what was not checked |
 
 ### 11.6 SH Phase B results (2026-10-21)
 

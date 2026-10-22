@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-SH` (requirements `SH-01` … `SH-08`) |
-| Status | **Approved by the owner (2026-10-21); Phases A and B merged (PRs #12, #13); C not started** |
+| Status | **Approved by the owner (2026-10-21); Phases A and B merged (PRs #12, #13); SH-02 independently reviewed (docs/reviews/SH-02.md); C not started** |
 | Owner | Debasis Ray |
 | Created | 2026-10-21 |
 | Parent | [PRD](../../PRD.md) §9.1, §9.2, §10.2, §11, §13, Roadmap Phase 1 and Phase 2.5; [§22](../../PRD.md) |
@@ -88,7 +88,7 @@ Priority: **P0** ships first and gates 2.0; **P1** same release if capacity; **P
 | A renderer throws on one malformed item | Only that section shows the fallback line; admin unlock still works |
 | All content files fail to load | Page shell and fallbacks render; products show repo-name cards |
 | `reads.json` has an unknown `schema_version` | CI error; runtime shows the Reads fallback line, not a crash |
-| Headless Chrome exits non-zero or hangs | CI step fails with the captured output and a 60 s timeout |
+| Headless Chrome exits non-zero or hangs | CI step fails with the captured output; the harness stops itself after 100 s (watchdog) inside the step's 2-minute limit |
 
 ## 8. Open questions
 
@@ -130,3 +130,4 @@ SH Phase A must merge before any RC, PC or UX code.
 - 2026-10-21: Phase A built on `v2/sh-a` (PR #12): SH-01 (`runGuarded`, fixed fallback line, boot always reaches `enableAdmin`), SH-08 (`fetchJson`, 8 s), SH-02 (`scripts/smoke.js`, 13 cases, CI step, 29 s on the runner). Q1 confirmed by the spike. Also fixed on the way: a content file that is valid JSON `null` used to abort boot before any render (found by the new smoke case, proven failing first).
 - 2026-10-21: Phase A merged (PR #12). Phase B built on `v2/sh-b`: SH-03 (CONTRACT.md enforced by `checkContractDoc` in CI, tests C01-C03), SH-04 (`schema_version` 1 in `reads.json`; rule `reads-schema-version` with fixture and runbook row; browser tolerates missing or older, refuses newer; `RL.serializeReads` so the admin publish keeps the key; `podcasts.json` gets its version with SPEC-PC), SH-07 (OPERATIONS.md: every product procedure executed once and the output recorded). Finding: the admin publish built `{books, articles}` by hand and would have dropped any new key; now one tested serializer.
 - 2026-10-22: Phase B merged (PR #13). Reads `schema_version` moved from 1 to 2 by SPEC-RC Phase A (rule and mechanism unchanged).
+- 2026-10-22: SH-02 independently reviewed by a separate Opus 5.5 agent ([docs/reviews/SH-02.md](../../reviews/SH-02.md)): APPROVE WITH CONDITIONS, then APPROVE after fixes to the harness (process cleanup, watchdog, 400 on bad URLs, GET/HEAD only, Host check, dot-files refused, `SMOKE_ONLY` guarded). Open: accepted risk N2 (Node SIGKILL leaves Chrome running). Spec wording fixed: the CI step limit is 2 minutes with a 100 s watchdog inside it.

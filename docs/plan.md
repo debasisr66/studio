@@ -82,7 +82,8 @@ Heavy edits to `js/app.js`: keep new logic in small tested modules and watch the
 | [Design](design.md) §12 | Now (done); when design changes during build | Corrections found while building, with reasons |
 | [Test](test.md) v2.0 | Each phase; at release | Fill B and the case results; live results section |
 | [Build](build.md) §18 | When a planned command becomes real | Replace "planned" with the tested command |
-| [Security](security.md) §11 | Each phase | Results column, checklist, residual risks, owner acknowledgement |
+| [Security](security.md) §11 | Each phase | Results column, checklist, residual risks, owner acknowledgement. For gated phases the entry only links the independent review and quotes its verdict |
+| [Review gate](REVIEW-GATE.md), [reviews/](reviews/) | SH-02 now; UX-04 and UX-05 before their PRs merge | A separate reviewer agent on a different model writes the verdict; the author never marks a gated item passed; guarded by `tests/review-records.test.js` |
 | [Architecture](ARCHITECTURE.md) §13 | At release | Move from "proposed" to current; fold into §1-12 |
 | [Learning guide](LEARNING-GUIDE.md) Step 18 | Each phase; at release | Real commands and screenshots of the new flows |
 | [Model use](model-use.md) | At release | Final usage figures and any agent detail |
