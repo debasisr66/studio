@@ -4,9 +4,9 @@ Spec: [spec.md](spec.md) (`SPEC-PC`). IDs `TC-PC-<group><nn>`. ⬜ not run.
 
 | ID | Req | Case | Expected | Status |
 |----|-----|------|----------|--------|
-| TC-PC-D01 | PC-01 | `platformOf` for Spotify, Apple Podcasts, YouTube hosts | right labels | ⬜ |
-| TC-PC-D02 | PC-01 | Unknown host | plain domain, never markup | ⬜ |
-| TC-PC-D03 | PC-01 | Entry view fills defaults for missing optional fields | pass | ⬜ |
+| TC-PC-D01 | PC-01 | `platformOf` for Spotify, Apple Podcasts, YouTube hosts | right labels | ✅ |
+| TC-PC-D02 | PC-01 | Unknown host | plain domain, never markup | ✅ |
+| TC-PC-D03 | PC-01 | Entry view fills defaults for missing optional fields | pass | ✅ |
 | TC-PC-U01 | PC-02 | Blog section and nav items gone; Podcasts present in header and bottom nav | pass | ⬜ |
 | TC-PC-U02 | PC-02 | Card shows title link, show, platform, date, comment, tags | pass | ⬜ |
 | TC-PC-U03 | PC-02 | Listen link opens a new tab with `noopener noreferrer` | pass | ⬜ |
@@ -21,13 +21,13 @@ Spec: [spec.md](spec.md) (`SPEC-PC`). IDs `TC-PC-<group><nn>`. ⬜ not run.
 | TC-PC-A04 | PC-03 | Edit and delete; draft until Publish | pass | ⬜ |
 | TC-PC-A05 | PC-03 | Publish writes only `content/podcasts.json` (stubbed API: GET sha, validate, PUT once; identical content skips) | pass | ⬜ |
 | TC-PC-A06 | PC-03 | No blog editor, no `+ New post`, no `post` schema left | pass | ⬜ |
-| TC-PC-V01 | PC-04 | Unsafe or malformed URL (whitespace, credentials, `javascript:`) | CI error `podcast-url-clean` | ⬜ |
-| TC-PC-V02 | PC-04 | Missing or over-long title | CI error `podcast-title` | ⬜ |
-| TC-PC-V03 | PC-04 | Missing or unknown `schema_version` | CI error `podcast-schema-version` | ⬜ |
-| TC-PC-V04 | PC-04 | Duplicate URL | warning `podcast-duplicate-url` | ⬜ |
-| TC-PC-V05 | PC-04 | Too many or too long tags; comment over 280 | CI errors | ⬜ |
-| TC-PC-V06 | PC-04 | Every new rule has a fixture and runbook row (TR-04 guard) | pass | ⬜ |
-| TC-PC-V07 | PC-04 | Real `podcasts.json` passes | pass | ⬜ |
+| TC-PC-V01 | PC-04 | Unsafe or malformed URL (whitespace, credentials, `javascript:`) | CI error `podcast-url-clean` | ✅ |
+| TC-PC-V02 | PC-04 | Missing or over-long title | CI error `podcast-title` | ✅ |
+| TC-PC-V03 | PC-04 | Missing or unknown `schema_version` | CI error `podcast-schema-version` | ✅ |
+| TC-PC-V04 | PC-04 | Duplicate URL | warning `podcast-duplicate-url` | ✅ |
+| TC-PC-V05 | PC-04 | Too many or too long tags; comment over 280 | CI errors | ✅ |
+| TC-PC-V06 | PC-04 | Every new rule has a fixture and runbook row (TR-04 guard) | pass | ✅ |
+| TC-PC-V07 | PC-04 | Real `podcasts.json` passes | pass | ✅ |
 | TC-PC-R01 | PC-05 | `#blog` and `#blog/x` land on Podcasts | pass | ⬜ |
 | TC-PC-R02 | PC-05 | Page does not fetch `blog.json`; file still served and valid | pass | ⬜ |
 | TC-PC-R03 | PC-05 | Health check still green (file served) | pass | ⬜ |
@@ -41,7 +41,8 @@ Spec: [spec.md](spec.md) (`SPEC-PC`). IDs `TC-PC-<group><nn>`. ⬜ not run.
 
 Regression: Reads, Products, Updates, What's new, profile photo, theme toggle, admin unlock and publish for reads; 142-test suite green; CSP clean.
 
-Exit criteria: P0 rows ✅ (PC-01 to PC-05); owner Q2 and Q3 answered before launch.
+Exit criteria: P0 rows ✅ (PC-01 to PC-05); owner Q2 and Q3 answered before launch. **Phase A: PC-01 and PC-04 rows ✅ (V07: the real file is valid and empty).**
 
 ## Status log
 - 2026-10-21: Draft created; nothing run.
+- 2026-10-22: PC Phase A run (`v2/pc-a`): `tests/spec-pc-phase-a.test.js` (13 tests, all failed first), then 194 of 194 unit tests pass; smoke 17 of 17 unchanged; validator OK and shown to fail on a deliberately bad file. D01-D03 and V01-V07 ✅. Two rules beyond the spec's six (`podcast-show`, `podcast-duplicate-id`) mirror the Reads rules. Groups U, A, R, K, N, S arrive in Phases B and C.

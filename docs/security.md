@@ -250,3 +250,13 @@ A successful smoke test proves rendering in one browser engine only. CI still ca
 | Surface | No new network call, host, storage key, secret, dependency or permission; `index.html`, CSP, workflows, `changelog.json` untouched |
 | Finding | Between the data merge and any rollback, `main` (SH Phase B) alone would show the Reads fallback for a version 2 file, because it only understands version 1. Code and data therefore change in one commit and the rollback target is the `v1.5` tag, not the previous commit |
 | Residual | The rollback rehearsal was run by hand (a scratch export of the tag), not in CI |
+
+### 11.8 PC Phase A results (2026-10-22)
+
+| Check | Result |
+|-------|--------|
+| New input path | One new content file, `podcasts.json`, validated in CI with the shared strict URL rule (clean http(s), no credentials or control characters, at most 2048 characters) and the Reads limits; eight rules, each with a failing fixture. It is not fetched or rendered by the page yet, so no visitor-facing surface changed |
+| Platform label (T-class: untrusted text in a label) | `platformOf` is a closed host list matched on the exact host or a true subdomain; look-alikes (`evilspotify.com`, `spotify.com.evil.io`) get their plain domain, and unusable input gives an empty label. The result is text only; the page will escape it in Phase B |
+| Version gate | CI accepts exactly `schema_version` 1; the browser helper refuses only a newer version (same pattern as Reads) |
+| Surface | No new network call, host, storage key, secret, dependency or permission; `index.html`, `app.js`, CSS, CSP, workflows and `changelog.json` untouched |
+| Residual | The admin cannot yet publish this file (Phase B), so the composer-side checks (T22 embeds, publish over a newer file) are still open for that phase |

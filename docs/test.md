@@ -4,9 +4,9 @@ Releases: **v2.0 (planned, nothing run)** · **v1.5 (shipped 2026-10-21: SPEC-TR
 
 ---
 
-# v2.0 — Studio 2.0 (in progress: SH Phases A and B merged, RC Phase A built, rest planned)
+# v2.0 — Studio 2.0 (in progress: SH A and B and RC A merged, PC Phase A built, rest planned)
 
-Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22): **116 new cases**, on top of the existing **142 passing unit tests**. Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12), SH Phase B (PR #13) and RC Phase A are run:** see §G, §H and §I.
+Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22): **116 new cases**, on top of the existing **142 passing unit tests**. Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12), SH Phase B (PR #13), RC Phase A (PR #14) and PC Phase A are run:** see §G, §H, §I and §J.
 
 ## A. Requirements (release level)
 
@@ -32,7 +32,7 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | REQ-52 | TC-SH-C01–C03, V01–V04, D01–D02 | ✅ (SH Phase B) · ⬜ A01–A03 (Phase C) |
 | REQ-53 | TC-RC-D01–D04, M01–M03, V01–V04, X01 | ✅ (RC Phase A; X01 library half only, the third-tab half arrives with RC Phase B) |
 | REQ-54 | TC-RC-U01–U08, L01–L04, E01–E04, S01–S02, B01–B02 | ⬜ |
-| REQ-55 | TC-PC-D01–D03, V01–V07, N01–N02, S01 | ⬜ (S01 owner step 🔒) |
+| REQ-55 | TC-PC-D01–D03, V01–V07, N01–N02, S01 | ✅ D01–D03, V01–V07 (PC Phase A) · ⬜ N01–N02 (Phase C) · S01 owner step 🔒 |
 | REQ-56 | TC-PC-U01–U08, A01–A06, R01–R05, K01–K02 | ⬜ |
 | REQ-57 | TC-UX-S01–S02, P01–P04, N01–N05, L01–L05, A01–A05, F01 | ⬜ (F01 owner step 🔒) |
 | REQ-58 | Regression suite (§D) | ⬜ |
@@ -99,7 +99,7 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 
 ---
 
-## I. Results: RC Phase A (2026-10-22)
+## I. Results: RC Phase A (2026-10-22, PR #14, merged as `122e3d1`)
 
 | Check | Result |
 |-------|--------|
@@ -110,6 +110,21 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | Migration, before and after (`git show main:content/reads.json` vs the new file) | `schema_version` 1 → 2; 5 reads → 5, 1 book → 1; id, url, title, comment, tags, kind and added identical for every read; title, author, year and note identical for the book; with `category` removed the two files are deep-equal. Categories: all 5 reads and the book `technical` (owner-confirmed 2026-10-21). Kept as the permanent snapshot `tests/fixtures/reads-before-rc-a.json` that `TC-RC-M01` compares against |
 | Rollback proof (TC-RC-M03) | The `v1.5` tag exported to a scratch folder, the migrated `reads.json` copied in, the smoke "real content" case run against it: **passes**, products and updates render, all 5 reads render, no console errors. v1.5 code contains no `schema_version` logic, so it ignores the new keys. Note: the SH Phase B code (current `main`, supports only version 1) would show the Reads fallback line for a version 2 file; that is why the code and the data change in one commit, and rollback means the `v1.5` tag |
 | Not done in this phase | No visible UI (by design); sub-item tabs, deep links and the composer Section choice (RC Phase B); the `TC-RC-X01` third-tab half; owner real-publish of a read (no visible change yet) |
+
+---
+
+## J. Results: PC Phase A (2026-10-22)
+
+| Check | Result |
+|-------|--------|
+| Unit tests | **194 of 194 pass** (181 + 13 new in `tests/spec-pc-phase-a.test.js`). Written first: **13 of 194 failed** (every new test; the helpers and validator did not exist). After the build, 5 further tests failed until the contract and runbook rows existed (`TC-SH-C02`, `TC-TR-D02`, `TC-PC-V06`), which is the guard doing its job |
+| Browser smoke | **17 of 17 pass** in 19.7 s, unchanged: the page does not load `podcasts.json` and `index.html` and `app.js` are untouched, so there is nothing new to see |
+| Validator | OK, 0 errors, 0 warnings. A deliberately bad `podcasts.json` (blank title, `javascript:` link) made it print `FAILED` with both errors; the file was restored |
+| New rules | 8: `podcast-url-clean`, `-title`, `-schema-version`, `-duplicate-url` (warning), `-tags`, `-comment`, plus `-show` and `-duplicate-id` (added to mirror Reads). Each has a failing fixture, a RUNBOOK row and a CONTRACT entry (TR-04 and SH-03 guards green); `good.json` raises none |
+| Data | `content/podcasts.json` = `{ "schema_version": 1, "podcasts": [] }` (seed links are the owner's, Phase C) |
+| Helpers (`js/reads-lib.js`) | `platformOf` (closed host list, exact host or subdomain, so `evilspotify.com` and `spotify.com.evil.io` stay plain domains), `podcastView`, `isSupportedPodcastsVersion`, and `keyOf` now exported for the duplicate check |
+| Design note | Duplicate-link check keeps the query string, unlike the Reads one, so two YouTube videos (`?v=`) are not flagged as the same link. The Reads check still ignores the query (a pre-existing quirk, not changed here) |
+| Not done in this phase | Everything visible: section, nav, composer, `#blog` redirect, blog removal, health check of `podcasts.json` (added when the page uses it), PC-06 to PC-08 |
 
 ---
 

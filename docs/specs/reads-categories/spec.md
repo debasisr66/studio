@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-RC` (requirements `RC-01` … `RC-09`) |
-| Status | **Approved by the owner (2026-10-21); Phase A built on `v2/rc-a` (PR open, awaiting merge approval); B and C not started** |
+| Status | **Approved by the owner (2026-10-21); Phase A merged (PR #14, `122e3d1`); B and C not started** |
 | Owner | Debasis Ray |
 | Created | 2026-10-21 |
 | Parent | [PRD](../../PRD.md) §7, §9.4, §11.3; [§22](../../PRD.md) |
@@ -120,3 +120,4 @@ Rollback: tag `v1.5`; `reads.json` is additive (extra keys), so old code still r
 - 2026-10-21: Draft created from code findings F1-F5. Awaiting owner answers to Q1 to Q3.
 - 2026-10-21: Approved by the owner with the recommended answers; decisions recorded in section 8-9 above.
 - 2026-10-22: Phase A built on `v2/rc-a`: RC-01 (`CATEGORIES`, `categoryOf`, `categoryCounts`, `filterReads` by category in `js/reads-lib.js`; browser default `other`), RC-06 (rule `reads-category` with fixture, RUNBOOK row and CONTRACT entry; the validator now accepts only `schema_version` 2), RC-05 (one commit raises `schema_version` 1 → 2 and adds `technical` to all 5 reads and the book; before/after comparison identical; v1.5 code renders it). No visible UI. The admin composer and the book editor give new entries `technical` (`DEFAULT_NEW_CATEGORY`) and `RL.serializeReads` fills a missing category, so a publish can never fail the new CI rule; RC-04's Section choice replaces that default in Phase B. Results: [test.md](test.md).
+- 2026-10-22: Phase A merged (PR #14, `122e3d1`).

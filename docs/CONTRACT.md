@@ -7,7 +7,7 @@
 | `content/products.json` | Which repositories to show and how | Owner (edit the file) | `validateProducts`, `productWarnings` |
 | `content/cache.json` | Last synced GitHub data per product | Sync workflow only | `validateCache` |
 | `content/reads.json` | Reading list and books | Owner (admin screen) | `validateReads` |
-| `content/podcasts.json` | *Planned (PC-01)* podcast links | Owner (admin screen) | `validatePodcasts` (planned) |
+| `content/podcasts.json` | Podcast links. Validated since v2.0 PC Phase A; the page does not show it until PC Phase B | Owner (admin screen, from PC Phase B) | `validatePodcasts` |
 | `content/blog.json` | Blog posts. Archive after 2.0 (*planned*: not loaded) | Owner | `validateBlog` |
 | `content/changelog.json` | What's new and the visible version | Owner, in the release PR | `validateChangelog` |
 | `content/profile.json`, `content/profile.jpg` | Profile photo manifest and image | Owner (admin screen) | `validateProfileManifest`, `validateProfileImage` |
@@ -44,9 +44,15 @@ Article fields: `id` (unique number), `added` (date), `url` (clean, required), `
 
 Book fields: `title` (required), `author`, `year`, `note`, `category` (same closed list, required; rule `reads-category`).
 
-## podcasts.json (planned, PC-01)
+## podcasts.json (object)
 
-`{ "schema_version": 1, "podcasts": [ { id, added, title (required, ≤ 140), url (clean, required), show (≤ 80), comment (≤ 280), tags (≤ 5) } ] }`. Planned rule ids: `podcast-url-clean`, `podcast-title`, `podcast-schema-version`, `podcast-tags`, `podcast-comment`; duplicate URL warns (`podcast-duplicate-url`).
+`{ "schema_version": 1, "podcasts": [ { id, added, title (required, ≤ 140), url (clean, required), show (≤ 80), comment (≤ 280), tags (≤ 5, each ≤ 24) } ] }`
+
+Only `title` and `url` are required; `id` (unique when present), `added` (`YYYY-MM-DD`), `show`, `comment` and `tags` are optional. A link may point to a show or to an episode. `schema_version` is required, an integer, currently `1` (`podcast-schema-version`); a browser will tolerate a missing or older value and refuse a newer one, the same as `reads.json`. Currently zero podcasts (the owner supplies the seed links; none are invented).
+
+Rule ids: `podcast-url-clean`, `podcast-title`, `podcast-schema-version`, `podcast-tags`, `podcast-comment`, `podcast-show`, `podcast-duplicate-id`; a repeated link only warns (`podcast-duplicate-url`, compared with the query string kept, so two YouTube videos are different links).
+
+The platform label on a card (*planned, PC Phase B*) comes from a closed host list in `js/reads-lib.js` (`platformOf`: Spotify, Apple Podcasts, YouTube; any other host shows its plain domain).
 
 ## blog.json
 

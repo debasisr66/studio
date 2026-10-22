@@ -121,6 +121,28 @@ function validateReads(reads) {
   return { errors, warnings };
 }
 
+/* SPEC-PC PC-04. Same strict URL rule and limits as Reads; the file is not shown by the page yet (Phase A). */
+function validatePodcasts(file) {
+  const errors = [], warnings = [];
+  if (!isObj(file) || !Array.isArray(file.podcasts)) return { errors: ['podcasts.json: needs a podcasts array'], warnings };
+  if (!Number.isInteger(file.schema_version) || file.schema_version !== RL.PODCASTS_SCHEMA_VERSION)
+    errors.push(`podcasts.json: schema_version must be ${RL.PODCASTS_SCHEMA_VERSION} (this is the version of the file's shape; got ${JSON.stringify(file.schema_version)})`);
+  const ids = new Set(), links = new Set();
+  file.podcasts.forEach((p, i) => {
+    const at = `podcasts.json podcasts[${i}]`;
+    if (!isObj(p)) return errors.push(`${at}: must be an object`);
+    if (!isStr(p.title) || !p.title.trim() || p.title.length > RL.LIMITS.title) errors.push(`${at}: podcast title is required, 1 to ${RL.LIMITS.title} characters`);
+    if (!isStr(p.url) || !httpUrl(p.url) || !RL.normalizeUrl(p.url)) errors.push(`${at}: podcast url must be ${URL_HINT}`);
+    else { const k = RL.keyOf(p.url); if (links.has(k)) warnings.push(`${at}: same link as an earlier podcast`); links.add(k); }
+    if (p.show !== undefined && (!isStr(p.show) || p.show.length > RL.PODCAST_LIMITS.show)) errors.push(`${at}: podcast show must be text up to ${RL.PODCAST_LIMITS.show} characters`);
+    if (p.comment !== undefined && (!isStr(p.comment) || p.comment.length > RL.LIMITS.comment)) errors.push(`${at}: podcast comment must be text up to ${RL.LIMITS.comment} characters`);
+    if (p.tags !== undefined && (!Array.isArray(p.tags) || p.tags.length > RL.LIMITS.tags || p.tags.some(t => !isStr(t) || t.length > RL.LIMITS.tag))) errors.push(`${at}: podcast tags must be an array of at most ${RL.LIMITS.tags} strings, each up to ${RL.LIMITS.tag} characters`);
+    if (p.added !== undefined && !DATE_RE.test(String(p.added))) errors.push(`${at}: added must be YYYY-MM-DD`);
+    if (p.id !== undefined) { if (ids.has(p.id)) errors.push(`${at}: podcast duplicate id ${p.id}`); ids.add(p.id); }
+  });
+  return { errors, warnings };
+}
+
 function validateIndex(html, exists) {
   const errors = [];
   if (!/<html[^>]*\blang="[a-z-]+"/i.test(html)) errors.push('index.html: <html> needs a lang attribute');
@@ -357,6 +379,8 @@ function run() {
   if (blog !== undefined) errors.push(...validateBlog(blog));
   const reads = json('content/reads.json');
   if (reads !== undefined) { const r = validateReads(reads); errors.push(...r.errors); warnings.push(...r.warnings); }
+  const podcasts = json('content/podcasts.json');
+  if (podcasts !== undefined) { const r = validatePodcasts(podcasts); errors.push(...r.errors); warnings.push(...r.warnings); }
 
   const changelog = json('content/changelog.json');
   if (changelog !== undefined) errors.push(...validateChangelog(changelog));
@@ -419,6 +443,14 @@ const RULES = [
   { id: 'reads-category', fn: 'validateReads', level: 'error', match: /category must be one of/, fix: 'ci-rejects-content', doc: 'category must be one of' },
   { id: 'reads-schema-version', fn: 'validateReads', level: 'error', match: /schema_version must be/, fix: 'ci-rejects-content', doc: 'schema_version must be' },
   { id: 'reads-duplicate-id', fn: 'validateReads', level: 'error', match: /duplicate id/, fix: 'ci-rejects-content', doc: 'duplicate id' },
+  { id: 'podcast-url-clean', fn: 'validatePodcasts', level: 'error', match: /podcast url must be a clean/, fix: 'ci-rejects-content', doc: 'podcast url must be a clean' },
+  { id: 'podcast-title', fn: 'validatePodcasts', level: 'error', match: /podcast title is required/, fix: 'ci-rejects-content', doc: 'podcast title is required' },
+  { id: 'podcast-schema-version', fn: 'validatePodcasts', level: 'error', match: /podcasts\.json: schema_version must be/, fix: 'ci-rejects-content', doc: 'podcasts.json: schema_version must be' },
+  { id: 'podcast-duplicate-url', fn: 'validatePodcasts', level: 'warning', match: /same link as an earlier podcast/, fix: 'ci-rejects-content', doc: 'same link as an earlier podcast' },
+  { id: 'podcast-tags', fn: 'validatePodcasts', level: 'error', match: /podcast tags must be/, fix: 'ci-rejects-content', doc: 'podcast tags must be' },
+  { id: 'podcast-comment', fn: 'validatePodcasts', level: 'error', match: /podcast comment must be/, fix: 'ci-rejects-content', doc: 'podcast comment must be' },
+  { id: 'podcast-show', fn: 'validatePodcasts', level: 'error', match: /podcast show must be/, fix: 'ci-rejects-content', doc: 'podcast show must be' },
+  { id: 'podcast-duplicate-id', fn: 'validatePodcasts', level: 'error', match: /podcast duplicate id/, fix: 'ci-rejects-content', doc: 'podcast duplicate id' },
   { id: 'changelog-version', fn: 'validateChangelog', level: 'error', match: /version must look like/, fix: 'ci-rejects-content', doc: 'version must look like' },
   { id: 'changelog-plain-text', fn: 'validateChangelog', level: 'error', match: /plain text/, fix: 'ci-rejects-content', doc: 'plain text' },
 ];
@@ -433,6 +465,7 @@ function runRule(rule, fx) {
     case 'validateBlog': return arr(validateBlog(fx.input));
     case 'validateChangelog': return arr(validateChangelog(fx.input));
     case 'validateReads': return validateReads(fx.input);
+    case 'validatePodcasts': return validatePodcasts(fx.input);
     default: throw new Error('unknown validator ' + rule.fn);
   }
 }
@@ -445,7 +478,7 @@ function checkContractDoc(doc, files, ruleIds) {
 }
 const missingFixtures = (rules, ids) => rules.filter(r => !ids.includes(r.id)).map(r => r.id);
 
-module.exports = { RULES, runRule, missingFixtures, checkContractDoc, productWarnings, checkWorkflows, validateProfileManifest, validateProfileImage, checkSvg, checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
+module.exports = { RULES, runRule, missingFixtures, checkContractDoc, productWarnings, checkWorkflows, validateProfileManifest, validateProfileImage, checkSvg, checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validatePodcasts, run, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
 
 if (require.main === module) {
   const { errors, warnings, sizes } = run();
