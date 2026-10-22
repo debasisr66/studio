@@ -8,22 +8,22 @@ Spec: [spec.md](spec.md) (`SPEC-RC`). IDs `TC-RC-<group><nn>`. ⬜ not run. Unit
 | TC-RC-D02 | RC-01 | `categoryOf` with `technical` / `other` | same value | ✅ |
 | TC-RC-D03 | RC-01 | `filterReads` respects category plus tag plus search together | correct subset | ✅ |
 | TC-RC-D04 | RC-01 | Counts per category ignore tag/search filters | whole-sub-item counts | ✅ |
-| TC-RC-U01 | RC-02 | Two tabs exist with counts; `role=tablist`, `aria-selected` | pass | ⬜ |
-| TC-RC-U02 | RC-02 | Click, Left/Right arrow, Home/End switch sub-item and move focus correctly | pass | ⬜ |
-| TC-RC-U03 | RC-02 | Switching clears tag and search | pass | ⬜ |
-| TC-RC-U04 | RC-02 | Default Technical; Others when Technical empty | pass | ⬜ |
-| TC-RC-U05 | RC-02 | Empty sub-item shows an empty state | pass | ⬜ |
-| TC-RC-U06 | RC-02 | 375 px: tabs fit, no overflow; touch targets ≥ 44 px | pass | ⬜ |
-| TC-RC-U07 | RC-02 | Dark and light themes: tab contrast ≥ 4.5:1 | pass | ⬜ |
-| TC-RC-U08 | RC-02 | No match here but a match in the other sub-item shows the hint | pass | ⬜ |
-| TC-RC-L01 | RC-03 | `#reads` | default sub-item | ⬜ |
-| TC-RC-L02 | RC-03 | `#reads/others`, `#reads/technical` | that sub-item | ⬜ |
-| TC-RC-L03 | RC-03 | `#reads/xyz`, `#reads/__proto__` | ignored | ⬜ |
-| TC-RC-L04 | RC-03 | Switching updates the hash without scrolling the page | pass | ⬜ |
-| TC-RC-E01 | RC-04 | Composer requires a section; error is inline and announced | pass | ⬜ |
-| TC-RC-E02 | RC-04 | Last chosen section is the next default in the session | pass | ⬜ |
-| TC-RC-E03 | RC-04 | Editing can move an entry between sub-items | pass | ⬜ |
-| TC-RC-E04 | RC-04 | XSS payloads in title/comment/tags still inert | pass | ⬜ |
+| TC-RC-U01 | RC-02 | Two tabs exist with counts; `role=tablist`, `aria-selected` | pass | ✅ |
+| TC-RC-U02 | RC-02 | Click, Left/Right arrow, Home/End switch sub-item and move focus correctly | pass | ✅ |
+| TC-RC-U03 | RC-02 | Switching clears tag and search | pass | ✅ |
+| TC-RC-U04 | RC-02 | Default Technical; Others when Technical empty | pass | ✅ |
+| TC-RC-U05 | RC-02 | Empty sub-item shows an empty state | pass | ✅ |
+| TC-RC-U06 | RC-02 | 375 px: tabs fit, no overflow; touch targets ≥ 44 px | pass | ✅ |
+| TC-RC-U07 | RC-02 | Dark and light themes: tab contrast ≥ 4.5:1 | pass | ✅ |
+| TC-RC-U08 | RC-02 | No match here but a match in the other sub-item shows the hint | pass | ✅ |
+| TC-RC-L01 | RC-03 | `#reads` | default sub-item | ✅ |
+| TC-RC-L02 | RC-03 | `#reads/others`, `#reads/technical` | that sub-item | ✅ |
+| TC-RC-L03 | RC-03 | `#reads/xyz`, `#reads/__proto__` | ignored | ✅ |
+| TC-RC-L04 | RC-03 | Switching updates the hash without scrolling the page | pass | ✅ |
+| TC-RC-E01 | RC-04 | Composer requires a section; error is inline and announced | pass | ✅ |
+| TC-RC-E02 | RC-04 | Last chosen section is the next default in the session | pass | ✅ |
+| TC-RC-E03 | RC-04 | Editing can move an entry between sub-items | pass | ✅ |
+| TC-RC-E04 | RC-04 | XSS payloads in title/comment/tags still inert | pass | ✅ |
 | TC-RC-M01 | RC-05 | Migration keeps ids, urls, titles, comments, tags, kinds identical (before/after compare) | pass | ✅ |
 | TC-RC-M02 | RC-05 | All 5 reads and the book carry the owner-confirmed category | pass | ✅ |
 | TC-RC-M03 | RC-05 | Old (v1.5) code renders migrated data (extra keys ignored) | pass | ✅ |
@@ -35,12 +35,13 @@ Spec: [spec.md](spec.md) (`SPEC-RC`). IDs `TC-RC-<group><nn>`. ⬜ not run. Unit
 | TC-RC-S02 | RC-07 | Counts stay whole-sub-item while filtering | pass | ⬜ |
 | TC-RC-B01 | RC-08 | Books appear under articles in their sub-item | pass | ⬜ |
 | TC-RC-B02 | RC-08 | Two-column layout gone at all widths; no overflow | pass | ⬜ |
-| TC-RC-X01 | RC-09 | Adding a value to `CATEGORIES` in a test double yields a third tab with no other code change | pass | ◐ library half ✅ (`tests/spec-rc-phase-a.test.js`); third tab with RC Phase B |
+| TC-RC-X01 | RC-09 | Adding a value to `CATEGORIES` in a test double yields a third tab with no other code change | pass | ✅ (unit: `tests/spec-rc-phase-b.test.js`; browser: smoke adds a category at run time and a third tab appears) |
 
 Regression: all existing reads tests (filter, share, normalise, composer, admin) and the 142-test suite stay green; CSP clean; no new third-party request.
 
-Exit criteria: P0 rows ✅ (RC-01 to RC-06); owner Q2 answered before M-tests run on real data. **Phase A: RC-01, RC-05, RC-06 rows ✅; Q2 answered 2026-10-21.**
+Exit criteria: P0 rows ✅ (RC-01 to RC-06); owner Q2 answered before M-tests run on real data. **Phase A: RC-01, RC-05, RC-06 rows ✅; Q2 answered 2026-10-21. Phase B: RC-02, RC-03, RC-04 rows ✅.**
 
 ## Status log
 - 2026-10-21: Draft created; nothing run.
 - 2026-10-22: RC Phase A run (`v2/rc-a`): `tests/spec-rc-phase-a.test.js` (17 tests; 25 of 181 failed before the build, counting 8 existing tests updated to version 2), then 181 of 181 pass; smoke 17 of 17 (new: odd categories render with no console error; admin composer publishes `category` and `schema_version` 2 with the API stubbed); validator OK. D01-D04, V01-V04, M01-M03 ✅. M01: before/after comparison of ids, urls, titles, comments, tags, kinds, added and all book fields identical (snapshot `tests/fixtures/reads-before-rc-a.json`). M02: all 5 reads and the book `technical`. M03: the `v1.5` tag exported to a scratch folder with the migrated file renders products, updates and all 5 reads with no console error (run by hand, not in CI; the in-CI half asserts the migration only adds the `category` key). X01: library half only. Groups U, L, E, S, B arrive in Phases B and C.
+- 2026-10-22: RC Phase B run (`v2/rc-b`): `tests/spec-rc-phase-b.test.js` (9 unit tests, all failed first) and 21 new smoke cases plus one updated (22 of 23 RC smoke cases failed before the build; only the Phase A odd-category case passed). Now 203 of 203 unit tests, 38 of 38 smoke cases (32 s), validator OK. U01-U08, L01-L04, E01-E04 and X01 ✅. Extra cases beyond the plan: `TC-RC-E05` (the book editor has a Section choice and a saved book moves), `TC-RC-U05` also asserts the empty section hides the search toolbar (found by looking at the page, then fixed with `.toolbar[hidden]`). U07 measures real computed colours for selected and unselected tabs in both themes (≥ 4.5:1). Groups S and B (RC-07, RC-08) arrive in Phase C.

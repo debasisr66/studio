@@ -97,6 +97,18 @@ details.notes[open] summary{margin-bottom:2px}
 .empty{border:1px dashed var(--field);border-radius:var(--radius);padding:28px;text-align:center;color:var(--muted);font-size:14.5px}
 .notice{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--muted);font-size:13.5px;margin-bottom:16px}
 
+/* reads: section tabs and the composer's Section choice */
+.tabs{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 20px;border-bottom:1px solid var(--border)}
+.tab{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:8px 16px;margin-bottom:-1px;background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);font:500 15px var(--font);cursor:pointer}
+.tab:hover{color:var(--text)}
+.tab[aria-selected="true"]{color:var(--text);border-bottom-color:var(--accent-hover)}
+.tab-count{font:500 12px var(--mono);background:var(--surface-2);border-radius:999px;padding:1px 8px}
+.sect-field{border:0;margin:12px 0 0;padding:0;min-width:0}
+.sect-field legend{padding:0;margin:0 0 2px;font-size:13px;font-weight:500;color:var(--muted)}
+.radios{display:flex;flex-wrap:wrap;gap:4px 20px}
+.radio{display:inline-flex;align-items:center;gap:8px;min-height:44px;font-size:15px;cursor:pointer}
+.radio input{width:20px;height:20px;margin:0;accent-color:var(--accent)}
+
 /* reads: composer, cards, toolbar */
 .avatar{flex:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:#fff;font:600 16px var(--font);text-transform:uppercase;background:hsl(var(--h,260) 45% 30%)}
 .composer{display:none;margin-bottom:16px}
@@ -121,6 +133,7 @@ body.admin .composer{display:block}
 .preview h4{margin:0 0 6px;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
 .form-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
 .toolbar{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.toolbar[hidden]{display:none}   /* a section with fewer than 4 reads has no search or tag chips */
 .toolbar input[type=search]{width:100%;min-height:44px;background:var(--surface);border:1px solid var(--field);color:var(--text);border-radius:999px;padding:8px 16px;font:inherit;font-size:15px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{background:var(--surface);border:1px solid var(--field);color:var(--text);border-radius:999px;padding:5px 12px;min-height:32px;font-size:13px;cursor:pointer}

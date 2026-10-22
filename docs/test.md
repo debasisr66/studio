@@ -4,9 +4,9 @@ Releases: **v2.0 (planned, nothing run)** · **v1.5 (shipped 2026-10-21: SPEC-TR
 
 ---
 
-# v2.0 — Studio 2.0 (in progress: SH A and B and RC A merged, PC Phase A built, rest planned)
+# v2.0 — Studio 2.0 (in progress: SH A and B, RC A and PC A merged, RC Phase B built, rest planned)
 
-Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22): **116 new cases**, on top of the existing **142 passing unit tests**. Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12), SH Phase B (PR #13), RC Phase A (PR #14) and PC Phase A are run:** see §G, §H, §I and §J.
+Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22): **116 new cases**, on top of the existing **142 passing unit tests**. Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12), SH Phase B (PR #13), RC Phase A (PR #14), PC Phase A (PR #15) and RC Phase B are run:** see §G, §H, §I, §J and §K.
 
 ## A. Requirements (release level)
 
@@ -31,7 +31,7 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | REQ-51 | TC-SH-B01–B09 | ✅ B01–B04 · ⬜ B05–B09 (Phase C) |
 | REQ-52 | TC-SH-C01–C03, V01–V04, D01–D02 | ✅ (SH Phase B) · ⬜ A01–A03 (Phase C) |
 | REQ-53 | TC-RC-D01–D04, M01–M03, V01–V04, X01 | ✅ (RC Phase A; X01 library half only, the third-tab half arrives with RC Phase B) |
-| REQ-54 | TC-RC-U01–U08, L01–L04, E01–E04, S01–S02, B01–B02 | ⬜ |
+| REQ-54 | TC-RC-U01–U08, L01–L04, E01–E04, S01–S02, B01–B02 | ✅ U, L, E (RC Phase B) · ⬜ S01–S02, B01–B02 (Phase C) |
 | REQ-55 | TC-PC-D01–D03, V01–V07, N01–N02, S01 | ✅ D01–D03, V01–V07 (PC Phase A) · ⬜ N01–N02 (Phase C) · S01 owner step 🔒 |
 | REQ-56 | TC-PC-U01–U08, A01–A06, R01–R05, K01–K02 | ⬜ |
 | REQ-57 | TC-UX-S01–S02, P01–P04, N01–N05, L01–L05, A01–A05, F01 | ⬜ (F01 owner step 🔒) |
@@ -125,6 +125,20 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | Helpers (`js/reads-lib.js`) | `platformOf` (closed host list, exact host or subdomain, so `evilspotify.com` and `spotify.com.evil.io` stay plain domains), `podcastView`, `isSupportedPodcastsVersion`, and `keyOf` now exported for the duplicate check |
 | Design note | Duplicate-link check keeps the query string, unlike the Reads one, so two YouTube videos (`?v=`) are not flagged as the same link. The Reads check still ignores the query (a pre-existing quirk, not changed here) |
 | Not done in this phase | Everything visible: section, nav, composer, `#blog` redirect, blog removal, health check of `podcasts.json` (added when the page uses it), PC-06 to PC-08 |
+
+---
+
+## K. Results: RC Phase B (2026-10-22)
+
+| Check | Result |
+|-------|--------|
+| Unit tests | **203 of 203 pass** (194 + 9 new in `tests/spec-rc-phase-b.test.js`); all 9 failed first |
+| Browser smoke | **38 of 38 pass** in 32 s (17 + 21 new). Before the build, 22 of the 23 RC cases failed (the 21 new, plus the Phase A composer case now choosing a section) |
+| What the cases prove | Tab list, ARIA wiring, counts (U01); click and Left/Right/Home/End with wrap and focus (U02); switching clears filters (U03); defaults (U04); empty states and a hidden toolbar (U05); 375 px fit and 44 px targets (U06); contrast of selected and unselected tabs in both themes, measured from computed colours (U07); no-match hint that switches section (U08); `#reads`, `#reads/technical`, `#reads/others`, `#reads/xyz`, `#reads/__proto__` (L01-L03); no scroll jump, no new history entry, hash change switches tab (L04); composer radios, inline announced error, remembered section, published under the chosen section, editing moves an entry, XSS payloads inert (E01-E04); book editor Section (E05); a runtime-added category gets a third tab (X01) |
+| Visual check | Real content at 1280 px (light) and 375 px (dark) in the built-in browser: tabs show `Technical 6` (5 reads + 1 book) and `Others 0`; Others shows the empty text; no horizontal overflow. Found by looking: the empty section still showed the search box (`.toolbar` display overrode `hidden`), fixed and covered by U05 |
+| Harness fix | Each smoke case now loads a fresh URL (`?case=N`); a hash-only navigation does not reload, so deep-link cases silently inherited the previous page's state (found when `#reads` and `#reads/xyz` cases failed) |
+| Validator | OK; `app.js`, CSS and `index.html` inside budget; no inline style or script; no new host |
+| Not done | RC-07 (share and copy re-checked, counts while filtering) and RC-08 (books in one column) are Phase C; a real-phone and screen-reader pass is an owner step; the mobile bottom nav highlights Blog while Reads is on screen (existing behaviour, SPEC-UX) |
 
 ---
 

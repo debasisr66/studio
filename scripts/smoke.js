@@ -87,6 +87,7 @@ function connect(url) {
 
 /* ---------- running one case ---------- */
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+let caseNo = 0;
 
 async function runCase(cdp, base, c, errors) {
   overlay = { dirs: (c.fixtures || []).map(f => path.join(FIX, f)), manifest: {} };
@@ -96,7 +97,8 @@ async function runCase(cdp, base, c, errors) {
   const init = c.token ? await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: "try{sessionStorage.setItem('studio-admin-pat','not-a-real-token-smoke-test')}catch(e){}" }) : null;
   errors.length = 0;
   const t0 = Date.now();
-  await cdp.send('Page.navigate', { url: base + '/' });
+  // a different query on every case forces a full load: a hash-only change would not reload the page, so a deep-link case would inherit the previous case's state
+  await cdp.send('Page.navigate', { url: base + '/?case=' + (++caseNo) + (c.hash || '') });
   const ev = async expr => {
     const r = await cdp.send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true });
     if (r.exceptionDetails) throw new Error('page eval failed: ' + expr);
@@ -139,6 +141,30 @@ async function sectionsRendered(ctx, except = []) {
 }
 const noExceptionText = async (ctx, f) => { const t = await ctx.ev('document.body.innerText'); if (/TypeError|ReferenceError|Cannot read propert/.test(t)) f.push('an exception message is visible on the page'); };
 
+
+/* ---------- RC Phase B helpers: Reads tabs ---------- */
+const TWO = ['reads-two-sections', 'healthy'];
+const tabsInfo = ctx => ctx.ev(`(() => { const tl = document.querySelector('#readTabs'); if (!tl) return null;
+  return { role: tl.getAttribute('role'), tabs: [...tl.querySelectorAll('[role=tab]')].map(t => ({ id: t.id, text: t.textContent.replace(/\\s+/g, ' ').trim(), sel: t.getAttribute('aria-selected'), tab: t.tabIndex, controls: t.getAttribute('aria-controls'), focused: document.activeElement === t })),
+    panel: (() => { const p = document.querySelector('#readsPanel'); return p ? { role: p.getAttribute('role'), by: p.getAttribute('aria-labelledby') } : null; })(),
+    articles: [...document.querySelectorAll('#articlesFeed .item .read-title')].map(e => e.textContent.replace(/\\s*\\(opens in a new tab\\)/, '').trim()), books: [...document.querySelectorAll('#booksFeed .item h3')].map(e => e.textContent.trim()) }; })()`);
+const selectedLabel = async ctx => { const i = await tabsInfo(ctx); const t = i && i.tabs.find(x => x.sel === 'true'); return t ? t.text.replace(/\s*\d+$/, '') : null; };
+const expectSection = async (ctx, want) => { const got = await selectedLabel(ctx); return got === want ? [] : [`expected ${want} selected, got ${got}`]; };
+const keyOn = (ctx, sel, key) => ctx.ev(`document.querySelector(${JSON.stringify(sel)}).dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(key)}, bubbles: true, cancelable: true }))`);
+const lum = c => { const v = c.map(x => { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); }); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
+const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+const colours = (ctx, sel) => ctx.ev(`(() => { const rgb = s => (s.match(/[\\d.]+/g) || []).map(Number);
+  const el = document.querySelector(${JSON.stringify(sel)}); if (!el) return null; const fg = rgb(getComputedStyle(el).color);
+  let n = el, bg = [0, 0, 0, 0]; while (n) { const c = rgb(getComputedStyle(n).backgroundColor); if (c.length === 3 || (c.length === 4 && c[3] > 0.95)) { bg = c; break; } n = n.parentElement; }
+  return { fg: fg.slice(0, 3), bg: bg.slice(0, 3) }; })()`);
+const countOf = (i, name) => { const t = i.tabs.find(x => x.text.startsWith(name)); return t ? Number(t.text.replace(/^\D+/, '')) : null; };
+const fillComposer = (ctx, o) => ctx.ev(`(() => { const set = (id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); };
+  document.getElementById('composerOpen').click(); set('cf-url', ${JSON.stringify(o.url)}); set('cf-title', ${JSON.stringify(o.title)}); ${o.comment ? `set('cf-comment', ${JSON.stringify(o.comment)});` : ''} ${o.tags ? `set('cf-tags', ${JSON.stringify(o.tags)});` : ''}
+  ${o.section ? `document.querySelector('#cf-category input[value=${o.section}]').click();` : ''} return true; })()`);
+const stubApi = ctx => ctx.ev(`(() => { window.__puts = []; const real = window.fetch.bind(window);
+  window.fetch = (u, o) => String(u).startsWith('https://api.github.com') ? Promise.resolve(o && o.method === 'PUT' ? (window.__puts.push({ u: String(u), b: JSON.parse(o.body) }), new Response('{}', { status: 200 })) : new Response('{}', { status: 404 })) : real(u, o); return true; })()`);
+const publishedReads = async ctx => { await ctx.ev("document.getElementById('publishBtn').click(); new Promise(r => setTimeout(r, 600))"); const puts = JSON.parse(await ctx.ev('JSON.stringify(window.__puts)')); const p = puts.find(x => /content\/reads\.json/.test(x.u)); return p ? JSON.parse(Buffer.from(p.b.content, 'base64').toString('utf8')) : null; };
+
 const CASES = [
   { id: 'TC-SH-B01 real content, 1280 px', width: 1280, fixtures: [], noErrors: true, check: async ctx => {
     const f = [];
@@ -180,8 +206,9 @@ const CASES = [
   { id: 'TC-SH-V03 reads.json with a newer schema_version: Reads shows the fallback line, everything else renders', width: 1280, fixtures: ['future-reads-version', 'healthy'], check: async ctx => {
     const f = []; await isFallback(ctx, '#articlesFeed', 'Reads', f);
     f.push(...await sectionsRendered(ctx, ['reads'])); await noExceptionText(ctx, f); return f; } },
-  { id: 'TC-RC-D01 reads with a missing, unknown or odd category (and a book with a non-text one) all render, no errors (browser default is other)', width: 1280, fixtures: ['reads-odd-categories', 'healthy'], noErrors: true, check: async ctx => {
-    const f = [...await sectionsRendered(ctx)]; const n = await ctx.ev(count('#articlesFeed .item')); if (n !== 4) f.push(`expected 4 reads, found ${n}`);
+  { id: 'TC-RC-D01 reads with a missing, unknown or odd category (and a book with a non-text one) render under Others, no errors', width: 1280, fixtures: ['reads-odd-categories', 'healthy'], noErrors: true, check: async ctx => {
+    const f = [...await sectionsRendered(ctx)]; const n = await ctx.ev(count('#articlesFeed .item')); if (n !== 1) f.push(`Technical should list its 1 read, found ${n}`);
+    await ctx.ev("document.querySelectorAll('#readTabs [role=tab]')[1].click()"); const m = await ctx.ev(count('#articlesFeed .item')); if (m !== 3) f.push(`Others should list the 3 reads with a missing or unknown category, found ${m}`);
     const t = await ctx.ev(text('#articlesFeed')); if (t && t.includes(FALLBACK)) f.push('Reads showed its fallback line'); await noExceptionText(ctx, f); return f; } },
   { id: 'TC-RC-E00 admin composer: a new read is published with a category and schema_version 2 (GitHub API stubbed, nothing leaves the page)', width: 1280, token: true, fixtures: ['healthy'], check: async ctx => {
     const f = [];
@@ -192,6 +219,7 @@ const CASES = [
         : real(u, o);
       const set = (id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); };
       document.getElementById('composerOpen').click();
+      document.querySelector('#cf-category input[value=technical]').click();
       set('cf-url', 'https://example.com/rc-a-smoke'); set('cf-title', 'RC A smoke read'); set('cf-tags', 'ai');
       document.getElementById('composerForm').requestSubmit();
       await new Promise(r => setTimeout(r, 300));
@@ -210,6 +238,111 @@ const CASES = [
     if (without) f.push(without + ' published entries have no valid category');
     if ((file.articles || []).length !== 6) f.push('expected 5 existing reads plus the new one, got ' + (file.articles || []).length);
     return f; } },
+  { id: 'TC-RC-U01 Reads has a tab list with one tab per section, counts of the whole section (reads and books), a tab panel, ARIA wiring', width: 1280, fixtures: TWO, noErrors: true, check: async ctx => {
+    const f = [], i = await tabsInfo(ctx); if (!i) return ['no #readTabs tab list'];
+    if (i.role !== 'tablist') f.push('tab list role is ' + i.role);
+    if (i.tabs.length !== 2) f.push('expected 2 tabs, found ' + i.tabs.length);
+    if (countOf(i, 'Technical') !== 5 || countOf(i, 'Others') !== 3) f.push('counts should be Technical 5 and Others 3, got ' + i.tabs.map(t => t.text).join(' | '));
+    if (i.tabs.filter(t => t.sel === 'true').length !== 1) f.push('exactly one tab must be selected');
+    if (i.tabs.some(t => (t.sel === 'true') !== (t.tab === 0))) f.push('roving tabindex: only the selected tab is in the tab order');
+    if (!i.panel || i.panel.role !== 'tabpanel' || i.panel.by !== (i.tabs.find(t => t.sel === 'true') || {}).id) f.push('the tab panel is not labelled by the selected tab');
+    if (i.tabs.some(t => t.controls !== 'readsPanel')) f.push('tabs must control #readsPanel');
+    return f; } },
+  { id: 'TC-RC-U02 click, arrow keys, Home and End switch the section and move focus; only that section is listed', width: 1280, fixtures: TWO, check: async ctx => {
+    const f = []; let i = await tabsInfo(ctx);
+    if (i.articles.length !== 4 || i.books.join() !== 'Tech book') f.push('Technical should list 4 reads and its book, got ' + JSON.stringify([i.articles, i.books]));
+    const step = async (key, want) => { await keyOn(ctx, '#readTabs [aria-selected=true]', key); const j = await tabsInfo(ctx), t = j.tabs.find(x => x.sel === 'true');
+      if (!t || !t.text.startsWith(want) || !t.focused) f.push(`after ${key}: expected ${want} selected and focused, got ${t && t.text} focused=${t && t.focused}`); return j; };
+    i = await step('ArrowRight', 'Others');
+    if (i.articles.join() !== 'Other zebra,Other yak' || i.books.join() !== 'Other book') f.push('Others lists the wrong items: ' + JSON.stringify([i.articles, i.books]));
+    await step('ArrowRight', 'Technical'); await step('End', 'Others'); await step('Home', 'Technical'); await step('ArrowLeft', 'Others');
+    await ctx.ev("document.querySelector('#readTabs [role=tab]').click()");
+    const sel = await selectedLabel(ctx); if (sel !== 'Technical') f.push('clicking the first tab selected ' + sel);
+    return f; } },
+  { id: 'TC-RC-U03 switching section clears the tag filter and the search', width: 1280, fixtures: TWO, check: async ctx => {
+    const f = []; await ctx.ev("document.querySelector('#tagChips [data-filter=ai]').click()");
+    await ctx.ev("(() => { const s = document.getElementById('readSearch'); s.value = 'alpha'; s.dispatchEvent(new Event('input', { bubbles: true })); })()");
+    if ((await tabsInfo(ctx)).articles.join() !== 'Tech alpha') f.push('filters did not narrow Technical to one read');
+    await ctx.ev("document.querySelectorAll('#readTabs [role=tab]')[1].click()");
+    const i = await tabsInfo(ctx), q = await ctx.ev("document.getElementById('readSearch').value"), pressed = await ctx.ev("document.querySelectorAll('#tagChips [aria-pressed=true]').length");
+    if (q !== '') f.push('search box kept "' + q + '"'); if (pressed > 1) f.push('a tag chip is still active'); if (i.articles.length !== 2) f.push('Others should list its 2 reads, got ' + i.articles.length);
+    return f; } },
+  { id: 'TC-RC-U04 default section is Technical; Others when Technical is empty', width: 1280, fixtures: TWO, check: async ctx => {
+    const s = await selectedLabel(ctx); return s === 'Technical' ? [] : ['expected Technical, got ' + s]; } },
+  { id: 'TC-RC-U04 Technical empty: Others is selected on load', width: 1280, fixtures: ['reads-only-others', 'healthy'], check: async ctx => {
+    const s = await selectedLabel(ctx); return s === 'Others' ? [] : ['expected Others, got ' + s]; } },
+  { id: 'TC-RC-U05 an empty section shows a friendly empty state, not a blank', width: 1280, fixtures: ['reads-only-others', 'healthy'], check: async ctx => {
+    const f = []; await ctx.ev("document.querySelector('#readTabs [role=tab]').click()");
+    const t = await ctx.ev(text('#articlesFeed')); if (!t || !/Nothing in Technical yet/.test(t)) f.push('Reads empty state missing: "' + (t || '').slice(0, 60) + '"');
+    const b = await ctx.ev(text('#booksFeed')); if (!b || !b.trim()) f.push('Books column is blank');
+    if (await ctx.ev("document.getElementById('toolbar').getBoundingClientRect().height") > 0) f.push('the search and tag toolbar is visible in an empty section'); return f; } },
+  { id: 'TC-RC-U06 375 px: tabs fit with no overflow and touch targets are at least 44 px', width: 375, fixtures: TWO, noErrors: true, check: async ctx => {
+    const f = [], m = await ctx.ev(`(() => { const r = [...document.querySelectorAll('#readTabs [role=tab]')].map(t => t.getBoundingClientRect()); return { over: document.documentElement.scrollWidth - innerWidth, h: Math.min(...r.map(x => x.height)), right: Math.max(...r.map(x => x.right)), n: r.length }; })()`);
+    if (!m.n) return ['no tabs']; if (m.over > 1) f.push('horizontal overflow of ' + m.over + ' px'); if (m.h < 44) f.push('tab height ' + m.h + ' px'); if (m.right > 375) f.push('a tab runs past the viewport'); return f; } },
+  { id: 'TC-RC-U07 tab text contrast is at least 4.5:1 in both themes, selected and not', width: 1280, fixtures: TWO, check: async ctx => {
+    const f = [];
+    for (const theme of ['dark', 'light']) {
+      await ctx.ev(`document.documentElement.setAttribute('data-theme', ${JSON.stringify(theme)})`);
+      for (const sel of ['#readTabs [aria-selected=true]', '#readTabs [aria-selected=false]']) {
+        const c = await colours(ctx, sel); if (!c) { f.push('no tab for ' + sel); continue; }
+        const r = ratio(c.fg, c.bg); if (r < 4.5) f.push(`${theme} ${sel}: contrast ${r.toFixed(2)} (< 4.5)`);
+      }
+    }
+    return f; } },
+  { id: 'TC-RC-U08 no match in this section but a match in the other shows a hint that switches section', width: 1280, fixtures: TWO, check: async ctx => {
+    const f = []; await ctx.ev("(() => { const s = document.getElementById('readSearch'); s.value = 'zebra'; s.dispatchEvent(new Event('input', { bubbles: true })); })()");
+    const t = await ctx.ev(text('#articlesFeed')); if (!t || !/No reads match/.test(t)) f.push('no "No reads match" message'); if (!/Try Others/.test(t || '')) f.push('no hint to try Others: "' + (t || '').slice(0, 80) + '"');
+    await ctx.ev("document.querySelector('#articlesFeed [data-cat]').click()");
+    if (await selectedLabel(ctx) !== 'Others') f.push('the hint did not switch to Others'); return f; } },
+  { id: 'TC-RC-L01 #reads opens the default section', width: 1280, hash: '#reads', fixtures: TWO, check: async ctx => await expectSection(ctx, 'Technical') },
+  { id: 'TC-RC-L02 #reads/others opens Others and brings Reads into view', width: 1280, hash: '#reads/others', fixtures: TWO, check: async ctx => {
+    const f = [], s = await selectedLabel(ctx); if (s !== 'Others') f.push('expected Others, got ' + s);
+    await sleep(900); const top = await ctx.ev("document.getElementById('reads').getBoundingClientRect().top"); if (top > 200 || top < -50) f.push('Reads is not scrolled into view (top = ' + Math.round(top) + ')'); return f; } },
+  { id: 'TC-RC-L02 #reads/technical opens Technical even when Technical is not the default', width: 1280, hash: '#reads/technical', fixtures: ['reads-only-others', 'healthy'], check: async ctx => expectSection(ctx, 'Technical') },
+  { id: 'TC-RC-L03 #reads/xyz and #reads/__proto__ are ignored: default section, no errors', width: 1280, hash: '#reads/__proto__', fixtures: TWO, noErrors: true, check: async ctx => expectSection(ctx, 'Technical') },
+  { id: 'TC-RC-L03 #reads/xyz is ignored', width: 1280, hash: '#reads/xyz', fixtures: ['reads-only-others', 'healthy'], noErrors: true, check: async ctx => expectSection(ctx, 'Others') },
+  { id: 'TC-RC-L04 switching updates the hash without scrolling the page or adding history; a hash change switches the tab', width: 1280, fixtures: TWO, check: async ctx => {
+    const f = []; await ctx.ev("window.scrollTo(0, 400)"); await sleep(300);
+    const before = await ctx.ev('[scrollY, history.length]'); await ctx.ev("document.querySelectorAll('#readTabs [role=tab]')[1].click()"); await sleep(300);
+    const after = await ctx.ev('[scrollY, history.length, location.hash]');
+    if (after[2] !== '#reads/others') f.push('hash is ' + after[2]); if (Math.abs(after[0] - before[0]) > 2) f.push(`page scrolled from ${before[0]} to ${after[0]}`); if (after[1] !== before[1]) f.push('history grew');
+    await ctx.ev("location.hash = '#reads/technical'"); await sleep(400);
+    if (await selectedLabel(ctx) !== 'Technical') f.push('a hash change to #reads/technical did not switch the tab'); return f; } },
+  { id: 'TC-RC-E01 composer: Section choice with one radio per category, one checked; an empty choice is an inline, announced error', width: 1280, token: true, fixtures: TWO, check: async ctx => {
+    const f = []; await ctx.ev("document.getElementById('composerOpen').click()");
+    const r = await ctx.ev("[...document.querySelectorAll('#cf-category input[type=radio]')].map(x => [x.value, x.checked])");
+    if (r.length !== 2) return ['expected 2 section radios, got ' + r.length]; if (r.filter(x => x[1]).length !== 1) f.push('exactly one section must be preselected');
+    await fillComposer(ctx, { url: 'https://example.com/e01', title: 'E01' }); await ctx.ev("document.querySelectorAll('#cf-category input').forEach(x => x.checked = false); document.getElementById('composerForm').requestSubmit();");
+    const e = await ctx.ev("[document.getElementById('cf-category-err').textContent, document.getElementById('cf-category-err').getAttribute('role'), document.querySelectorAll('#articlesFeed .item').length]");
+    if (!/section/i.test(e[0])) f.push('no inline error about the section'); if (e[1] !== 'alert') f.push('error is not announced (role=alert)'); if (e[2] !== 4) f.push('a read was added despite the error'); return f; } },
+  { id: 'TC-RC-E02 the last chosen section is the next default; a new read is published under the section chosen', width: 1280, token: true, fixtures: TWO, check: async ctx => {
+    const f = []; await stubApi(ctx);
+    await fillComposer(ctx, { url: 'https://example.com/e02', title: 'E02 read', section: 'other' }); await ctx.ev("document.getElementById('composerForm').requestSubmit()"); await sleep(300);
+    await ctx.ev("document.getElementById('composerOpen').click()");
+    const chk = await ctx.ev("(document.querySelector('#cf-category input:checked') || {}).value"); if (chk !== 'other') f.push('the next composer did not remember Others (got ' + chk + ')');
+    const i = await tabsInfo(ctx); if (countOf(i, 'Others') !== 4 || countOf(i, 'Technical') !== 5) f.push('counts after adding to Others: ' + i.tabs.map(t => t.text).join(' | '));
+    const file = await publishedReads(ctx); const mine = file && file.articles.find(a => a.title === 'E02 read');
+    if (!mine) f.push('the read was not published'); else if (mine.category !== 'other') f.push('published under ' + mine.category + ', expected other'); if (file && file.schema_version !== 2) f.push('schema_version ' + file.schema_version); return f; } },
+  { id: 'TC-RC-E03 editing an entry can move it to the other section', width: 1280, token: true, fixtures: TWO, check: async ctx => {
+    const f = []; await ctx.ev("[...document.querySelectorAll('#articlesFeed [data-edit]')].find(b => /Tech alpha/.test(b.getAttribute('aria-label'))).click()");
+    const pre = await ctx.ev("(document.querySelector('#cf-category input:checked') || {}).value"); if (pre !== 'technical') f.push('edit form did not show the entry section (got ' + pre + ')');
+    await ctx.ev("document.querySelector('#cf-category input[value=other]').click(); document.getElementById('composerForm').requestSubmit()"); await sleep(300);
+    const i = await tabsInfo(ctx); if (countOf(i, 'Technical') !== 4 || countOf(i, 'Others') !== 4) f.push('counts after the move: ' + i.tabs.map(t => t.text).join(' | ')); if (i.articles.includes('Tech alpha')) f.push('the entry is still listed under Technical'); return f; } },
+  { id: 'TC-RC-E04 XSS payloads in title, comment and tags stay inert in the preview and the list; the section value is never markup', width: 1280, token: true, fixtures: TWO, check: async ctx => {
+    const f = [], P = '<img src=x onerror="window.__x=1"><script>window.__x=1<\/script>';
+    await fillComposer(ctx, { url: 'https://example.com/e04', title: P, comment: P, tags: '"><svg onload=window.__x=1>', section: 'technical' }); await sleep(200);
+    let bad = await ctx.ev("[window.__x, document.querySelectorAll('#cf-preview img[src=x], #cf-preview svg, #cf-preview script').length]"); if (bad[0] || bad[1]) f.push('payload active in the preview: ' + JSON.stringify(bad));
+    await ctx.ev("document.getElementById('composerForm').requestSubmit()"); await sleep(300);
+    bad = await ctx.ev("[window.__x, document.querySelectorAll('#reads img[src=x], #reads svg[onload], #reads script').length, document.querySelector('#readTabs').innerHTML.includes('<img')]"); if (bad[0] || bad[1] || bad[2]) f.push('payload active in the list: ' + JSON.stringify(bad));
+    const t = await ctx.ev(text('#articlesFeed')); if (!t || !t.includes('<img')) f.push('the payload should show as plain text'); return f; } },
+  { id: 'TC-RC-E05 the book editor has a Section choice and a saved book moves to that section', width: 1280, token: true, fixtures: TWO, check: async ctx => {
+    const f = []; await ctx.ev("document.getElementById('addBook').click()");
+    const ok = await ctx.ev("(() => { const s = document.querySelector('#modal [data-k=category]'); if (!s) return false; document.querySelector('#modal [data-k=title]').value = 'New other book'; document.querySelector('#modal [data-k=author]').value = 'Z'; s.value = 'other'; document.getElementById('ms').click(); return true; })()");
+    if (!ok) return ['the book editor has no Section select']; await sleep(300);
+    const i = await tabsInfo(ctx); if (countOf(i, 'Others') !== 4 || countOf(i, 'Technical') !== 5) f.push('counts after adding a book to Others: ' + i.tabs.map(t => t.text).join(' | ')); return f; } },
+  { id: 'TC-RC-X01 a category added to CATEGORIES at run time gets a third tab with no other change', width: 1280, fixtures: TWO, check: async ctx => {
+    await ctx.ev("ReadsLib.CATEGORIES.push('news'); document.querySelector('#readTabs [role=tab]').click();");
+    const i = await tabsInfo(ctx); return i.tabs.length === 3 && /^News/.test(i.tabs[2].text) ? [] : ['expected a third tab "News", got ' + i.tabs.map(t => t.text).join(' | ')]; } },
   { id: 'TC-SH-T01 reads.json never answers: the page still loads (8 s timeout) and the rest renders', width: 1280, fixtures: ['hang-reads', 'healthy'], timeout: 20000, check: async ctx => {
     const f = [...await sectionsRendered(ctx, ['reads'])]; if (ctx.ms > 14000) f.push(`took ${ctx.ms} ms; the timeout should end the wait at about 8 s`); return f; } },
   { id: 'TC-SH-T02 reads.json answers after 2 s: it still renders', width: 1280, fixtures: ['slow-reads', 'healthy'], check: ctx => sectionsRendered(ctx) },
