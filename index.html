@@ -68,7 +68,8 @@
 
   <section class="block" id="reads" aria-labelledby="h-reads"><div class="wrap">
     <div class="sec-head"><h2 id="h-reads">Reads</h2><span class="sub">Articles, videos &amp; books worth your time</span></div>
-    <div class="two reads">
+    <div class="tabs" id="readTabs" role="tablist" aria-label="Reads sections"></div>
+    <div class="two reads" id="readsPanel" role="tabpanel" aria-labelledby="tab-technical">
       <div>
         <h3 class="sub-h">Reading list</h3>
 
@@ -93,7 +94,9 @@
               <div class="field"><label for="cf-tags">Tags <span class="opt">(comma separated, up to 5)</span></label>
                 <input id="cf-tags" name="tags" type="text" autocomplete="off" placeholder="ai, architecture"></div>
             </div>
-            <div class="preview" id="cf-preview-wrap"><h4>Preview</h4><div id="cf-preview"></div></div>
+            <fieldset class="sect-field" id="cf-category" aria-describedby="cf-category-err"><legend>Section</legend><div class="radios" id="cf-category-opts"></div>
+              <div class="field-err" id="cf-category-err" role="alert"></div></fieldset>
+            <div class="preview" id="cf-preview-wrap"><h4>Preview</h4><div id="cf-preview"></div><p class="muted-xs" id="cf-preview-section"></p></div>
             <div class="form-btns">
               <button type="button" class="cta ghost" id="cf-cancel">Cancel</button>
               <button type="submit" class="cta" id="cf-submit">Post</button>

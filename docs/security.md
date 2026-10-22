@@ -261,3 +261,14 @@ A successful smoke test proves rendering in one browser engine only. CI still ca
 | Version gate | CI accepts exactly `schema_version` 1; the browser helper refuses only a newer version (same pattern as Reads) |
 | Surface | No new network call, host, storage key, secret, dependency or permission; `index.html`, `app.js`, CSS, CSP, workflows and `changelog.json` untouched |
 | Residual | The admin cannot yet publish this file (Phase B), so the composer-side checks (T22 embeds, publish over a newer file) are still open for that phase |
+
+### 11.9 RC Phase B results (2026-10-22)
+
+| Check | Result |
+|-------|--------|
+| New input path: the URL fragment | `#reads/<slug>` is compared for exact equality with the slugs of the closed list; anything else (`xyz`, `__proto__`, `constructor`, encoded bytes, 5000 characters, markup) selects the default section and never reaches a selector or the DOM; unit and smoke cases cover each |
+| New input path: the Section field | Radio group built from `CATEGORIES`; the value is validated against the list on submit (`requireCategory`); the book editor's select is built the same way; the stored value is the closed-list string, never user text |
+| XSS (T-class) | Payloads in title, comment and tags (`<img onerror>`, `<script>`, `"><svg onload>`) stay inert in the preview, the list and the tab list (smoke E04: no handler ran, no element created, text shown literally). Tab labels, slugs, ids and counts are escaped or numeric |
+| State and storage | No new storage key or cookie; the remembered section lives only in memory for the session; `history.replaceState` changes the fragment only |
+| Surface | No new network call, host, secret, dependency or permission; CSP and workflows untouched; `changelog.json` untouched |
+| Residual | The mobile nav highlight and the single-column books layout are UI work in later phases; keyboard and contrast pass for the whole page is SPEC-UX Phase B |

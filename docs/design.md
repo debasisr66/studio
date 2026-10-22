@@ -640,6 +640,13 @@ stateDiagram-v2
 
 Accessible tab pattern: `role="tablist"`, two `role="tab"` buttons with counts, `aria-selected`, `aria-controls`, roving `tabindex`, Left/Right/Home/End keys, one `role="tabpanel"`. Switching clears tag and search and updates the hash (`#reads/technical`, `#reads/others`) without scrolling. Books render below the articles in the same sub-item (single column); the book editor stays for 2.0. A "No match here" state suggests the other section when it has a match.
 
+**Corrections found while building (RC Phase B):**
+1. A tab's count is reads plus books (books are in the same section); the single-column layout is still RC Phase C.
+2. A deep link such as `#reads/others` matches no element id, so the browser cannot scroll to it: the page scrolls Reads into view itself, instantly (a smooth scroll was cancelled by layout changes during load).
+3. Switching uses `history.replaceState` (no scroll, no history entry); a later change to plain `#reads` keeps the section you are on, only a fresh load applies the default.
+4. The composer's Section is a radio group preselected with the last section chosen, else the section being viewed, rather than a blank required choice; the required check remains in `validateEntry` for safety.
+5. A section with fewer than 4 reads hides search and tag chips; a search with no match here offers "Try Others" when the other section has a match.
+
 ### 12.6 Podcasts: adding and publishing
 
 ```mermaid
