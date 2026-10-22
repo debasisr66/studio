@@ -193,7 +193,7 @@ T15 and T16 (visitor usage data and corrupt local data) were dropped on 2026-10-
 | T20 | **Schema-version bypass** (unknown version silently accepted, or old data mis-read) | SH-04 | Known versions only in CI; runtime defaults documented; failure is a section fallback | TC-SH-V01–V03 | ✅ (SH Phase A) |
 | T21 | **New CI tool risk** (headless Chrome and a local static server on the runner) | SH-02 | Server binds to localhost on a random port for the step only; no secrets in the step; no network egress needed; pinned action versions unchanged | TC-SH-B03, B04; `git diff .github` review | ✅ (SH Phase A) |
 | T22 | **Embedded content creep** (iframes or players for podcasts) | PC-02 | No embeds; CSP `default-src 'none'` and the validator keep third-party hosts out; smoke test asserts no iframe/audio | TC-PC-U07 | ✅ (SH Phase B, reads) |
-| T23 | **Data loss in migration** | RC-05 | Before/after comparison; additive keys; rollback proof with v1.5 code | TC-RC-M01–M03 | ⬜ |
+| T23 | **Data loss in migration** | RC-05 | Before/after comparison; additive keys; rollback proof with v1.5 code | TC-RC-M01–M03 | ✅ (RC Phase A, §11.7) |
 | T24 | **Retired blog leaves a dangling path** (old link, stale code with an editor) | PC-05 | Redirect; code removed; archive file unrendered and validated | TC-PC-R01–R04 | ⬜ |
 
 ### 11.2 Controls that must remain unchanged (checked at each phase)
@@ -212,7 +212,7 @@ T15 and T16 (visitor usage data and corrupt local data) were dropped on 2026-10-
 - [ ] XSS payloads (`<img onerror>`, `javascript:`, `data:`) in every new field render inert (composer preview, cards, tabs, platform label).
 - [ ] Network log shows no new request or host during heavy use.
 - [ ] No new storage key or cookie is written (Studio stores nothing about visitors).
-- [ ] Rollback rehearsed: v1.5 code on migrated data renders correctly.
+- [x] Rollback rehearsed: v1.5 code on migrated data renders correctly (RC Phase A, §11.7).
 - [ ] Residual risks written down at the end of §11 with owner acknowledgement.
 
 ### 11.4 Residual risks expected (to confirm after build)
@@ -239,3 +239,14 @@ A successful smoke test proves rendering in one browser engine only. CI still ca
 | Surface | No new network call, host, storage, secret, dependency or permission; `index.html`, CSP and workflows untouched this phase |
 | Docs as a control | The contract and the runbook can no longer drift silently: CI fails on a missing file, rule id or broken link in the test suite |
 | Residual | The "refuse to publish over a newer file" guard has no stubbed-API test yet (code inspection only) |
+
+### 11.7 RC Phase A results (2026-10-22)
+
+| Check | Result |
+|-------|--------|
+| T23 data loss in migration | Before/after comparison of every field of the 5 reads and the book is identical apart from the added `category`; the pre-migration file is kept as a test fixture; rollback rehearsed: the `v1.5` tag code renders the migrated file (products, updates, all 5 reads, no console error) |
+| New input path | One new field, `category`. Closed list (`CATEGORIES`), validated in CI (`reads-category`, fixture, runbook row, contract entry), defaulted to `other` in the browser; it is not rendered anywhere yet, and is never used as markup or a class |
+| Version gate | CI accepts exactly `schema_version` 2; the browser accepts 1 and 2 and still refuses a newer file (unchanged smoke case `TC-SH-V03`). The admin publish writes version 2 through the serializer, which also fills a missing category so the admin cannot publish a file CI rejects (stubbed-API smoke case; also proven to fail when the fill is removed) |
+| Surface | No new network call, host, storage key, secret, dependency or permission; `index.html`, CSP, workflows, `changelog.json` untouched |
+| Finding | Between the data merge and any rollback, `main` (SH Phase B) alone would show the Reads fallback for a version 2 file, because it only understands version 1. Code and data therefore change in one commit and the rollback target is the `v1.5` tag, not the previous commit |
+| Residual | The rollback rehearsal was run by hand (a scratch export of the tag), not in CI |

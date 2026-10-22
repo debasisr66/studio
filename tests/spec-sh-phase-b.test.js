@@ -9,8 +9,8 @@ const RL = require('../js/reads-lib.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const read = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
-const article = (o = {}) => ({ id: 1, added: '2026-10-19', title: 'T', url: 'https://example.com/a', kind: 'article', tags: [], ...o });
-const reads = (o = {}) => ({ schema_version: 1, books: [], articles: [article()], ...o });
+const article = (o = {}) => ({ id: 1, added: '2026-10-19', title: 'T', url: 'https://example.com/a', kind: 'article', tags: [], category: 'technical', ...o });
+const reads = (o = {}) => ({ schema_version: 2, books: [], articles: [article()], ...o });
 
 /* SH-03: the contract document is kept in step with the files and the rules */
 test('TC-SH-C01 every file in content/ appears in CONTRACT.md', () => {
@@ -40,7 +40,7 @@ test('TC-SH-V01 reads.json with a known schema_version is accepted', () => {
   assert.deepEqual(V.validateReads(reads()).errors, []);
 });
 test('TC-SH-V02 an unknown or non-integer schema_version is a CI error naming the file', () => {
-  for (const v of [2, 0, -1, 1.5, '1', null, true]) {
+  for (const v of [1, 3, 0, -1, 1.5, '1', null, true]) {
     const e = V.validateReads(reads({ schema_version: v })).errors;
     assert.ok(e.some(m => /reads\.json: schema_version must be/.test(m)), JSON.stringify(v));
   }
@@ -52,25 +52,26 @@ test('TC-SH-V03 a missing schema_version is a CI error (the browser still tolera
   assert.equal(RL.isSupportedReadsVersion(null), true);
 });
 test('TC-SH-V03 the browser refuses only a version newer than it understands', () => {
-  assert.equal(RL.READS_SCHEMA_VERSION, 1);
+  assert.equal(RL.READS_SCHEMA_VERSION, 2);
   assert.equal(RL.isSupportedReadsVersion(1), true);
-  assert.equal(RL.isSupportedReadsVersion(2), false);
+  assert.equal(RL.isSupportedReadsVersion(2), true);
+  assert.equal(RL.isSupportedReadsVersion(3), false);
   assert.equal(RL.isSupportedReadsVersion(99), false);
   assert.equal(RL.isSupportedReadsVersion('x'), true);   // garbage is treated as an old file, never a crash
 });
 test('TC-SH-V04 the real content/reads.json carries a supported schema_version', () => {
   const real = JSON.parse(read('content/reads.json'));
-  assert.equal(RL.READS_SCHEMA_VERSION, 1);
-  assert.equal(real.schema_version, 1);
+  assert.equal(RL.READS_SCHEMA_VERSION, 2);
+  assert.equal(real.schema_version, 2);
   assert.deepEqual(V.validateReads(real).errors, []);
 });
 test('TC-SH-V04 the admin publish keeps the version: serializeReads writes it first, then books and articles', () => {
-  const out = RL.serializeReads({ books: [{ title: 'B' }], articles: [article()] });
+  const out = RL.serializeReads({ books: [{ title: 'B', category: 'technical' }], articles: [article()] });
   assert.deepEqual(Object.keys(out), ['schema_version', 'books', 'articles']);
   assert.equal(out.schema_version, RL.READS_SCHEMA_VERSION);
-  const again = RL.serializeReads({ schema_version: 1, books: out.books, articles: out.articles });
+  const again = RL.serializeReads({ schema_version: 2, books: out.books, articles: out.articles });
   assert.equal(JSON.stringify(again), JSON.stringify(out));
-  assert.deepEqual(RL.serializeReads({}), { schema_version: 1, books: [], articles: [] });
+  assert.deepEqual(RL.serializeReads({}), { schema_version: 2, books: [], articles: [] });
 });
 
 /* SH-07 / D02: the documents' links and anchors resolve */

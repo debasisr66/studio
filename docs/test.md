@@ -4,9 +4,9 @@ Releases: **v2.0 (planned, nothing run)** · **v1.5 (shipped 2026-10-21: SPEC-TR
 
 ---
 
-# v2.0 — Studio 2.0 (in progress: SH Phase A merged, SH Phase B built, rest planned)
+# v2.0 — Studio 2.0 (in progress: SH Phases A and B merged, RC Phase A built, rest planned)
 
-Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22): **116 new cases**, on top of the existing **142 passing unit tests**. Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12) and Phase B are run:** see §G and §H.
+Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22): **116 new cases**, on top of the existing **142 passing unit tests**. Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12), SH Phase B (PR #13) and RC Phase A are run:** see §G, §H and §I.
 
 ## A. Requirements (release level)
 
@@ -30,7 +30,7 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | REQ-50 | TC-SH-I01–I05, T01–T02 | ✅ (SH Phase A) |
 | REQ-51 | TC-SH-B01–B09 | ✅ B01–B04 · ⬜ B05–B09 (Phase C) |
 | REQ-52 | TC-SH-C01–C03, V01–V04, D01–D02 | ✅ (SH Phase B) · ⬜ A01–A03 (Phase C) |
-| REQ-53 | TC-RC-D01–D04, M01–M03, V01–V04, X01 | ⬜ |
+| REQ-53 | TC-RC-D01–D04, M01–M03, V01–V04, X01 | ✅ (RC Phase A; X01 library half only, the third-tab half arrives with RC Phase B) |
 | REQ-54 | TC-RC-U01–U08, L01–L04, E01–E04, S01–S02, B01–B02 | ⬜ |
 | REQ-55 | TC-PC-D01–D03, V01–V07, N01–N02, S01 | ⬜ (S01 owner step 🔒) |
 | REQ-56 | TC-PC-U01–U08, A01–A06, R01–R05, K01–K02 | ⬜ |
@@ -96,6 +96,20 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | Operations guide | Add, hide, retire and recategorise a product executed as written; outputs match; docs corrected for one warning |
 | Docs links | A test checks every relative link and heading anchor in README and docs/ |
 | Not done | A stubbed-API test of the admin publish (guard against publishing over a newer file is by code inspection); `podcasts.json` version (arrives with SPEC-PC); Phase C items |
+
+---
+
+## I. Results: RC Phase A (2026-10-22)
+
+| Check | Result |
+|-------|--------|
+| Unit tests | **181 of 181 pass** (164 + 17 new in `tests/spec-rc-phase-a.test.js`). Written first: **25 of 181 failed** (the 17 new, plus 8 existing tests I updated to the version 2 contract: `TC-SH-V01-V04`, `TC-TR-X01` and two `validate-site` cases) |
+| Browser smoke | **17 of 17 pass** in 18.7 s (two new cases: reads with a missing, unknown or odd category all render with no console error; the admin composer publishes a new read with `category` and `schema_version` 2, with the GitHub API stubbed in the page). The existing real-content case now also requires the 5 reads to render |
+| Case checked for real failure | With the serializer's category fill disabled the composer case failed ("6 published entries have no valid category"); restored and green |
+| Validator | OK, 0 errors, 0 warnings; rule `reads-category` has a fixture, a CONTRACT entry and a RUNBOOK row (TR-04 and SH-03 guards green) |
+| Migration, before and after (`git show main:content/reads.json` vs the new file) | `schema_version` 1 → 2; 5 reads → 5, 1 book → 1; id, url, title, comment, tags, kind and added identical for every read; title, author, year and note identical for the book; with `category` removed the two files are deep-equal. Categories: all 5 reads and the book `technical` (owner-confirmed 2026-10-21). Kept as the permanent snapshot `tests/fixtures/reads-before-rc-a.json` that `TC-RC-M01` compares against |
+| Rollback proof (TC-RC-M03) | The `v1.5` tag exported to a scratch folder, the migrated `reads.json` copied in, the smoke "real content" case run against it: **passes**, products and updates render, all 5 reads render, no console errors. v1.5 code contains no `schema_version` logic, so it ignores the new keys. Note: the SH Phase B code (current `main`, supports only version 1) would show the Reads fallback line for a version 2 file; that is why the code and the data change in one commit, and rollback means the `v1.5` tag |
+| Not done in this phase | No visible UI (by design); sub-item tabs, deep links and the composer Section choice (RC Phase B); the `TC-RC-X01` third-tab half; owner real-publish of a read (no visible change yet) |
 
 ---
 

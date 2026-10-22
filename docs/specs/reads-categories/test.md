@@ -4,10 +4,10 @@ Spec: [spec.md](spec.md) (`SPEC-RC`). IDs `TC-RC-<group><nn>`. ⬜ not run. Unit
 
 | ID | Req | Case | Expected | Status |
 |----|-----|------|----------|--------|
-| TC-RC-D01 | RC-01 | `categoryOf({})`, unknown value, `null` | `other` | ⬜ |
-| TC-RC-D02 | RC-01 | `categoryOf` with `technical` / `other` | same value | ⬜ |
-| TC-RC-D03 | RC-01 | `filterReads` respects category plus tag plus search together | correct subset | ⬜ |
-| TC-RC-D04 | RC-01 | Counts per category ignore tag/search filters | whole-sub-item counts | ⬜ |
+| TC-RC-D01 | RC-01 | `categoryOf({})`, unknown value, `null` | `other` | ✅ |
+| TC-RC-D02 | RC-01 | `categoryOf` with `technical` / `other` | same value | ✅ |
+| TC-RC-D03 | RC-01 | `filterReads` respects category plus tag plus search together | correct subset | ✅ |
+| TC-RC-D04 | RC-01 | Counts per category ignore tag/search filters | whole-sub-item counts | ✅ |
 | TC-RC-U01 | RC-02 | Two tabs exist with counts; `role=tablist`, `aria-selected` | pass | ⬜ |
 | TC-RC-U02 | RC-02 | Click, Left/Right arrow, Home/End switch sub-item and move focus correctly | pass | ⬜ |
 | TC-RC-U03 | RC-02 | Switching clears tag and search | pass | ⬜ |
@@ -24,22 +24,23 @@ Spec: [spec.md](spec.md) (`SPEC-RC`). IDs `TC-RC-<group><nn>`. ⬜ not run. Unit
 | TC-RC-E02 | RC-04 | Last chosen section is the next default in the session | pass | ⬜ |
 | TC-RC-E03 | RC-04 | Editing can move an entry between sub-items | pass | ⬜ |
 | TC-RC-E04 | RC-04 | XSS payloads in title/comment/tags still inert | pass | ⬜ |
-| TC-RC-M01 | RC-05 | Migration keeps ids, urls, titles, comments, tags, kinds identical (before/after compare) | pass | ⬜ |
-| TC-RC-M02 | RC-05 | All 5 reads and the book carry the owner-confirmed category | pass | ⬜ |
-| TC-RC-M03 | RC-05 | Old (v1.5) code renders migrated data (extra keys ignored) | pass | ⬜ |
-| TC-RC-V01 | RC-06 | Missing category | CI error (`reads-category`) | ⬜ |
-| TC-RC-V02 | RC-06 | Unknown category | CI error | ⬜ |
-| TC-RC-V03 | RC-06 | After the bump: version `1` and a missing version are CI errors; `2` passes (rule `reads-schema-version` exists since SPEC-SH SH-04) | pass | ⬜ |
-| TC-RC-V04 | RC-06 | Both rules have fixtures and runbook rows (TR-04 guard) | pass | ⬜ |
+| TC-RC-M01 | RC-05 | Migration keeps ids, urls, titles, comments, tags, kinds identical (before/after compare) | pass | ✅ |
+| TC-RC-M02 | RC-05 | All 5 reads and the book carry the owner-confirmed category | pass | ✅ |
+| TC-RC-M03 | RC-05 | Old (v1.5) code renders migrated data (extra keys ignored) | pass | ✅ |
+| TC-RC-V01 | RC-06 | Missing category | CI error (`reads-category`) | ✅ |
+| TC-RC-V02 | RC-06 | Unknown category | CI error | ✅ |
+| TC-RC-V03 | RC-06 | After the bump: version `1` and a missing version are CI errors; `2` passes (rule `reads-schema-version` exists since SPEC-SH SH-04) | pass | ✅ |
+| TC-RC-V04 | RC-06 | Both rules have fixtures and runbook rows (TR-04 guard) | pass | ✅ |
 | TC-RC-S01 | RC-07 | Share, copy, native share unchanged | pass | ⬜ |
 | TC-RC-S02 | RC-07 | Counts stay whole-sub-item while filtering | pass | ⬜ |
 | TC-RC-B01 | RC-08 | Books appear under articles in their sub-item | pass | ⬜ |
 | TC-RC-B02 | RC-08 | Two-column layout gone at all widths; no overflow | pass | ⬜ |
-| TC-RC-X01 | RC-09 | Adding a value to `CATEGORIES` in a test double yields a third tab with no other code change | pass | ⬜ |
+| TC-RC-X01 | RC-09 | Adding a value to `CATEGORIES` in a test double yields a third tab with no other code change | pass | ◐ library half ✅ (`tests/spec-rc-phase-a.test.js`); third tab with RC Phase B |
 
 Regression: all existing reads tests (filter, share, normalise, composer, admin) and the 142-test suite stay green; CSP clean; no new third-party request.
 
-Exit criteria: P0 rows ✅ (RC-01 to RC-06); owner Q2 answered before M-tests run on real data.
+Exit criteria: P0 rows ✅ (RC-01 to RC-06); owner Q2 answered before M-tests run on real data. **Phase A: RC-01, RC-05, RC-06 rows ✅; Q2 answered 2026-10-21.**
 
 ## Status log
 - 2026-10-21: Draft created; nothing run.
+- 2026-10-22: RC Phase A run (`v2/rc-a`): `tests/spec-rc-phase-a.test.js` (17 tests; 25 of 181 failed before the build, counting 8 existing tests updated to version 2), then 181 of 181 pass; smoke 17 of 17 (new: odd categories render with no console error; admin composer publishes `category` and `schema_version` 2 with the API stubbed); validator OK. D01-D04, V01-V04, M01-M03 ✅. M01: before/after comparison of ids, urls, titles, comments, tags, kinds, added and all book fields identical (snapshot `tests/fixtures/reads-before-rc-a.json`). M02: all 5 reads and the book `technical`. M03: the `v1.5` tag exported to a scratch folder with the migrated file renders products, updates and all 5 reads with no console error (run by hand, not in CI; the in-CI half asserts the migration only adds the `category` key). X01: library half only. Groups U, L, E, S, B arrive in Phases B and C.

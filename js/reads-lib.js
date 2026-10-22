@@ -6,6 +6,21 @@
   'use strict';
 
   var KINDS = ['article', 'video', 'paper', 'podcast', 'tool'];
+  /* The sections a read or book can belong to (SPEC-RC RC-01, RC-09). A closed list: adding a value here is the whole code change.
+     Anything missing or unknown is shown as 'other' in the browser (never an error); CI rejects it (rule reads-category). */
+  var CATEGORIES = ['technical', 'other'];
+  var DEFAULT_NEW_CATEGORY = 'technical';   // what the admin gives a new read until the Section choice ships (RC Phase B)
+  function categoryOf(e) {
+    var c = e && typeof e === 'object' ? e.category : undefined;
+    return typeof c === 'string' && CATEGORIES.indexOf(c) >= 0 ? c : 'other';
+  }
+  /* Whole-section counts, ignoring any tag or search filter. */
+  function categoryCounts(list, cats) {
+    var out = {};
+    (cats || CATEGORIES).forEach(function (c) { out[c] = 0; });
+    (list || []).forEach(function (e) { var c = categoryOf(e); if (c in out) out[c]++; });
+    return out;
+  }
   var LIMITS = { url: 2048, title: 140, comment: 280, tags: 5, tag: 24 };
   var TRACKING = /^(utm_[a-z0-9_]+|fbclid|gclid|mc_cid|mc_eid|igshid)$/i;
 
@@ -35,14 +50,19 @@
 
   /* Version of the shape of content/reads.json (SPEC-SH SH-04). The browser tolerates a missing or older version (documented defaults)
      and refuses only a NEWER one, so it never edits or publishes over a file it does not understand. CI requires the key. */
-  var READS_SCHEMA_VERSION = 1;
+  var READS_SCHEMA_VERSION = 2;   // 2 = every read and book has a category (SPEC-RC RC-05); 1 = before
   function isSupportedReadsVersion(v) {
     return !(typeof v === 'number' && isFinite(v) && Math.floor(v) === v && v > READS_SCHEMA_VERSION);
   }
-  /* What the admin writes to reads.json: the version first, then the lists. Always the current version, so a publish never drops the key. */
+  /* What the admin writes to reads.json: the version first, then the lists. Always the current version, so a publish never drops the key.
+     An entry that somehow has no valid category (hand edit, legacy) gets the admin default, so a publish can never fail the CI category rule. */
+  function withCategory(e) {
+    if (!e || typeof e !== 'object' || CATEGORIES.indexOf(e.category) >= 0) return e;
+    var o = {}; Object.keys(e).forEach(function (k) { o[k] = e[k]; }); o.category = DEFAULT_NEW_CATEGORY; return o;
+  }
   function serializeReads(r) {
     r = r || {};
-    return { schema_version: READS_SCHEMA_VERSION, books: Array.isArray(r.books) ? r.books : [], articles: Array.isArray(r.articles) ? r.articles : [] };
+    return { schema_version: READS_SCHEMA_VERSION, books: (Array.isArray(r.books) ? r.books : []).map(withCategory), articles: (Array.isArray(r.articles) ? r.articles : []).map(withCategory) };
   }
 
   /* Strict check for a URL that is stored or published (CI and the admin screen): http(s) only, no whitespace or control
@@ -106,8 +126,11 @@
     if (comment.length > LIMITS.comment) errors.comment = 'Keep your take under ' + LIMITS.comment + ' characters';
     var kind = e.kind == null || e.kind === '' ? 'article' : String(e.kind);
     if (KINDS.indexOf(kind) < 0) errors.kind = 'Choose a type from the list';
-    var ok = Object.keys(errors).length === 0;
-    return { ok: ok, errors: errors, value: ok ? { url: url, title: title, comment: comment, kind: kind, tags: parseTags(e.tags) } : null };
+    var hasCat = e.category !== undefined && e.category !== null && e.category !== '';
+    if (hasCat && CATEGORIES.indexOf(e.category) < 0) errors.category = 'Choose a section from the list';
+    var ok = Object.keys(errors).length === 0, value = null;
+    if (ok) { value = { url: url, title: title, comment: comment, kind: kind, tags: parseTags(e.tags) }; if (hasCat) value.category = e.category; }   // no category given: an edit keeps the entry's own
+    return { ok: ok, errors: errors, value: value };
   }
 
   function shareLinks(url) {
@@ -125,6 +148,7 @@
       comment: e.comment != null && e.comment !== '' ? e.comment : (e.note || ''),
       kind: KINDS.indexOf(e.kind) >= 0 ? e.kind : 'article',
       tags: Array.isArray(e.tags) ? e.tags : [],
+      category: categoryOf(e),
       added: e.added || ''
     };
   }
@@ -134,6 +158,7 @@
     var q = String(opts.q || '').trim().toLowerCase();
     return (list || []).filter(function (e) {
       var v = entryView(e);
+      if (opts.category && v.category !== opts.category) return false;
       if (opts.tag && v.tags.indexOf(opts.tag) < 0) return false;
       if (!q) return true;
       return (v.title + ' ' + v.comment + ' ' + v.url + ' ' + v.tags.join(' ')).toLowerCase().indexOf(q) >= 0;
@@ -167,7 +192,7 @@
     return t.toLocaleDateString('en-GB', o);
   }
 
-  return { KINDS: KINDS, pickAsset: pickAsset, formatDate: formatDate, LIMITS: LIMITS, normalizeUrl: normalizeUrl, isPublishableUrl: isPublishableUrl, READS_SCHEMA_VERSION: READS_SCHEMA_VERSION, isSupportedReadsVersion: isSupportedReadsVersion, serializeReads: serializeReads, domainOf: domainOf, isDuplicate: isDuplicate,
+  return { KINDS: KINDS, CATEGORIES: CATEGORIES, DEFAULT_NEW_CATEGORY: DEFAULT_NEW_CATEGORY, categoryOf: categoryOf, categoryCounts: categoryCounts, pickAsset: pickAsset, formatDate: formatDate, LIMITS: LIMITS, normalizeUrl: normalizeUrl, isPublishableUrl: isPublishableUrl, READS_SCHEMA_VERSION: READS_SCHEMA_VERSION, isSupportedReadsVersion: isSupportedReadsVersion, serializeReads: serializeReads, domainOf: domainOf, isDuplicate: isDuplicate,
     parseTags: parseTags, validateEntry: validateEntry, shareLinks: shareLinks, entryView: entryView,
     filterReads: filterReads, allTags: allTags };
 });

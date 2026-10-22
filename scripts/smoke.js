@@ -144,6 +144,7 @@ const CASES = [
     const f = [];
     for (const [sel, name] of [['#products', 'Products'], ['#updates', 'Updates'], ['#reads', 'Reads']]) if (!(await ctx.ev(count(sel)))) f.push(name + ' section missing');
     if (!(await ctx.ev(count('#grid .card:not(.skel)')))) f.push('no product cards from the real content');
+    if ((await ctx.ev(count('#articlesFeed .item'))) < 5) f.push('Reads did not render the 5 reads of the real (schema 2, categorised) content');
     return f; } },
   { id: 'TC-SH-B01 healthy fixture, 1280 px, no console errors (TC-SH-I05)', width: 1280, fixtures: ['healthy'], noErrors: true, check: ctx => sectionsRendered(ctx) },
   { id: 'TC-SH-B02 healthy fixture, 375 px: no horizontal overflow, bottom nav shown', width: 375, fixtures: ['healthy'], noErrors: true, check: async ctx => {
@@ -179,6 +180,36 @@ const CASES = [
   { id: 'TC-SH-V03 reads.json with a newer schema_version: Reads shows the fallback line, everything else renders', width: 1280, fixtures: ['future-reads-version', 'healthy'], check: async ctx => {
     const f = []; await isFallback(ctx, '#articlesFeed', 'Reads', f);
     f.push(...await sectionsRendered(ctx, ['reads'])); await noExceptionText(ctx, f); return f; } },
+  { id: 'TC-RC-D01 reads with a missing, unknown or odd category (and a book with a non-text one) all render, no errors (browser default is other)', width: 1280, fixtures: ['reads-odd-categories', 'healthy'], noErrors: true, check: async ctx => {
+    const f = [...await sectionsRendered(ctx)]; const n = await ctx.ev(count('#articlesFeed .item')); if (n !== 4) f.push(`expected 4 reads, found ${n}`);
+    const t = await ctx.ev(text('#articlesFeed')); if (t && t.includes(FALLBACK)) f.push('Reads showed its fallback line'); await noExceptionText(ctx, f); return f; } },
+  { id: 'TC-RC-E00 admin composer: a new read is published with a category and schema_version 2 (GitHub API stubbed, nothing leaves the page)', width: 1280, token: true, fixtures: ['healthy'], check: async ctx => {
+    const f = [];
+    const raw = await ctx.ev(`(async () => {
+      window.__puts = []; const real = window.fetch.bind(window);
+      window.fetch = (u, o) => String(u).startsWith('https://api.github.com')
+        ? Promise.resolve(o && o.method === 'PUT' ? (window.__puts.push({ u: String(u), b: JSON.parse(o.body) }), new Response('{}', { status: 200 })) : new Response('{}', { status: 404 }))
+        : real(u, o);
+      const set = (id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); };
+      document.getElementById('composerOpen').click();
+      set('cf-url', 'https://example.com/rc-a-smoke'); set('cf-title', 'RC A smoke read'); set('cf-tags', 'ai');
+      document.getElementById('composerForm').requestSubmit();
+      await new Promise(r => setTimeout(r, 300));
+      document.getElementById('publishBtn').click();
+      await new Promise(r => setTimeout(r, 600));
+      return JSON.stringify(window.__puts);
+    })()`);
+    const puts = JSON.parse(raw || '[]'), p = puts.find(x => /content\/reads\.json/.test(x.u));
+    if (!p) { f.push('no PUT of content/reads.json was made; got ' + puts.map(x => x.u).join(', ')); return f; }
+    const file = JSON.parse(Buffer.from(p.b.content, 'base64').toString('utf8'));
+    if (file.schema_version !== 2) f.push('published schema_version is ' + file.schema_version + ', expected 2');
+    const mine = (file.articles || []).find(a => a.title === 'RC A smoke read');
+    if (!mine) f.push('the new read is not in the published file');
+    else if (mine.category !== 'technical') f.push('the new read has category ' + JSON.stringify(mine.category) + ', expected technical');
+    const without = [...(file.articles || []), ...(file.books || [])].filter(e => !['technical', 'other'].includes(e.category)).length;
+    if (without) f.push(without + ' published entries have no valid category');
+    if ((file.articles || []).length !== 6) f.push('expected 5 existing reads plus the new one, got ' + (file.articles || []).length);
+    return f; } },
   { id: 'TC-SH-T01 reads.json never answers: the page still loads (8 s timeout) and the rest renders', width: 1280, fixtures: ['hang-reads', 'healthy'], timeout: 20000, check: async ctx => {
     const f = [...await sectionsRendered(ctx, ['reads'])]; if (ctx.ms > 14000) f.push(`took ${ctx.ms} ms; the timeout should end the wait at about 8 s`); return f; } },
   { id: 'TC-SH-T02 reads.json answers after 2 s: it still renders', width: 1280, fixtures: ['slow-reads', 'healthy'], check: ctx => sectionsRendered(ctx) },

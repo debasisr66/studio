@@ -49,10 +49,10 @@ test('blog: valid passes; bad date, empty title, unsafe link caught', () => {
   assert.ok(V.validateBlog({}).length);
 });
 
-const read = (o = {}) => ({ id: 1, added: '2026-10-19', title: 'T', url: 'https://example.com/a', comment: 'c', kind: 'article', tags: ['ai'], ...o });
+const read = (o = {}) => ({ id: 1, added: '2026-10-19', title: 'T', url: 'https://example.com/a', comment: 'c', kind: 'article', tags: ['ai'], category: 'technical', ...o });
 
 test('reads: valid, legacy-shaped and book entries pass', () => {
-  const r = V.validateReads({ schema_version: 1, books: [{ title: 'B', author: 'A' }], articles: [read(), { title: 'Old', url: 'https://old.org/x', note: 'n' }] });
+  const r = V.validateReads({ schema_version: 2, books: [{ title: 'B', author: 'A', category: 'technical' }], articles: [read(), { title: 'Old', url: 'https://old.org/x', note: 'n', category: 'other' }] });
   assert.deepEqual(r.errors, []);
 });
 
@@ -69,7 +69,7 @@ test('reads: catches javascript: URL, bad kind, too many tags, long comment, bad
 });
 
 test('reads: duplicate URLs only warn', () => {
-  const r = V.validateReads({ schema_version: 1, books: [], articles: [read({ id: 1 }), read({ id: 2, url: 'https://www.example.com/a/' })] });
+  const r = V.validateReads({ schema_version: 2, books: [], articles: [read({ id: 1 }), read({ id: 2, url: 'https://www.example.com/a/' })] });
   assert.deepEqual(r.errors, []);
   assert.equal(r.warnings.length, 1);
 });
