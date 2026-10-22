@@ -110,11 +110,13 @@ function validateReads(reads) {
     if (a.kind !== undefined && !RL.KINDS.includes(a.kind)) errors.push(`${at}: kind must be one of ${RL.KINDS.join(', ')}`);
     if (a.tags !== undefined && (!Array.isArray(a.tags) || a.tags.length > RL.LIMITS.tags || a.tags.some(t => !isStr(t)))) errors.push(`${at}: tags must be an array of at most ${RL.LIMITS.tags} strings`);
     if (a.comment !== undefined && (!isStr(a.comment) || a.comment.length > RL.LIMITS.comment)) errors.push(`${at}: comment must be text up to ${RL.LIMITS.comment} characters`);
+    if (!RL.CATEGORIES.includes(a.category)) errors.push(`${at}: category must be one of ${RL.CATEGORIES.join(', ')}`);
     if (a.added !== undefined && !DATE_RE.test(String(a.added))) errors.push(`${at}: added must be YYYY-MM-DD`);
     if (a.id !== undefined) { if (ids.has(a.id)) errors.push(`${at}: duplicate id ${a.id}`); ids.add(a.id); }
   });
   reads.books.forEach((b, i) => {
     if (!isObj(b) || !isStr(b.title) || !b.title.trim()) errors.push(`reads.json books[${i}]: title is required`);
+    if (isObj(b) && !RL.CATEGORIES.includes(b.category)) errors.push(`reads.json books[${i}]: category must be one of ${RL.CATEGORIES.join(', ')}`);
   });
   return { errors, warnings };
 }
@@ -414,6 +416,7 @@ const RULES = [
   { id: 'reads-kind', fn: 'validateReads', level: 'error', match: /kind must be one of/, fix: 'ci-rejects-content', doc: 'kind must be one of' },
   { id: 'reads-tags', fn: 'validateReads', level: 'error', match: /tags must be an array/, fix: 'ci-rejects-content', doc: 'tags must be an array' },
   { id: 'reads-comment', fn: 'validateReads', level: 'error', match: /comment must be text/, fix: 'ci-rejects-content', doc: 'comment must be text' },
+  { id: 'reads-category', fn: 'validateReads', level: 'error', match: /category must be one of/, fix: 'ci-rejects-content', doc: 'category must be one of' },
   { id: 'reads-schema-version', fn: 'validateReads', level: 'error', match: /schema_version must be/, fix: 'ci-rejects-content', doc: 'schema_version must be' },
   { id: 'reads-duplicate-id', fn: 'validateReads', level: 'error', match: /duplicate id/, fix: 'ci-rejects-content', doc: 'duplicate id' },
   { id: 'changelog-version', fn: 'validateChangelog', level: 'error', match: /version must look like/, fix: 'ci-rejects-content', doc: 'version must look like' },

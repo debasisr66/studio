@@ -1,6 +1,6 @@
 # Content contract
 
-**Status: enforced (SPEC-SH SH-03, v2.0 SH Phase B).** Documents the content files as of the current build, with later Studio 2.0 changes marked *planned*. CI fails if a file in `content/` or a rule id is missing from this page (`checkContractDoc`). Rule ids are the `RULES` list in `scripts/validate-site.js` plus the structural rules in the same file. Examples contain no real tokens.
+**Status: enforced (SPEC-SH SH-03, v2.0 SH Phase B; reads schema 2 from v2.0 RC Phase A).** Documents the content files as of the current build, with later Studio 2.0 changes marked *planned*. CI fails if a file in `content/` or a rule id is missing from this page (`checkContractDoc`). Rule ids are the `RULES` list in `scripts/validate-site.js` plus the structural rules in the same file. Examples contain no real tokens.
 
 | File | Purpose | Written by | Validator |
 |------|---------|-----------|-----------|
@@ -36,13 +36,13 @@ Rules: `synced_at` required, UTC, not in the future (`cache-synced-at`, `cache-s
 
 ## reads.json (object)
 
-`{ "schema_version": 1, "books": [ ... ], "articles": [ ... ] }`
+`{ "schema_version": 2, "books": [ ... ], "articles": [ ... ] }`
 
-`schema_version` (rule `reads-schema-version`) is the version of this file's shape: required, an integer, currently `1`. The admin screen writes it first on every publish. A browser tolerates a missing or older value (documented defaults) but refuses to show or edit a **newer** one (Reads shows its fallback line and nothing can be published over the file). *Planned (RC-05):* the Technical / Others migration raises it to `2` together with the `category` field.
+`schema_version` (rule `reads-schema-version`) is the version of this file's shape: required, an integer, currently `2` (`1` was the shape before categories). The admin screen writes it first on every publish. A browser tolerates a missing or older value (documented defaults: a missing `category` shows as `other`) but refuses to show or edit a **newer** one (Reads shows its fallback line and nothing can be published over the file). CI accepts exactly `2`. History: `1` (v1.5 and SH Phase B) → `2` (RC Phase A, adds `category` to every read and book; the migration was additive, so v1.5 code still renders the file).
 
-Article fields: `id` (unique number), `added` (date), `url` (clean, required), `title` (required, ≤ 140), `comment` (≤ 280), `kind` (`article`, `video`, `paper`, `podcast`, `tool`), `tags` (≤ 5, each ≤ 24). *Planned:* `category` (`technical` or `other`, required after migration; browser default `other`). Rule ids: `reads-url-clean`, `reads-kind`, `reads-tags`, `reads-comment`, `reads-duplicate-id`; planned `reads-category`, `reads-schema-version`. A repeated link warns.
+Article fields: `id` (unique number), `added` (date), `url` (clean, required), `title` (required, ≤ 140), `comment` (≤ 280), `kind` (`article`, `video`, `paper`, `podcast`, `tool`), `tags` (≤ 5, each ≤ 24), `category` (`technical` or `other`, required; the closed list is `CATEGORIES` in `js/reads-lib.js`; browser default for a missing or unknown value is `other`). Rule ids: `reads-url-clean`, `reads-kind`, `reads-tags`, `reads-comment`, `reads-duplicate-id`, `reads-category`, `reads-schema-version`. A repeated link warns.
 
-Book fields: `title` (required), `author`, `year`, `note`; *planned:* `category`.
+Book fields: `title` (required), `author`, `year`, `note`, `category` (same closed list, required; rule `reads-category`).
 
 ## podcasts.json (planned, PC-01)
 

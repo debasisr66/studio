@@ -1,11 +1,12 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "books": [
     {
       "title": "AI Engineering: Building Applications with Foundation Models (Full Colour Indian Edition)",
       "author": "by Chip Huyen (Author)",
       "year": "2024-25",
-      "note": "It is a great book. It would give clarity. Of course after this industry and tech changed a lot, but fundamentals count. \nhttps://www.amazon.in/AI-Engineering-Building-Applications-Foundation/dp/9355426666"
+      "note": "It is a great book. It would give clarity. Of course after this industry and tech changed a lot, but fundamentals count. \nhttps://www.amazon.in/AI-Engineering-Building-Applications-Foundation/dp/9355426666",
+      "category": "technical"
     }
   ],
   "articles": [
@@ -16,6 +17,7 @@
       "title": "Connect to MCP servers - Claude",
       "comment": "Add an MCP server to Claude Code, verify the connection, and find the configuration on disk.\n\nThe Model Context Protocol (MCP) lets Claude Code use tools beyond its built-in set, such as searching an issue tracker, querying a database, or controlling a web browser.",
       "kind": "article",
+      "category": "technical",
       "tags": [
         "ai",
         "claude"
@@ -28,6 +30,7 @@
       "title": "Copilot Cheatsheet",
       "comment": "Everything in one place, got it from someone, handy and useful.",
       "kind": "article",
+      "category": "technical",
       "tags": [
         "ai",
         "copilot"
@@ -40,6 +43,7 @@
       "title": "GPT Realtime 2 - Voice Agent (Soham Ray, Dr. Victor B - 22nd min)",
       "comment": "How Voice agents are getting better by the day ... and about Tau2 bench!",
       "kind": "article",
+      "category": "technical",
       "tags": [
         "ai",
         "voice",
@@ -53,6 +57,7 @@
       "title": "Claude Code Mods - A hook, a control handle to verification and workflow!",
       "comment": "Add panes, commands, and tool call rules to Claude Code with a mod. See what a mod can do, how to make or install one, and where mods run.\nA mod is a plugin that changes how Claude Code looks and behaves. It’s made of JavaScript or TypeScript event handlers:",
       "kind": "article",
+      "category": "technical",
       "tags": [
         "ai",
         "claudecode"
@@ -65,6 +70,7 @@
       "title": "AI Native SDLC - Claude Blog",
       "comment": "The new norms of AI SDLC, how one would adopt, blend with various harness etc. The SDLC norms are changing fast, need to create a fail proof method",
       "kind": "article",
+      "category": "technical",
       "tags": [
         "ai",
         "sdlc"

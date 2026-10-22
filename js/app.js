@@ -455,7 +455,7 @@ $('#composerForm').addEventListener('submit', ev => {
     state.reads.articles[state.editing] = next;
     say('Changes saved. Publish to make them public.');
   } else {
-    state.reads.articles.unshift({id: Date.now(), added: new Date().toISOString().slice(0, 10), ...r.value});
+    state.reads.articles.unshift({id: Date.now(), added: new Date().toISOString().slice(0, 10), category: RL.DEFAULT_NEW_CATEGORY, ...r.value});   // Section choice arrives in RC Phase B
     say('Added. Publish to make it public.');
   }
   state.dirty.reads = true; updateDirty(); closeComposer(); renderAll(); $('#composerOpen').focus();
@@ -465,7 +465,7 @@ $('#composerForm').addEventListener('submit', ev => {
 const SCHEMAS = {
   post: {title:'Blog post', fields:[['title','Title','input',1],['date','Date (YYYY-MM-DD)','input',1],['body','Body (supports - bullets, **bold**)','textarea',1],['link','Link (optional)','input']], list:()=>state.blog.posts, file:'blog', make:()=>({id:Date.now(), date:new Date().toISOString().slice(0,10), title:'', body:'', link:''})},
   article: {title:'Read', list:()=>state.reads.articles, file:'reads'},
-  book: {title:'Book', fields:[['title','Title','input',1],['author','Author','input',1],['year','Year','input'],['note','Note','textarea']], list:()=>state.reads.books, file:'reads', make:()=>({title:'', author:'', year:'', note:''})},
+  book: {title:'Book', fields:[['title','Title','input',1],['author','Author','input',1],['year','Year','input'],['note','Note','textarea']], list:()=>state.reads.books, file:'reads', make:()=>({title:'', author:'', year:'', note:'', category:RL.DEFAULT_NEW_CATEGORY})},
 };
 function editItem(kind, idx) {
   if (kind === 'article') return openComposer(idx);

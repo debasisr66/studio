@@ -50,10 +50,11 @@
         "kind": "article",
         "tags": [
           "ai"
-        ]
+        ],
+        "category": "technical"
       }
     ],
-    "schema_version": 1
+    "schema_version": 2
   },
   "validateChangelog": {
     "releases": [
