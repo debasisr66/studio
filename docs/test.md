@@ -1,6 +1,6 @@
 # Test Plan and Traceability — Studio
 
-Releases: **v2.0 (planned, nothing run)** · **v1.5 (shipped 2026-10-21: SPEC-TR)** · v1.4 (shipped 2026-10-20) · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
+Releases: **v2.0 (planned, nothing run)** · **v1.6 (intermediate, 2026-10-22: SPEC-SH A and B, SPEC-RC A and B, SPEC-PC A, review gate)** · **v1.5 (shipped 2026-10-21: SPEC-TR)** · v1.4 (shipped 2026-10-20) · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
 
 ---
 

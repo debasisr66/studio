@@ -63,7 +63,7 @@ Data flows one way: product repos notify the hub, and the hub only reads them. D
 - [Product requirements (PRD)](docs/PRD.md) · [Feature specs](docs/specs/README.md): spec-first work with requirement-to-test traceability
 - [Runbook](docs/RUNBOOK.md): symptom → cause → fix for sync, cache, CI and token problems
 - [Learning guide](docs/LEARNING-GUIDE.md): step-by-step setup, commands, tokens and the rotation runbook
-- **Studio 2.0 (proposed)**: [specs](docs/specs/README.md) · [impact](docs/impact.md) · [plan](docs/plan.md) · [design §12](docs/design.md) · [security §11](docs/security.md) (documents only so far; current version is v1.5)
+- **Studio 2.0 (proposed)**: [specs](docs/specs/README.md) · [impact](docs/impact.md) · [plan](docs/plan.md) · [design §12](docs/design.md) · [security §11](docs/security.md) (in progress; the live site is v1.6, an intermediate release that carries the Reads Technical / Others tabs; v2.0 is the full release)
 - Release set: [Security](docs/security.md) · [Impact](docs/impact.md) · [Plan](docs/plan.md) · [Design](docs/design.md) · [Tests and traceability](docs/test.md) · [Build commands](docs/build.md) · [Model use](docs/model-use.md)
 
 ## License
