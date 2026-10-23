@@ -166,9 +166,9 @@ test('TC-QA-U06 the token is never written to the DOM, the draft or any message:
 test('TC-QA-L03 the app locks after a successful publish, in Quick add and in Publish changes', () => {
   assert.ok(/Published and locked/.test(app));
   const pub = app.slice(app.indexOf("$('#publishBtn').onclick")), end = pub.indexOf('window.addEventListener'), body = pub.slice(0, end);
-  assert.ok(/lock\(\)/.test(body), 'Publish changes does not lock');
+  assert.ok(/lock\((true)?\)/.test(body), 'Publish changes does not lock');
   assert.ok(/qaPost|async function qaPost/.test(app));
-  const qa = app.slice(app.indexOf('async function qaPost')); assert.ok(/lock\(\)/.test(qa.slice(0, qa.indexOf('\n}\n'))), 'Quick add does not lock');
+  const qa = app.slice(app.indexOf('async function qaPost')); assert.ok(/lock\((true)?\)/.test(qa.slice(0, qa.indexOf('\n}\n'))), 'Quick add does not lock');
 });
 test('TC-QA-K05 Quick add reuses the existing validators (no rule is written twice)', () => {
   const qa = app.slice(app.indexOf('async function qaPost'), app.indexOf('async function qaPost') + 3000);
