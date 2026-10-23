@@ -923,6 +923,9 @@ const CASES = [
     await ctx.ev("document.getElementById('theme').click()");
     const r = await ctx.ev(`({ local: Object.keys(localStorage).sort().join(), session: Object.keys(sessionStorage).join(), cookie: document.cookie, hosts: [...new Set(performance.getEntriesByType('resource').map(e => new URL(e.name).host))].join() })`);
     const f = []; if (r.local !== 'studio-theme') f.push('local keys: ' + r.local); if (r.session) f.push('session keys: ' + r.session); if (r.cookie) f.push('cookie: ' + r.cookie); if (!/^127\.0\.0\.1:\d+$/.test(r.hosts)) f.push('hosts: ' + r.hosts); return f; } },
+  { id: 'TC-UX-F02 the footer shows the release date next to the version and labels the product-data date for what it is', width: 1280, fixtures: ['healthy'], ...uxWith(), noErrors: true, check: async ctx => {
+    const t = await ctx.ev("document.querySelector('footer').innerText.replace(/\\s+/g, ' ')"), f = [];
+    if (!/Studio v1\.5 · 21 Oct 2026/.test(t)) f.push('version and release date: ' + t); if (!/Product data updated · 19 Oct 2026/.test(t)) f.push('product data date: ' + t); if (/Synced from GitHub/.test(t)) f.push('old label still shown'); return f; } },
 ];
 
 async function main() {
