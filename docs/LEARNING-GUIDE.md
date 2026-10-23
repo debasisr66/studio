@@ -454,7 +454,9 @@ curl -s https://debasisr66.github.io/studio/content/cache.json | head -20
 
 ## Step 18 — Studio 2.0: what changes for the owner (partly built)
 
-Written ahead of the build and updated as phases ship. **Built and live so far (2026-10-23):** the Technical / Others tabs and the Section choice in the composer, Podcasts with "Share a podcast", the retired Blog (`#blog` goes to Podcasts), and the cautious publish (it refuses to write over content it could not load or that changed on GitHub; if so, wait a minute, reload, try again). **Still to come:** the fixed page order and matching navs, seed podcasts, final checks. Commands marked *planned* do not work yet.
+Written ahead of the build and updated as phases ship. **Built and live so far (2026-10-23):** the Technical / Others tabs and the Section choice in the composer, Podcasts with "Share a podcast", the retired Blog (`#blog` goes to Podcasts), and the cautious publish (it refuses to write over content it could not load or that changed on GitHub; if so, wait a minute, reload, try again). **Still to come:** Quick add (below), the fixed page order and matching navs, seed podcasts, final checks.
+
+**Planned next, Quick add ([SPEC-QA](specs/quick-add/spec.md), needs your approval):** you copy a link by instinct while reading, tap one icon on your iPhone Home Screen, tap Paste, fill the title, press **Post and publish**, give the token (the iPhone Passwords app can fill it with Face ID), and Studio locks itself again. The order no longer matters: the token is asked for only when you post. The exact Home Screen and Shortcut steps are written here when the feature ships. Commands marked *planned* do not work yet.
 
 **What you will see**
 - Reads has two sections, **Technical** and **Others**. When you add a read, the form asks which one. Your five current reads and the book are proposed as Technical; you confirm this before the migration.
@@ -466,7 +468,7 @@ Written ahead of the build and updated as phases ship. **Built and live so far (
 | Phase | Where to read | What to run (planned where marked) |
 |-------|---------------|------------------------------------|
 | Specs and impact | `docs/specs/*`, `docs/impact.md` | read and answer the open questions in `docs/plan.md` |
-| Plan | `docs/plan.md` | follow the ten steps in order |
+| Plan | `docs/plan.md` | follow the twelve steps in order |
 | Design | `docs/design.md` §12 | diagrams render on GitHub |
 | Build and test | `docs/build.md` §18, `docs/test.md` v2.0 | `node --test tests/*.test.js`, `node scripts/validate-site.js`, `node scripts/smoke.js` (exists since SH Phase A) |
 | Security | `docs/security.md` §11 | the checklist in §11.3 |

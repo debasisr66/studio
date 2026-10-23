@@ -284,3 +284,33 @@ Author's notes only; the verdict belongs to the independent reviewer.
 | Publish path | One file per commit through the existing flow; now also refuses when GitHub's copy differs from the one this page loaded (conservative: wait, reload, retry) and runs the CI rules on the whole file first |
 | Surface | No new network host, storage key, cookie, secret, dependency or permission; nothing embedded; CSP and workflows unchanged; `changelog.json` untouched |
 | Residual | Reads has the older whole-file validation gap (its entries are only JSON round-tripped before publish); the Reads composer still offers the Podcast format until Phase C |
+
+### 11.11 SPEC-QA Quick add: pre-implementation review (2026-10-23; design-level, nothing built)
+
+Author's pre-review. The independent reviewer's verdicts for the two phases (gates G4, G5) will be linked from here when they exist; this table is the threat list the reviewer is briefed with.
+
+| # | Threat | Req | Control | Test | Status |
+|---|--------|-----|---------|------|--------|
+| T25 | **Injection through pasted text or the `#add=` fragment** (markup, `javascript:`, `data:`, credentials in a link, oversized values) | QA-02, QA-09 | Every value ends in `normalizeUrl`, `validateEntry` or `validatePodcastEntry`; output escaped everywhere; oversize and malformed inputs ignored with a message | TC-QA-P04, P05, F03, F05, S01 | ⬜ |
+| T26 | **A crafted `#add=` link posts or misleads** | QA-09 | Prefill only; a banner says so; never submits; the owner must press Post and give the token; fragment cleared after reading | TC-QA-F01, F04 | ⬜ |
+| T27 | **Silent clipboard read** | QA-02 | Read only inside the tap handler of Paste from clipboard; never on load or open; content used only as a link candidate; never logged or sent | TC-QA-P07 | ⬜ |
+| T28 | **The draft key becomes a second place a secret or visitor data lives** | QA-07 | One owner-only `sessionStorage` key; link, title, take, tags and kind only; never the token; absent for visitors; cleared on success and Cancel | TC-QA-D02, D03, D04 | ⬜ |
+| T29 | **Token exposure while moving to just-in-time unlock** | QA-04 | Token still only in the tab's `sessionStorage`; never in DOM text, console or the draft; prompt cancel and failure paths write nothing | TC-QA-U03, U04, U06 | ⬜ |
+| T30 | **Admin left open, or locked while publishing** | QA-06 | Lock on success only; failure keeps the session and the draft; idle lock (30 min) and manual lock unchanged | TC-QA-L03, L04, L05 | ⬜ |
+| T31 | **A visitor reaches the sheet** (`#add`) | QA-01 | The sheet holds no data and writes nothing; Post asks for a token; no API call is made without one | TC-QA-E03, S02, U07 | ⬜ |
+| T32 | **Autofill change causes the token to be offered for saving in the wrong place** | QA-04 | `autocomplete="current-password"` plus a labelled username field, scoped to this origin; saving to the iPhone Passwords app is the owner's choice and is the intended place (hardware-backed, biometric); the site stores nothing new | TC-QA-U05, O01 | ⬜ |
+| T33 | **The new path bypasses the SPEC-PC publish guards** | QA-05 | Quick add calls the same publish function (unloaded or changed content refused, whole-file validation, skip identical) | TC-QA-L06 | ⬜ |
+| T34 | **Stored or derived token (PIN, passkey) added later "for convenience"** | n/a | Rejected in the spec (D1, D2); a change of that kind needs a new spec and review | n/a | Decided |
+
+**Controls that must remain unchanged (checked at each phase):** token only in tab `sessionStorage`; 30-minute idle lock; CSP strict with no new host; no cookie; the content contract and validators; the PC-B publish guards; escaping in every context; `git diff main -- .github content` empty.
+
+**Review checklist to complete during the build**
+- [ ] New input paths listed (paste, share text, `#add`, `#add=`, draft key, token form) and each has a validator or closed control.
+- [ ] XSS payloads in every new field render inert (sheet, preview, published card).
+- [ ] Network log: no new host; no API call before a token is given.
+- [ ] Storage: exactly the admin token key (when unlocked) and the draft key (when used); neither exists for a visitor.
+- [ ] Auto-lock proven for the success path and absent on failure; token gone from storage afterwards.
+- [ ] Independent review (G4 after Phase A, G5 after Phase B) done; verdict linked; owner acknowledged.
+- [ ] Owner device checks O01-O06 recorded.
+
+**Residual risks expected (to confirm after the build):** Face ID autofill may not work on the owner's phone (convenience only); a discarded tab can still lose a draft; a model review is not a human audit.
