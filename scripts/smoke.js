@@ -267,6 +267,19 @@ const qaClose = ctx => ctx.ev("document.getElementById('qa-cancel').click()");
 const QA_MSG = 'Enter a valid web address starting with http:// or https://';
 const QA_P = '<img src=x onerror="window.__x=1"><script>window.__x=1<\/script>';
 
+/* ---------- UX Phase A helpers (SPEC-UX) ---------- */
+const UX_ORDER = 'hero,products,updates,reads,podcasts', UX_NAV = 'Products>#products|Updates>#updates|Reads>#reads|Podcasts>#podcasts';
+const UX_BLOCK = `for (const k of ['localStorage', 'sessionStorage']) Object.defineProperty(window, k, { configurable: true, get() { throw new DOMException('blocked', 'SecurityError'); } });`;
+const uxWith = (init = '') => ({ init, fast: true });
+const uxOrder = ctx => ctx.ev("[...document.querySelectorAll('main > section')].map(s => s.classList.contains('hero') ? 'hero' : s.id).join()");
+const uxNavs = ctx => ctx.ev(`(() => { const of = id => [...document.querySelectorAll('#' + id + ' a')].map(a => a.textContent.trim() + '>' + a.getAttribute('href')).join('|'); return { head: of('navlinks'), bottom: of('navbottom') }; })()`);
+const uxTop = (ctx, id) => ctx.ev(`Math.round(document.getElementById(${JSON.stringify(id)}).getBoundingClientRect().top)`);
+/* waits until the scroll position has stopped moving (smooth scrolling, late layout), up to 2.5 s */
+const uxStill = async ctx => { let last = -1, calm = 0; for (let i = 0; i < 25 && calm < 3; i++) { await sleep(100); const y = await ctx.ev('Math.round(scrollY)'); calm = y === last ? calm + 1 : 0; last = y; } };
+const uxLands = async (ctx, id) => { await uxStill(ctx); const t = await uxTop(ctx, id); const end = await ctx.ev('scrollY + innerHeight >= document.documentElement.scrollHeight - 2');   // the last section cannot reach the top of a short page
+  return (t > 140 && !(end && t < 700)) || t < -20 ? [`${id} is not at the top of the page (top ${t} px)`] : []; };
+const uxFollow = async (ctx, id) => { await ctx.ev("window.scrollTo({ top: 0, behavior: 'instant' }); history.replaceState(null, '', location.pathname + location.search)"); await sleep(80); await ctx.ev(`location.hash = ${JSON.stringify('#' + id)}`); return uxLands(ctx, id).then(r => r.map(x => 'followed: ' + x)); };
+
 const CASES = [
   { id: 'TC-SH-B01 real content, 1280 px', width: 1280, fixtures: [], noErrors: true, check: async ctx => {
     const f = [];
@@ -835,6 +848,76 @@ const CASES = [
     const f = []; await stubGh(ctx); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/s02', title: 'S02' });
     for (const id of ['qa-draft', 'qa-publish']) { await qaClick(ctx, id, 150); const s = await qs(ctx); if (!s.tok) f.push(id + ': no token prompt'); await qaClick(ctx, 'tok-cancel', 100); }
     const n = await apiCalls(ctx); if (n) f.push(n + ' API call(s) before a token'); return f; } },
+  /* ---------- SPEC-UX Phase A (TC-UX-*): the simple layout ---------- */
+  { id: 'TC-UX-S01 DOM order at 1280 px: hero, Products, Updates, Reads, Podcasts; TC-UX-S02 identical with storage blocked', width: 1280, fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => {
+    const f = [], a = await uxOrder(ctx); if (a !== UX_ORDER) f.push('order: ' + a);
+    return f; } },
+  { id: 'TC-UX-S02 the order is the same with storage blocked, and with the admin token present', width: 1280, fixtures: TWO, ...uxWith(UX_BLOCK), noErrors: true, check: async ctx => { const a = await uxOrder(ctx); return a === UX_ORDER ? [] : ['order (storage blocked): ' + a]; } },
+  { id: 'TC-UX-S02 unlocked: the same order, and the nav is unchanged', width: 1280, token: true, fixtures: TWO, ...uxWith(), check: async ctx => { const a = await uxOrder(ctx), n = await uxNavs(ctx); return [...(a === UX_ORDER ? [] : ['order (unlocked): ' + a]), ...(n.head === UX_NAV && n.bottom === UX_NAV ? [] : ['nav (unlocked): ' + JSON.stringify(n)])]; } },
+  { id: 'TC-UX-P01 every section has a heading and a one-line description in the same pattern', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => {
+    const r = await ctx.ev(`['products','updates','reads','podcasts'].map(id => { const s = document.getElementById(id), h = s && s.querySelector('.sec-head h2'), d = s && s.querySelector('.sec-head .sec-desc'); return { id, h: h && h.textContent.trim(), d: d && d.textContent.trim().length, by: s && s.getAttribute('aria-labelledby') === (h && h.id), lines: d && Math.round(d.getBoundingClientRect().height / parseFloat(getComputedStyle(d).lineHeight)) }; })`);
+    const f = []; for (const x of r) { if (!x.h || !x.d || !x.by) f.push(x.id + ': ' + JSON.stringify(x)); else if (x.lines > 2) f.push(x.id + ' description is ' + x.lines + ' lines'); } return f; } },
+  { id: 'TC-UX-P01 every section shows a friendly empty state, never blank', width: 1280, fixtures: ['ux-all-empty'], noErrors: true, check: async ctx => {
+    const r = await ctx.ev(`({ g: document.getElementById('grid').textContent.trim(), u: document.getElementById('updatesFeed').textContent.trim(), r: document.getElementById('articlesFeed').textContent.trim(), p: document.getElementById('podcastFeed').textContent.trim() })`);
+    const f = []; for (const [k, v] of Object.entries(r)) if (!v || v.length < 12) f.push(k + ' is blank'); return f; } },
+  { id: 'TC-UX-P02 locked: no add action is visible; unlocked: one per section that has one (Reads, Podcasts), none in Products and Updates', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => {
+    const vis = `[...document.querySelectorAll('.composer-open, .addbtn')].filter(e => e.offsetParent !== null && !e.closest('.who-text')).map(e => e.closest('section.block').id)`;
+    const f = [], locked = await ctx.ev(vis); if (locked.length) f.push('visible while locked: ' + locked);
+    await ctx.ev("document.body.classList.add('admin')"); const open = await ctx.ev(vis);
+    if (open.includes('products') || open.includes('updates')) f.push('add action in Products or Updates: ' + open); if (open.filter(x => x === 'podcasts').length !== 1) f.push('Podcasts add actions: ' + open.filter(x => x === 'podcasts').length); if (!open.includes('reads')) f.push('Reads has no add action');
+    return f; } },
+  { id: 'TC-UX-N01 header nav (1280 px) and bottom nav (375 px) list the same four links, in page order', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => { const n = await uxNavs(ctx); return n.head === UX_NAV && n.bottom === UX_NAV ? [] : ['navs: ' + JSON.stringify(n)]; } },
+  { id: 'TC-UX-N01 at 375 px the four bottom-nav items fit, with labels, at least 44 px high; no overflow (TC-UX-P03, A05)', width: 375, fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => {
+    const r = await ctx.ev(`(() => { const nav = document.getElementById('navbottom'), as = [...nav.querySelectorAll('a')].map(a => { const b = a.getBoundingClientRect(); return { t: a.textContent.trim(), w: Math.round(b.width), h: Math.round(b.height), l: Math.round(b.left), r: Math.round(b.right) }; }); return { shown: getComputedStyle(nav).display, as, over: document.documentElement.scrollWidth - innerWidth, text: [...nav.querySelectorAll('a')].map(a => a.textContent.trim()).join('|') }; })()`);
+    const f = []; if (r.shown === 'none') f.push('bottom nav hidden'); if (r.as.length !== 4) f.push(r.as.length + ' items');
+    for (const a of r.as) { if (a.h < 44) f.push(a.t + ' is ' + a.h + ' px high'); if (a.w < 44 || a.l < 0 || a.r > 375) f.push(a.t + ' does not fit: ' + JSON.stringify(a)); }
+    if (r.over > 1) f.push('horizontal overflow ' + r.over + ' px'); if (r.text !== 'Products|Updates|Reads|Podcasts') f.push('labels: ' + r.text); return f; } },
+  { id: 'TC-UX-N03 aria-current follows the section in view, in both navs', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => {
+    const f = [];
+    for (const id of ['updates', 'podcasts', 'products', 'reads']) {
+      await ctx.ev(`document.getElementById(${JSON.stringify(id)}).scrollIntoView({ behavior: 'instant', block: 'start' })`); await sleep(250);
+      const cur = await ctx.ev(`['navlinks', 'navbottom'].map(n => [...document.querySelectorAll('#' + n + ' a[aria-current]')].map(a => a.getAttribute('href')).join())`);
+      if (cur[0] !== '#' + id || cur[1] !== '#' + id) f.push(id + ': aria-current is ' + JSON.stringify(cur));
+    } return f; } },
+  { id: 'TC-UX-N04 skip link is the first stop and goes to main; the header links are in page order in the tab order', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => {
+    const r = await ctx.ev(`(() => { const ts = [...document.querySelectorAll('a[href], button, input, select, textarea, [tabindex]')].filter(e => e.offsetParent !== null && e.tabIndex >= 0); const nav = [...document.querySelectorAll('#navlinks a')].map(a => ts.indexOf(a));
+      return { first: ts[0] && ts[0].getAttribute('href'), nav, main: !!document.getElementById('main') }; })()`);
+    const f = []; if (r.first !== '#main' || !r.main) f.push('first stop: ' + r.first); if (r.nav.some((x, i) => x < 0 || (i && x <= r.nav[i - 1]))) f.push('nav tab order: ' + r.nav); return f; } },
+  { id: 'TC-UX-N05 What\'s new, theme toggle and logo are still there and work', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => {
+    const f = [], r = await ctx.ev(`(() => { const t = document.documentElement.dataset.theme; document.getElementById('theme').click(); const t2 = document.documentElement.dataset.theme; return { t, t2, wn: !document.getElementById('whatsNewBtn').hidden, logo: !!document.querySelector('.brand .logo') }; })()`);
+    if (r.t === r.t2) f.push('the theme did not change'); if (!r.wn) f.push("What's new is hidden"); if (!r.logo) f.push('logo missing'); return f; } },
+  { id: 'TC-UX-L01 #products, #updates, #reads and #podcasts each reach their section (and the section is the one in the nav)', width: 1280, hash: '#updates', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => uxLands(ctx, 'updates') },
+  { id: 'TC-UX-L01 #podcasts on a cold load', width: 1280, hash: '#podcasts', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => uxLands(ctx, 'podcasts') },
+  { id: 'TC-UX-L01 #products on a cold load', width: 1280, hash: '#products', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => uxLands(ctx, 'products') },
+  { id: 'TC-UX-L01 #reads on a cold load', width: 1280, hash: '#reads', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => uxLands(ctx, 'reads') },
+  { id: 'TC-UX-L01 the same four links followed while the page is open, and on a phone', width: 375, fixtures: TWO, ...uxWith(), check: async ctx => {
+    const f = []; for (const id of ['podcasts', 'updates', 'reads', 'products']) { f.push(...await uxFollow(ctx, id)); } return f; } },
+  { id: 'TC-UX-L02 #reads/technical and #reads/others open that sub-item and show Reads', width: 1280, hash: '#reads/others', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => {
+    const f = [...await uxLands(ctx, 'reads'), ...await expectSection(ctx, 'Others')]; await ctx.ev("location.hash = '#reads/technical'"); await sleep(300); f.push(...await expectSection(ctx, 'Technical')); return f; } },
+  { id: 'TC-UX-L03 #blog and #blog/x land on Podcasts, in view', width: 1280, hash: '#blog', fixtures: PODS, ...uxWith(), noErrors: true, check: async ctx => {
+    await sleep(500); const f = await uxLands(ctx, 'podcasts'); const h = await ctx.ev('location.hash'); if (h !== '#podcasts') f.push('hash is ' + h); return f; } },
+  { id: 'TC-UX-L04 an unknown or hostile fragment does nothing harmful: no error, nothing inserted, nothing runs, the default Reads section', width: 1280, hash: '#reads/%3Cscript%3Ewindow.__x=1%3C/script%3E', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => {
+    const f = [], before = await ctx.ev(count('script'));
+    for (const h of ['#xyz', '#__proto__', '#constructor', '#reads/<img src=x onerror=window.__x=1>', '#products/../x', '#%E0%A4%A', '#' + 'a'.repeat(5000), '#blog<script>window.__x=1</script>']) {
+      await ctx.ev(`location.hash = ${JSON.stringify(h)}`); await sleep(120);
+    }
+    const r = await ctx.ev(`({ x: window.__x, scripts: document.querySelectorAll('script').length, imgs: document.querySelectorAll('img[src=x]').length, inj: document.body.innerHTML.includes('onerror=window') })`);
+    if (r.x) f.push('a fragment ran code'); if (r.scripts !== before) f.push('a script element appeared'); if (r.imgs || r.inj) f.push('a fragment was inserted into the page');
+    return [...f, ...await expectSection(ctx, 'Technical')]; } },
+  { id: 'TC-UX-L04 an unknown fragment on a cold load leaves the page at the top, the page fully rendered', width: 1280, hash: '#xyz', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => { const y = await ctx.ev('Math.round(scrollY)'); return [...(y > 5 ? ['page scrolled to ' + y] : []), ...await sectionsRendered(ctx)]; } },
+  { id: 'TC-UX-L05 with storage blocked: #updates and #reads/others land, #blog reaches Podcasts', width: 1280, hash: '#reads/others', fixtures: TWO, ...uxWith(UX_BLOCK), noErrors: true, check: async ctx => {
+    const f = [...await uxLands(ctx, 'reads'), ...await expectSection(ctx, 'Others')]; for (const id of ['updates', 'podcasts']) f.push(...await uxFollow(ctx, id));
+    await ctx.ev("location.hash = '#blog'"); await sleep(400); const h = await ctx.ev('location.hash'); if (h !== '#podcasts') f.push('#blog went to ' + h); return f; } },
+  { id: 'TC-UX-P04 Reads is one column: Books sit under the reads, same left edge, no side-by-side layout', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => {
+    const r = await ctx.ev(`(() => { const a = document.getElementById('articlesFeed').getBoundingClientRect(), b = document.getElementById('booksFeed').getBoundingClientRect(); return { al: Math.round(a.left), bl: Math.round(b.left), at: Math.round(a.top), bt: Math.round(b.top), aw: Math.round(a.width) }; })()`);
+    const f = []; if (r.al !== r.bl) f.push('Books start at x ' + r.bl + ' but the reads at ' + r.al); if (r.bt <= r.at) f.push('Books are not below the reads'); if (r.aw < 600) f.push('the reads column is only ' + r.aw + ' px wide at 1280 px'); return f; } },
+  { id: 'TC-UX-A05 no horizontal scroll at 375 px and 1280 px, in both themes', width: 375, fixtures: TWO, ...uxWith(), check: async ctx => {
+    const f = []; for (const t of ['dark', 'light']) { await ctx.ev(`document.documentElement.dataset.theme = ${JSON.stringify(t)}`); const o = await ctx.ev('document.documentElement.scrollWidth - innerWidth'); if (o > 1) f.push(t + ' overflow ' + o + ' px at 375'); } return f; } },
+  { id: 'TC-UX-A05 no horizontal scroll at 1280 px', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => { const o = await ctx.ev('document.documentElement.scrollWidth - innerWidth'); return o > 1 ? ['overflow ' + o + ' px'] : []; } },
+  { id: 'TC-UX-privacy the layout work adds no storage key, cookie or request: a visitor has only the theme key, no cookie, and no host other than this one', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => {
+    await ctx.ev("document.getElementById('theme').click()");
+    const r = await ctx.ev(`({ local: Object.keys(localStorage).sort().join(), session: Object.keys(sessionStorage).join(), cookie: document.cookie, hosts: [...new Set(performance.getEntriesByType('resource').map(e => new URL(e.name).host))].join() })`);
+    const f = []; if (r.local !== 'studio-theme') f.push('local keys: ' + r.local); if (r.session) f.push('session keys: ' + r.session); if (r.cookie) f.push('cookie: ' + r.cookie); if (!/^127\.0\.0\.1:\d+$/.test(r.hosts)) f.push('hosts: ' + r.hosts); return f; } },
 ];
 
 async function main() {
