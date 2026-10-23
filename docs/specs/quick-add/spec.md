@@ -3,13 +3,13 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-QA` (requirements `QA-01` … `QA-10`) |
-| Status | **Approved by the owner (2026-10-23), including the one owner-only draft key (QA-07). Phase A (QA-01 … QA-08) built 2026-10-23 on `v2/qa-a-build`, independent review G4 in [reviews/QA-A.md](../../reviews/QA-A.md), awaiting the owner's device checks and merge; Phase B not started** |
+| Status | **Approved by the owner (2026-10-23). Phase A (QA-01 … QA-08) merged as PR #24 (independent review [QA-A](../../reviews/QA-A.md); owner device checks O01-O04, O07 passed). QA-09 (prefill by link, Phase B) was built, then DROPPED by the owner on 2026-10-23 (PR #25 closed unmerged); QA-10 is a non-goal. The spec is complete** |
 | Owner | Debasis Ray |
 | Created | 2026-10-23 |
 | Parent | [PRD](../../PRD.md) §9.4, §11.3, §14; [§22](../../PRD.md) |
 | Depends on | [SPEC-RC](../reads-categories/spec.md) Phase B and [SPEC-PC](../podcast-links/spec.md) Phase B (both merged: the two composers, the guarded publish) |
 | Target | Studio v2.0 (planned before SPEC-UX Phase A) |
-| Review | Independent review required for both phases ([REVIEW-GATE.md](../../REVIEW-GATE.md) G4, G5) |
+| Review | Independent review of Phase A ([REVIEW-GATE.md](../../REVIEW-GATE.md) G4, done); G5 was for Phase B, which was dropped |
 
 ## 1. Summary
 
@@ -66,7 +66,7 @@ Adding a read or a podcast from the owner's iPhone is a planning task: unlock fi
 
 **QA-08 (P1): One-tap entry on iPhone.** Opening `…/#add` shows the sheet with the link field focused and the Paste button visible, from a cold start. The documented recipe for **Chrome**: set Chrome as the iPhone's default browser (Settings, the Chrome app, Default Browser App); open `…/#add` in Chrome, Share, **Add to Home Screen** (available to third-party browsers since iOS 16.4); the icon is the one tap. A Home Screen icon without a web-app manifest is a plain bookmark and opens in the *default* browser, which is why Chrome must be the default. Fallbacks, in order: a Chrome bookmark in the toolbar (two taps); an iPhone Shortcut on the Home Screen that opens `googlechromes://debasisr66.github.io/studio/#add` (Chrome's own scheme for https links). Nothing relies on shared storage between browsers.
 
-**QA-09 (P1, Phase B): Prefill by link.** `…/#add=<encoded link>` (optionally `&t=<encoded title>`) opens the sheet with those values filled. It only prefills: it never submits, and it shows "Prefilled from a link: check it". Values go through the same normalisation and validation; malformed, oversized or non-`http(s)` values are ignored with a message. The fragment is cleared from the address bar after it is read (the draft key carries the values on). The documented iPhone recipe is a **Shortcut** "Add to Studio" in the Share Sheet that opens this address with the shared link (first with the plain `https://` address, which opens in the default browser; if that opens the wrong browser, with the `googlechromes://` form); it lives on the phone and is described, not shipped.
+**QA-09 (P1, Phase B): Prefill by link. DROPPED 2026-10-23 (owner): the Share Sheet Shortcut it was meant to serve did not work as expected on the owner's iPhone, and without it the feature has no everyday use. It was built and independently reviewed, PR #25 was closed unmerged and the branch `v2/qa-b-build` is kept; the text below is the requirement as it was.** `…/#add=<encoded link>` (optionally `&t=<encoded title>`) opens the sheet with those values filled. It only prefills: it never submits, and it shows "Prefilled from a link: check it". Values go through the same normalisation and validation; malformed, oversized or non-`http(s)` values are ignored with a message. The fragment is cleared from the address bar after it is read (the draft key carries the values on). The documented iPhone recipe is a **Shortcut** "Add to Studio" in the Share Sheet that opens this address with the shared link (first with the plain `https://` address, which opens in the default browser; if that opens the wrong browser, with the `googlechromes://` form); it lives on the phone and is described, not shipped.
 
 **QA-10 (P2): Not now.** See section 4.
 
@@ -128,7 +128,7 @@ Secondary sources only (no device); the owner device checks are the proof.
 | Phase | Contents | Gate |
 |-------|----------|------|
 | A | QA-01 … QA-08 (sheet, paste first, kind choice, just-in-time unlock, autofill-friendly field, post and publish, auto-lock, draft key, `#add` entry) | Smoke and unit tests; independent review (G4); owner device checks O01-O04, O06 |
-| B | QA-09 (prefill by link, Shortcut recipe) | Smoke and unit tests; independent review (G5); owner device check O05 |
+| B | QA-09 (prefill by link, Shortcut recipe) | **Dropped 2026-10-23** (built and reviewed, not merged) |
 
 Mapping to the options discussed on 2026-10-23: A = QA-01, QA-02, QA-04 (just-in-time); B = QA-04 (autofill attributes); C = QA-05, QA-06; G = QA-08; D = QA-09.
 
@@ -158,3 +158,4 @@ Rollback: revert the merge commit; no content file or schema changes, the existi
 - 2026-10-23: **Approved by the owner**, including the amendment of the PRD storage target to allow the one owner-only draft key. Next: tests first, Phase A. The owner asked how to test on the phone before merge: see the preview options discussed in the session (a separate sandbox copy is recommended; the method is recorded here once chosen).
 - 2026-10-23: Phone preview chosen by the owner (separate sandbox repository). `debasisr66/studio-sandbox` created (public, Pages on `main`, HTTPS enforced) and filled with a copy of the current site by `scripts/make-sandbox.js` (tests in `tests/make-sandbox.test.js`; six tests, all failed before the script existed). The owner creates the sandbox-only token and runs the device checks when Phase A is ready.
 - 2026-10-23: **Phase A built** (tests first: 19 unit + 1 sandbox + 45 smoke cases, all red before the build). One decision on the way: the token prompt and the sheet are two static dialogs in `index.html` (a real `<form>` for the prompt), not the shared `#modal`. `Escape` is treated like Cancel (clears the draft); the sheet has no tap-outside-to-close, so a stray tap cannot discard a draft. A visitor who types into the sheet gets the draft key in their own tab (see the test plan's status log). The 20 KB budget of `reads-lib.js` was raised to 26 KB. Phone preview: `docs/build.md` 18.2b. Awaiting: independent review G4, owner device checks O01-O04, O06, O07, owner "merge".
+- 2026-10-23: **Phase B dropped by the owner.** It had been built tests-first (9 unit and 14 smoke cases) and reviewed (G5, APPROVE WITH CONDITIONS, record kept on the branch `v2/qa-b-build`; one medium finding fixed). The owner tried to build the iPhone Shortcut for it, could not get the Share Sheet setting to work on iOS 27, and chose to keep the code simple. PR #25 closed unmerged. `#add` (Phase A) is unchanged; `#add=...` is not handled and is ignored like any other address. The Phase A fallback "Shortcut" in QA-08 (a Home Screen Shortcut that just opens `#add`) is unaffected.

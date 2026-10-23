@@ -23,7 +23,7 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | REQ-58 | Nothing else breaks: products, updates, sync, health, keep-alive, profile, What's new, admin publish, CSP, budgets | all |
 | REQ-59 | All artefacts updated and traceable PRD → spec → test → release | all |
 | REQ-60 | Quick add: paste first, Read or Podcast in one sheet, just-in-time unlock with an autofill-friendly token field, post and publish in one action, auto-lock after every successful publish, owner-only draft, `#add` home-screen entry | QA-01 … QA-08 |
-| REQ-61 | Prefill by link (`#add=…`) that only prefills and never submits | QA-09 |
+| REQ-61 | ~~Prefill by link (`#add=…`)~~ **dropped 2026-10-23** | QA-09 |
 
 ## B. Traceability (requirement → spec → cases → status)
 
@@ -40,7 +40,7 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | REQ-58 | Regression suite (§D) | ⬜ |
 | REQ-59 | Artefact checklist ([plan.md](plan.md) "Artefact update matrix") | ⬜ |
 | REQ-60 | TC-QA-E01–E05, P01–P07, K01–K05, U01–U07, L01–L07, D01–D04, H01–H03, S01–S03, X01–X02 ✅ (§M); O01–O04, O06, O07 | ✅ except O: owner steps 🔒 |
-| REQ-61 | TC-QA-F01–F06, O05 | ⬜ (O05 owner step 🔒) |
+| REQ-61 | TC-QA-F01–F06, O05 | ➖ dropped with Phase B (not merged) |
 
 ## C. Test strategy by layer
 

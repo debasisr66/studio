@@ -80,8 +80,8 @@ Added by the owner after RC and PC Phase B went live: [SPEC-QA](specs/quick-add/
 | Area | Change | Risk | Mitigation |
 |------|--------|------|------------|
 | `index.html` | One new dialog (Add to Studio); the token prompt becomes a form with a username field and an autofill-friendly password field | Markup mistakes break the existing prompt or composers | Existing composers untouched; smoke cases cover prompt, sheet, both composers |
-| `js/app.js` (about +4 KB of the 80 KB budget) | Sheet logic, just-in-time unlock, post-and-publish, auto-lock, `#add` and `#add=` routing, draft key | The most sensitive code in the site: unlock, publish, lock | Tests first, shared validators and the guarded publish reused (no copy of any rule); independent review for both phases (G4, G5) |
-| `js/reads-lib.js` | Pure helpers: `extractLink`, `extractTitle`, `suggestKind`, `parseAddFragment` | Parsing untrusted pasted text and fragments | Unit tests on hostile and oversized inputs; every value ends in the existing `normalizeUrl` and validators |
+| `js/app.js` (about +4 KB of the 80 KB budget) | Sheet logic, just-in-time unlock, post-and-publish, auto-lock, `#add` routing (`#add=` was dropped with QA-09), draft key | The most sensitive code in the site: unlock, publish, lock | Tests first, shared validators and the guarded publish reused (no copy of any rule); independent review for both phases (G4, G5) |
+| `js/reads-lib.js` | Pure helpers: `extractLink`, `extractTitle`, `suggestKind`, `parseAddFragment` (dropped with QA-09) | Parsing untrusted pasted text and fragments | Unit tests on hostile and oversized inputs; every value ends in the existing `normalizeUrl` and validators |
 | `js/token-store.js`, `lock()` | Lock after every successful publish | A lock that fires too early or never | Success path only; failure keeps the session and the draft; tests for both |
 | Storage | One new **owner-only** `sessionStorage` key for the in-progress draft (no token in it); the PRD target "no new storage key" is amended to "no storage about visitors; one owner-only draft key" | A reviewer or visitor sees the draft key as "tracking" | Written only after the owner uses the sheet; never for visitors; cleared on success and Cancel; test that a visitor session has no such key |
 | Clipboard | Read only on a tap of **Paste from clipboard** | Silent clipboard reads | Not read on load or open (test counts calls); browser prompts apply |
@@ -100,7 +100,7 @@ Added by the owner after RC and PC Phase B went live: [SPEC-QA](specs/quick-add/
 | Q7 | The Home Screen icon opens in Safari, or drops `#add`, instead of Chrome | Medium | Low | Chrome as default browser; fallbacks: a Chrome bookmark, or a Shortcut with `googlechromes://`; checks O04, O07 | Open until O04 |
 | Q2 | Auto-lock after publish forces a new token entry for the next item | High | Low | Intended (security first); autofill makes it one tap; owner agreed | Accepted |
 | Q3 | iOS discards the tab while the owner fetches the token | Medium | Medium (draft lost) | Draft key (QA-07); the link is usually still on the clipboard | Mitigated |
-| Q4 | A crafted `#add=` link prefills something misleading | Low | Low | Prefill only, banner, validation, never auto-submit, the owner must press Post and give the token | Mitigated (Phase B) |
+| Q4 | A crafted `#add=` link prefills something misleading | Low | Low | Prefill only, banner, validation, never auto-submit, the owner must press Post and give the token | Not applicable: QA-09 dropped 2026-10-23 |
 | Q5 | The sheet becomes a second, divergent add path | Medium | Medium | Reuses the same validators and publish flow; parity test TC-QA-K05; SPEC-UX decides whether to keep the old composers | Mitigated |
 | Q6 | A bug in lock or unlock leaves the admin open or locks mid-publish | Low | High | Tests for success and failure paths; independent review G4 | Open until review |
 

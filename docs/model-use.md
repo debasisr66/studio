@@ -144,6 +144,10 @@ Measured with the session tools on 2026-10-23 at about 07:00 UTC. Where a figure
 | SH-02 re-review, same agent | Opus 5.5 | APPROVE (N1 to N5 new, N2 accepted by the owner) | 114,131 tokens, 8 tool uses, 187 s |
 | PC Phase B, first review | Opus 5.5, read-only | APPROVE WITH CONDITIONS (3 medium, 2 low) | 125,263 tokens, 20 tool uses, 596 s |
 | PC Phase B re-review, same agent | Opus 5.5 | APPROVE (3 new low findings) | 154,855 tokens, 10 tool uses, 892 s |
+| QA Phase A (G4), first review | Opus 5.5, read-only | REJECT (1 high, 1 medium, several low); all fixed tests-first | 178,665 tokens, 28 tool uses, 786 s |
+| QA Phase A re-review, same agent | Opus 5.5 | APPROVE WITH CONDITIONS (both met) | 193,602 tokens, 8 tool uses, 351 s |
+| QA Phase B (G5), first review | Opus 5.5, read-only | APPROVE WITH CONDITIONS (1 medium, 4 low); phase later dropped, not merged | 124,852 tokens, 22 tool uses, 413 s |
+| QA Phase B re-review, same agent | Opus 5.5 | APPROVE WITH CONDITIONS (met); not merged | 140,341 tokens, 6 tool uses, 439 s |
 
 The token figure on a re-review may be cumulative for that agent rather than the cost of the second run alone; the tool does not say. The records are [reviews/SH-02.md](reviews/SH-02.md) and [reviews/PC-B.md](reviews/PC-B.md). The reviewers found real defects the author's own tests had not (an orphaned browser with an open debugging port; three ways a publish could overwrite the owner's content). Two limits stay: some fixes made after a reviewer's final verdict were not re-checked by it (each record says which), and a second model is not a human audit.
 

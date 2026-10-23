@@ -287,7 +287,7 @@ Author's notes only; the verdict belongs to the independent reviewer.
 
 ### 11.11 SPEC-QA Quick add: pre-implementation review (2026-10-23; design-level, nothing built)
 
-Author's pre-review. The independent reviewer's verdicts for the two phases (gates G4, G5) will be linked from here when they exist; this table is the threat list the reviewer is briefed with.
+Author's pre-review. The independent reviewer's verdict for Phase A (gate G4) is [reviews/QA-A.md](reviews/QA-A.md). Phase B (gate G5, prefill by link, T26) was dropped on 2026-10-23 and never merged, so **no `#add=` handling exists on `main`**: T26 does not apply and T25 covers only the pasted text; this table was the threat list the reviewer was briefed with.
 
 | # | Threat | Req | Control | Test | Status |
 |---|--------|-----|---------|------|--------|

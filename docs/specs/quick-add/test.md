@@ -1,6 +1,6 @@
 # Test plan: Quick add
 
-Spec: [spec.md](spec.md) (`SPEC-QA`). IDs `TC-QA-<group><nn>`. ⬜ not run, ✅ passed (Phase A, 2026-10-23: unit test, smoke case or static check; the evidence is in [docs/test.md](../../test.md) section M), 🔒 owner step on a real iPhone. Unit tests first (pure helpers in `js/reads-lib.js`), then browser smoke with the GitHub API and the clipboard stubbed in the page (nothing leaves the machine), then the owner's device checks. Every case is written first and shown failing.
+Spec: [spec.md](spec.md) (`SPEC-QA`). IDs `TC-QA-<group><nn>`. ➖ dropped with Phase B, ⬜ not run, ✅ passed (Phase A, 2026-10-23: unit test, smoke case or static check; the evidence is in [docs/test.md](../../test.md) section M), 🔒 owner step on a real iPhone. Unit tests first (pure helpers in `js/reads-lib.js`), then browser smoke with the GitHub API and the clipboard stubbed in the page (nothing leaves the machine), then the owner's device checks. Every case is written first and shown failing.
 
 ## Sheet and entry (E), QA-01
 
@@ -75,16 +75,16 @@ Spec: [spec.md](spec.md) (`SPEC-QA`). IDs `TC-QA-<group><nn>`. ⬜ not run, ✅ 
 | TC-QA-H02 | QA-08 | `#add/anything` and `#adds` do not open the sheet; `#add` while unlocked opens it with no prompt | pass | ✅ |
 | TC-QA-H03 | QA-08 | OPERATIONS and LEARNING-GUIDE contain the iPhone recipe for Chrome (default browser, Add to Home Screen from Chrome, the Chrome-bookmark and `googlechromes://` Shortcut fallbacks) (static doc test) | pass | ✅ |
 
-## Prefill by link (F), QA-09, Phase B
+## Prefill by link (F), QA-09, Phase B: DROPPED 2026-10-23 (never merged; these rows are not run on `main`)
 
 | ID | Req | Case | Expected | Status |
 |----|-----|------|----------|--------|
-| TC-QA-F01 | QA-09 | `#add=<encoded link>` | Link filled, "Prefilled from a link: check it" banner, **not** submitted | ⬜ |
-| TC-QA-F02 | QA-09 | `&t=<encoded title>` | Title filled | ⬜ |
-| TC-QA-F03 | QA-09 | Malformed encoding, 5,000-character value, `javascript:`/`data:` link | Ignored with a message; sheet opens empty | ⬜ |
-| TC-QA-F04 | QA-09 | After reading, the fragment is gone from the address bar; the draft key carries the values | pass | ⬜ |
-| TC-QA-F05 | QA-09 | Odd keys (`__proto__`, `constructor`, repeated `add=`) ignored; no exception | pass | ⬜ |
-| TC-QA-F06 | QA-09 | The Shortcut recipe is documented with both the `https://` and the `googlechromes://` form (static doc test) | pass | ⬜ |
+| TC-QA-F01 | QA-09 | `#add=<encoded link>` | Link filled, "Prefilled from a link: check it" banner, **not** submitted | ➖ dropped |
+| TC-QA-F02 | QA-09 | `&t=<encoded title>` | Title filled | ➖ dropped |
+| TC-QA-F03 | QA-09 | Malformed encoding, 5,000-character value, `javascript:`/`data:` link | Ignored with a message; sheet opens empty | ➖ dropped |
+| TC-QA-F04 | QA-09 | After reading, the fragment is gone from the address bar; the draft key carries the values | pass | ➖ dropped |
+| TC-QA-F05 | QA-09 | Odd keys (`__proto__`, `constructor`, repeated `add=`) ignored; no exception | pass | ➖ dropped |
+| TC-QA-F06 | QA-09 | The Shortcut recipe is documented with both the `https://` and the `googlechromes://` form (static doc test) | pass | ➖ dropped |
 
 ## Security (S) and regression (X)
 
@@ -104,7 +104,7 @@ Spec: [spec.md](spec.md) (`SPEC-QA`). IDs `TC-QA-<group><nn>`. ⬜ not run, ✅ 
 | TC-QA-O02 | QA-02 | Copy a link in Chrome (Share, Copy, or long-press the address bar, Copy Link), then tap Paste | iOS may ask to allow paste; the link fills | 🔒 |
 | TC-QA-O03 | QA-07 | In Chrome, fill the sheet, switch to another app and back (and, if you can, leave it for a minute or two) | Draft still there. If it is not, the draft moves to `localStorage` with a 24-hour expiry (answers Q5) | ✅ owner, sandbox, Chrome on iPhone, 2026-10-23 |
 | TC-QA-O04 | QA-08 | With Chrome as the default browser, open `…/#add` in Chrome, Share, Add to Home Screen; copy a link; tap the icon | Opens in Chrome with the sheet ready for the paste, the `#add` part intact. If it opens elsewhere or loses `#add`, use the fallbacks of QA-08 | ✅ owner report, sandbox, 2026-10-23 |
-| TC-QA-O05 | QA-09 | Phase B: share an article from Chrome to the "Add to Studio" Shortcut (plain `https://` form first, `googlechromes://` form if the wrong browser opens) | Sheet opens in Chrome with the link filled, the fragment intact | 🔒 |
+| TC-QA-O05 | QA-09 | Phase B: share an article from Chrome to the "Add to Studio" Shortcut (plain `https://` form first, `googlechromes://` form if the wrong browser opens) | Sheet opens in Chrome with the link filled, the fragment intact | ➖ dropped |
 | TC-QA-O07 | QA-08 | Settings, Chrome, Default Browser App is Chrome; tap the Home Screen icon from a cold start | Chrome opens (not Safari) | ✅ owner report, sandbox, 2026-10-23 |
 | TC-QA-O06 | all | End to end, timed in Chrome: link copied → icon → Paste → title → Post and publish → token → published and locked | At most 6 actions; admin locked at the end; item live after about a minute | 🔒 |
 
@@ -118,3 +118,4 @@ Exit criteria: P0 rows ✅ (QA-01 … QA-06); P1 rows ✅ or deferred in writing
 - 2026-10-23: **Phase A built** (branch `v2/qa-a-build`). Every group except F and O is ✅: unit cases in `tests/spec-qa-phase-a.test.js` (19) and `tests/make-sandbox.test.js` (1 new), browser cases in `scripts/smoke.js` (45, ids `TC-QA-*`); all failed before the build. O01-O04, O06, O07 are the owner's, run first on the sandbox preview. Notes: TC-QA-S03 holds except that the `reads-lib.js` size budget went from 20 to 26 KB (the file was at 20,198 of 20,480 bytes before any Quick add code; the total budget is unchanged); TC-QA-D03 reads "a visitor who never opens the sheet" literally: a person who opens the sheet and types gets the draft key in their own tab (their own text, cleared by Cancel; nothing is sent), because the page cannot tell the owner from a visitor before the token is given.
 - 2026-10-23: Owner on the sandbox in Chrome on the iPhone: paste, post, publish and the auto-lock after a publish work; O01 (token autofill) and O03 (draft kept) reported working. O04 and O07 reported as: the unpublished link is retained and can be published after logging in again; the Home Screen icon opening in Chrome with `#add` intact was not explicitly confirmed, so O04, O07 and the O06 timing stay open. Owner feedback: the unlock-only path was a small link; it is now an **Edit or delete items** button (case TC-QA-E06).
 - 2026-10-23: Owner confirmed the Home Screen icon (from the sandbox address) opened the Add to Studio sheet by itself, found by accident of a tap rather than as a timed cold-start test. O04 and O07 recorded as passed on the owner's report; the strict cold-start wording and the O06 timing were not measured. Repeat O04, O07 and one real publish on the live address after the merge.
+- 2026-10-23: **Phase B and its cases F01-F06 and O05 are dropped** (owner decision; the code and 14 smoke cases exist only on the closed PR #25). Phase A is complete: every other row is ✅ or an owner check that passed.
