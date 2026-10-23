@@ -101,6 +101,13 @@ Heavy edits to `js/app.js`: keep new logic in small tested modules and watch the
 - [ ] Owner steps done: real read and podcast published; seed podcasts; real phone check.
 - [ ] Every artefact in the matrix updated; `v2.0` tagged; rollback tag `v1.5` verified.
 
+## Revisit later
+
+| Item | Source | Decision |
+|------|--------|----------|
+| N2: if Node itself is SIGKILLed (OOM, `kill -9`, a runner killing the tree), headless Chrome from the smoke test stays running with its DevTools port open. Possible fix: `--remote-debugging-pipe` (no TCP port; Chrome exits when the pipe closes) | [reviews/SH-02.md](reviews/SH-02.md) | **Accepted by the owner 2026-10-23 for now.** Revisit before v2.0 or if the smoke test ever runs on shared machines |
+| Reviewed-but-unchanged info items: checkout `persist-credentials: false`, `--no-sandbox` keyed on `GITHUB_ACTIONS` instead of `CI`, string-only fetch stub | [reviews/SH-02.md](reviews/SH-02.md) | Proposed as accepted; owner has not yet confirmed |
+
 ## Not in this plan
 
 Analytics, usage-based ordering, embedded audio, RSS import, owner-configurable section order, a third Reads sub-item (all P2 or non-goals in the specs).
