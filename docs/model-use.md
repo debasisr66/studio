@@ -1,6 +1,6 @@
 # Model and Agent Use — Studio
 
-Recorded 2026-10-19, updated after v1.4 work (2026-10-20) and the v2.0 planning session (2026-10-21, §7). This document reports what could be measured. Where a figure is not exposed by the tooling, it says so instead of guessing.
+Recorded 2026-10-19, updated after v1.4 work (2026-10-20), the v2.0 planning session (2026-10-21, §7) and the v2.0 build sessions (2026-10-22 to 23, §8, which also corrects §2 and §5). This document reports what could be measured. Where a figure is not exposed by the tooling, it says so instead of guessing.
 
 ## 1. Session
 
@@ -8,7 +8,7 @@ Recorded 2026-10-19, updated after v1.4 work (2026-10-20) and the v2.0 planning 
 |------|-------|
 | Session title | Studio hub site setup |
 | Session started | 2026-10-13 12:26 UTC |
-| Last update of this document | 2026-10-20 (v1.4 build; figures in §4 refreshed) |
+| Last update of this document | 2026-10-23 (§8 added; §1 to §7 describe the sessions up to the v2.0 planning and are kept as recorded; §2 and §5 are corrected by §8) |
 | Model | `claude-sonnet-5-5` (Claude Sonnet 5.5) |
 | Reasoning effort | medium |
 | Fast mode | off |
@@ -17,7 +17,7 @@ Recorded 2026-10-19, updated after v1.4 work (2026-10-20) and the v2.0 planning 
 
 ## 2. Agents
 
-**One agent did all the work: the main session, on Sonnet 5.5.**
+**Up to the v2.0 planning, one agent did all the work: the main session, on Sonnet 5.5. From the v2.0 build (2026-10-22) separate reviewer agents on a different model were used for security-sensitive work: see §8.**
 
 - No subagents were launched (no Explore, Plan, general-purpose or workflow agents). Planning for v1.1 was done by the main agent directly, because the codebase is one small site that was already fully in context.
 - No other model was used.
@@ -89,7 +89,7 @@ To get the authoritative billed numbers, use the usage page in the Claude accoun
 - The site is one HTML file, two small scripts and JSON content, so it fit comfortably in one context.
 - The work was sequential (library, then UI, then checks, then docs); each step depended on the previous result.
 - Parallel agents would have added coordination cost and re-sent context for little gain.
-- A separate reviewer agent would be worthwhile if the site grows (for example a second pair of eyes on security-sensitive changes); it was not used in this release, and the security checks here were done by the same agent that wrote the code.
+- A separate reviewer agent would be worthwhile if the site grows (for example a second pair of eyes on security-sensitive changes). It was not used up to v1.4, and the security checks until then were done by the same agent that wrote the code. **That changed on 2026-10-22: the owner asked for an independent reviewer on a different model for security-sensitive phases (§8, [REVIEW-GATE.md](REVIEW-GATE.md)).**
 
 ## 6. How to refresh this document
 
@@ -109,3 +109,52 @@ Ask Claude to re-run the session usage tool and update §4. For agent detail on 
 
 **Practical note for the build:** the 2.0 build is long (ten plan steps, one pull request each). Start each phase, or at least the SH foundation, in a **fresh session** and let the repository documents carry the context: `docs/PRD.md`, `docs/specs/*`, `docs/plan.md`, `docs/design.md` §12 and `docs/test.md` v2.0 contain everything needed. A separate reviewer agent would be worthwhile for the security-sensitive phases (SH-02 CI tool, UX-04/05 privacy) so that the author does not mark their own work; none has been used yet.
 
+## 8. v2.0 build sessions (2026-10-22 to 2026-10-23)
+
+Measured with the session tools on 2026-10-23 at about 07:00 UTC. Where a figure is not exposed it says so.
+
+### 8.1 Sessions and models
+
+| Item | Value |
+|------|-------|
+| This session | "Studio 2.0 step 3: Reads data model (RC Phase A)" (id `local_de0a8b05-…`), started 2026-10-22 06:12 UTC, a child of the earlier orchestrating session; still running |
+| Main agent and model | Claude Sonnet 5.5 (`claude-sonnet-5-5`), reasoning effort **medium**, fast mode **off**, permission mode **acceptEdits**, in its own git worktree |
+| Earlier phases | SH Phase A and B (PRs #12, #13) were built in an earlier session; their usage is not covered here |
+| Reviewer agents | **Claude Opus 5.5** (`opus`), a different model from the author, started fresh with read-only instructions (§8.3) |
+| Other agents | None: no Explore, Plan, workflow or other subagents; two earlier-session background shell tasks were stopped when that session ended |
+
+### 8.2 What the main agent did in this session
+
+| Phase | Work | PRs |
+|-------|------|-----|
+| RC Phase A | Tests first (25 of 181 failed), `category` and `CATEGORIES`, rule `reads-category`, schema 2 migration with a before/after proof and a v1.5 rollback proof | #14 |
+| PC Phase A | `podcasts.json`, `validatePodcasts`, eight rules with fixtures | #15 |
+| RC Phase B | Technical / Others tabs, deep links, composer Section, 21 smoke cases; a harness fix (fresh URL per case) | #16 |
+| Review gate | `REVIEW-GATE.md`, the SH-02 review and the smoke harness hardening (9 tests, 8 failed first) | #17 |
+| Intermediate release | Changelog 1.6, tag `v1.6` | #18 |
+| Fixes | CI red on `main` after the owner's first live publish (my tests depended on live content), N2 accepted | #19, #20 |
+| PC Phase B | Podcasts section, composer, Blog retired, `#blog` redirect; review-driven hardening of publishing (also for reads) | #21 |
+| Documents | Plan, specs and test results, security log, CONTRACT, RUNBOOK, design corrections, README, OPERATIONS, build, architecture, product-intro, learning guide, this document | in each PR and the audit PR |
+
+### 8.3 Reviewer agents
+
+| Review | Model | Result | Reported cost (as shown by the tool when it finished) |
+|--------|-------|--------|-------------------------------------------------------|
+| SH-02 CI tool, first review | Opus 5.5, read-only | APPROVE WITH CONDITIONS (1 medium, 3 low, info) | 85,556 tokens, 10 tool uses, 150 s |
+| SH-02 re-review, same agent | Opus 5.5 | APPROVE (N1 to N5 new, N2 accepted by the owner) | 114,131 tokens, 8 tool uses, 187 s |
+| PC Phase B, first review | Opus 5.5, read-only | APPROVE WITH CONDITIONS (3 medium, 2 low) | 125,263 tokens, 20 tool uses, 596 s |
+| PC Phase B re-review, same agent | Opus 5.5 | APPROVE (3 new low findings) | 154,855 tokens, 10 tool uses, 892 s |
+
+The token figure on a re-review may be cumulative for that agent rather than the cost of the second run alone; the tool does not say. The records are [reviews/SH-02.md](reviews/SH-02.md) and [reviews/PC-B.md](reviews/PC-B.md). The reviewers found real defects the author's own tests had not (an orphaned browser with an open debugging port; three ways a publish could overwrite the owner's content). Two limits stay: some fixes made after a reviewer's final verdict were not re-checked by it (each record says which), and a second model is not a human audit.
+
+### 8.4 Usage figures
+
+| Measure | Value |
+|---------|-------|
+| Context in use (this session) | **543,493 tokens** of 1,000,000 (54%); Messages 459,603 · System tools 36,496 · MCP tools 25,481 · System prompt 10,770 · Skills 9,970 · Memory files 1,173 |
+| Auto-compaction threshold | 97% of the window |
+| Plan limits (account-wide) | 5-hour window **48%** used (resets in about 28 minutes); weekly all-models **10%** used; extra usage disabled |
+| In-session token budget | about 14.97 million of 15 million left at the time of writing (an approximation, not a billing figure) |
+| Cumulative input and output tokens, per phase, per agent, cost in currency | Not exposed by the tooling; not estimated |
+
+**Practical note:** a context at about half the window is fine for the next phase, but start UX Phase A in a fresh session if this one grows past about 75%; the documents (`plan.md`, `test.md`, `security.md`, `reviews/`) carry the context.

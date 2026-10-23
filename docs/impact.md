@@ -1,10 +1,10 @@
 # Impact Analysis — Studio
 
-Releases: **v2.0 (proposed)** · v1.5 (shipped 2026-10-21) · v1.4 (shipped 2026-10-20) · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped)
+Releases: **v2.0 (in progress)** · **v1.6 (intermediate, 2026-10-22)** · v1.5 (shipped 2026-10-21) · v1.4 (shipped 2026-10-20) · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped)
 
 ---
 
-# v2.0 — Studio 2.0 (proposed): stabilise, Reads split, Podcasts, simpler layout
+# v2.0 — Studio 2.0 (in progress): stabilise, Reads split, Podcasts, simpler layout
 
 Date: 2026-10-21 · Rollback tag: `v1.5` · Specs: [SPEC-SH](specs/stabilize-core-hub/spec.md), [SPEC-RC](specs/reads-categories/spec.md), [SPEC-PC](specs/podcast-links/spec.md), [SPEC-UX](specs/simple-layout/spec.md) · PRD: §22 · Order of work: **PRD → specs → impact (this) → plan → design → build → test → security → artefacts**
 

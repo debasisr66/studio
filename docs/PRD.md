@@ -355,7 +355,7 @@ Spec: [SPEC-TR](specs/product-trust-reliability/spec.md) (draft, awaiting approv
 - Add better recovery guidance for failed syncs and stale data
 - Review whether branch protection or required CI should be enforced for this repo
 
-### Phase 2.5: Studio 2.0 (proposed, this revision)
+### Phase 2.5: Studio 2.0 (in progress; SH, RC and PC phases A and B built, v1.6 intermediate release live; UX and Phase C remain)
 Four specs, built in this order (each later one depends on the earlier):
 1. [SPEC-SH](specs/stabilize-core-hub/spec.md): stabilise the core hub (section isolation, browser smoke test, content contract, owner operations, schema versions)
 2. [SPEC-RC](specs/reads-categories/spec.md): Reads split into Technical and Others

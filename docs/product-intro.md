@@ -1,6 +1,6 @@
 # Studio and Penny — Product Introduction
 
-*Studio by Debasis Ray — learning never ends!* · https://debasisr66.github.io/studio/ · current version **v1.5**
+*Studio by Debasis Ray — learning never ends!* · https://debasisr66.github.io/studio/ · current version **v1.6** (the site itself is built from `main`, which already includes Podcasts)
 
 ## In one paragraph
 
@@ -10,12 +10,12 @@
 
 | Layer | What it does |
 |-------|--------------|
-| **Hub site** | Product cards (Open app, Download, Source), an Updates feed of release notes, a Blog, **Reads** (a curated, shareable reading list the owner adds to like a post), the owner's profile photo, the Studio logo, and a **What's new** button with the version in the footer |
+| **Hub site** | Product cards (Open app, Download, Source), an Updates feed of release notes, **Reads** (a curated, shareable reading list in two tabs, Technical and Others, that the owner adds to like a post), **Podcasts** (links to shows and episodes with a short take; the old Blog was retired), the owner's profile photo, the Studio logo, and a **What's new** button with the version in the footer |
 | **Live data** | A sync refreshes each product's description, version and downloads from GitHub nightly, and within minutes of a product release |
 | **One-way flow** | Products notify the hub; the hub only reads them. The hub can never change a product |
 | **Privacy** | Fonts, logo and every other asset are served by Studio itself: visiting contacts no one else, and there are no trackers or analytics |
-| **Owner tools** | A small admin layer (unlocked with a personal token that lives only in the browser tab) for the blog, reads and profile photo; photos are cropped, resized and stripped of location data before publishing |
-| **Safety net** | Strict security policy (no inline script or style, nothing from other sites), 142 automated tests, CI on every change, a daily health check that also watches the sync (it must have succeeded in the last 48 hours), release assets and the scheduled jobs, a sync that turns red (while keeping each product's last good data) when any product fails, a runbook for every alert, a weekly keep-alive so the nightly updates are never switched off, automation pinned to exact versions with weekly update proposals, and full git history for rollback |
+| **Owner tools** | A small admin layer (unlocked with a personal token that lives only in the browser tab) for reads, books, podcasts and the profile photo; photos are cropped, resized and stripped of location data before publishing |
+| **Safety net** | Strict security policy (no inline script or style, nothing from other sites), 235 automated tests (unit) plus a 66-case browser smoke test, CI on every change, a daily health check that also watches the sync (it must have succeeded in the last 48 hours), release assets and the scheduled jobs, a sync that turns red (while keeping each product's last good data) when any product fails, a runbook for every alert, a weekly keep-alive so the nightly updates are never switched off, automation pinned to exact versions with weekly update proposals, and full git history for rollback |
 | **Release discipline** | Every release goes through impact analysis, plan, design, test-first build, a visual comparison against the previous release, a security review and a pull request with green CI |
 | **Protection of the record** | The main branch's history cannot be rewritten or deleted by anyone, including the owner |
 | **Run cost** | Static hosting on GitHub Pages; no backend to patch or monitor |
@@ -77,14 +77,14 @@ A mobile-friendly personal expense manager in Indian rupees. All data stays in t
 
 *Sources: Penny's README, release notes, V3.2 verification record and security review (figures as recorded on 19 October 2026); Studio's architecture, test and security documents (figures as recorded on 20 October 2026, v1.4).*
 
-## Roadmap: Studio 2.0 (proposed; not yet built)
+## Roadmap: Studio 2.0 (in progress)
 
 | Change | What a visitor or the owner gets |
 |--------|----------------------------------|
-| Stabilised core | One failing section can no longer affect the rest of the page; rendering is tested automatically; every content file has a written contract |
-| Reads: Technical and Others | Two clear sections in Reads, each with its own filters and search, and a direct link to each |
-| Podcasts replace the Blog | The owner shares podcast and episode links with a short take; no embedded players, no third parties |
-| Simpler layout | One fixed, clear order (Products, Updates, Reads, Podcasts) with the same navigation on every screen; nothing is tracked or stored about visitors |
+| Stabilised core (built) | One failing section can no longer affect the rest of the page; rendering is tested automatically; every content file has a written contract |
+| Reads: Technical and Others (built, live) | Two clear sections in Reads, each with its own filters and search, and a direct link to each |
+| Podcasts replace the Blog (built; seed links pending) | The owner shares podcast and episode links with a short take; no embedded players, no third parties |
+| Simpler layout (not started) | One fixed, clear order (Products, Updates, Reads, Podcasts) with the same navigation on every screen; nothing is tracked or stored about visitors |
 
-Specs, impact, plan and security pre-review: [docs/specs/](specs/README.md), [impact](impact.md), [plan](plan.md), [security](security.md) §11. The current version remains **v1.5** until 2.0 ships.
+Specs, impact, plan and security pre-review: [docs/specs/](specs/README.md), [impact](impact.md), [plan](plan.md), [security](security.md) §11. The footer shows **v1.6**; v2.0 ships when the remaining phases (layout, seed content, final checks) are done.
 

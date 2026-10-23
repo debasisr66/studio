@@ -34,7 +34,9 @@ Edit `name`, `tagline` or `category` in `products.json`; no sync needed (these a
 
 ## Publish content (admin)
 
-Unlock ⚙ with `studio-admin` (Step 9 B). Reads: **Share a read**, edit or delete, then **Publish changes**. Photo: **Change photo**. *Planned in 2.0:* choose the section (Technical or Others) when adding a read; **Share a podcast** replaces the blog editor. Lock when finished.
+Unlock ⚙ with `studio-admin` (Step 9 B). Reads: **Share a read** (choose the **Section**, Technical or Others; it starts on the one you used last, else the tab you are viewing), edit or delete, then **Publish changes**. Podcasts: **Share a podcast** (link and title, optionally show, take and tags), edit or delete, then **Publish changes**. Photo: **Change photo**. Lock when finished.
+
+Publish is deliberately cautious: if a content file could not be loaded when the page opened, or GitHub's copy differs from the one the page loaded (another device published, or Pages has not caught up), nothing is written and you are told to wait a minute, reload and try again. Changes not yet published are lost on reload, so note anything you need first. There is no blog editor any more; `content/blog.json` is an archive.
 
 ## Release Studio itself
 
@@ -51,7 +53,7 @@ Follow [build.md](build.md) §15 (and §18 for 2.0): branch, tests, validator, p
 | Card shows an old version or sync is red | [RUNBOOK](RUNBOOK.md) "Stale or drifting cache" and "Sync failed" |
 | A bad commit is on `main` | [RUNBOOK](RUNBOOK.md) "Bad commit on main" (`git revert <sha>`) |
 | A scheduled workflow was disabled | [RUNBOOK](RUNBOOK.md) "Scheduled workflow disabled" |
-| After 2.0: the page itself looks broken | Roll back with `build.md` §18.6 (*planned*); tag `v1.5` is the safe point |
+| The page itself looks broken after a 2.0 change | Roll back with `build.md` §18.6 (*planned*); tag `v1.5` is the safe point (it brings the Blog back; `podcasts.json` and the new `reads.json` keys are ignored by old code); `v1.6` is the last tag before Podcasts |
 
 ## Questions this guide must answer
 

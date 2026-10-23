@@ -1,6 +1,6 @@
 # Build and Publish — Command Reference
 
-Current release line: **v1.5** (v2.0 is planned: §18); v1.4 and v1.3 are tagged. From v1.4 releases go through a **pull request** (see §15). Branch names must differ from tag names: a branch called `v1.1` and a tag `v1.1` made `git push origin v1.1` ambiguous (fix: `git push origin refs/tags/v1.1`).
+Current release line: **v1.6** (an intermediate release on the way to v2.0, whose build is §18); v1.5, v1.4 and v1.3 are tagged. From v1.4 releases go through a **pull request** (see §15). Branch names must differ from tag names: a branch called `v1.1` and a tag `v1.1` made `git push origin v1.1` ambiguous (fix: `git push origin refs/tags/v1.1`).
 
 Reference only. There is no build step: the repository is the site. Pages serves `main`, root `/`. Run from `/Users/debasisray/CoworkProjects/studio-site`.
 
@@ -226,7 +226,7 @@ node scripts/validate-site.js                       # enforces licences, size, r
 
 Photo: owner unlocks admin → **Change photo** → choose a PNG, JPEG or WebP → **Use this photo** → **Publish changes**. Two commits appear: `cms: update profile photo` and `cms: show profile photo`. To remove the photo, set `content/profile.json` back to `{"photo": null, "updated": null}` (the old image stays in git history).
 
-## 18. Studio 2.0 build and release flow (planned; commands marked "planned" do not exist yet)
+## 18. Studio 2.0 build and release flow (in progress; commands marked "planned" do not exist yet)
 
 Reference for the sequence in [plan.md](plan.md). Rollback tag: `v1.5`. Each phase is one branch and one pull request (§15). Branch names must differ from tag names.
 
@@ -236,7 +236,7 @@ Reference for the sequence in [plan.md](plan.md). Rollback tag: `v1.5`. Each pha
 cd /Users/debasisray/CoworkProjects/studio-site
 git checkout main && git pull --rebase
 git checkout -b v2/<spec>-<phase>          # e.g. v2/sh-a, v2/rc-a, v2/pc-b, v2/ux-b
-node --test tests/*.test.js                # baseline must be green (142 today)
+node --test tests/*.test.js                # baseline must be green (235 after PC Phase B)
 node scripts/validate-site.js              # OK, 0 errors
 ```
 
@@ -246,11 +246,13 @@ node scripts/validate-site.js              # OK, 0 errors
 node --test tests/<new>.test.js            # show the new tests failing first
 # build until green, then:
 node --test tests/*.test.js && node scripts/validate-site.js
-node scripts/smoke.js                      # real since SH Phase A: local server + headless Chrome over DevTools, 13 cases, ~16 s (set SMOKE_ONLY="text" to run matching cases; CHROME_BIN to choose a browser)
+node scripts/smoke.js                      # real since SH Phase A: local server + headless Chrome over DevTools, 66 cases, ~55 s (set SMOKE_ONLY="text" to run matching cases, never in CI; CHROME_BIN to choose a browser; SMOKE_WATCHDOG_MS bounds the run, default 100 s)
 python3 -m http.server 8080                # manual look at http://localhost:8080 at 375 and 1280 px, both themes
 ```
 
-### 18.3 One-time data migration (RC Phase A; planned)
+### 18.3 One-time data migration (RC Phase A; done 2026-10-22, PR #14)
+
+Done as one commit with the code. The scripts below were **not** written; the migration was a one-off edit, and the before/after proof is a permanent test (`tests/spec-rc-phase-a.test.js`, `TC-RC-M01` to `M03`) against two frozen fixtures, `tests/fixtures/reads-before-rc-a.json` and `reads-after-rc-a.json`. Tests must never compare against the live `content/` files: the owner publishes at any time. The block shows the originally planned shape.
 
 ```bash
 cp content/reads.json /tmp/reads.before.json

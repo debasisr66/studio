@@ -1,12 +1,12 @@
 # Test Plan and Traceability — Studio
 
-Releases: **v2.0 (planned, nothing run)** · **v1.6 (intermediate, 2026-10-22: SPEC-SH A and B, SPEC-RC A and B, SPEC-PC A, review gate)** · **v1.5 (shipped 2026-10-21: SPEC-TR)** · v1.4 (shipped 2026-10-20) · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
+Releases: **v2.0 (in progress)** · **v1.6 (intermediate, 2026-10-22: SPEC-SH A and B, SPEC-RC A and B, SPEC-PC A, review gate)** · **v1.5 (shipped 2026-10-21: SPEC-TR)** · v1.4 (shipped 2026-10-20) · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
 
 ---
 
-# v2.0 — Studio 2.0 (in progress: SH A and B, RC A and B, PC A merged and live in v1.6, PC Phase B built, rest planned)
+# v2.0 — Studio 2.0 (in progress: SH A and B, RC A and B, PC A and B merged; UX, Phase C and the release remain)
 
-Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22): **116 new cases**, on top of the existing **142 passing unit tests**. Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12), SH Phase B (PR #13), RC Phase A (PR #14), PC Phase A (PR #15) and RC Phase B and PC Phase B are run:** see §G, §H, §I, §J, §K and §L.
+Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22): **116 new cases**, on top of the former **142 passing unit tests** (**235** now, plus a **66-case** browser smoke test). Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12), SH Phase B (PR #13), RC Phase A (PR #14), PC Phase A (PR #15), RC Phase B (PR #16) and PC Phase B (PR #21) are run:** see §G, §H, §I, §J, §K and §L.
 
 ## A. Requirements (release level)
 

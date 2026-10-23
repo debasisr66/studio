@@ -25,11 +25,11 @@ PRD updated (done) → four specs (done, this PR) → impact (done) → **plan (
 | 2 | SH | B | CONTRACT.md, schema versions, OPERATIONS.md | Contract tests green, commands executed. **Merged (PR #13)** ✅ |
 | 3 | RC | A | `category` in data, validator, migration (no UI) | Migration proves no loss; owner confirms classification. **Merged (PR #14)** ✅ (classification confirmed 2026-10-21) |
 | 4 | PC | A | `podcasts.json`, validator, fixtures (section not visible) | Fixtures and contract green. **Merged (PR #15)** ✅ |
-| 5 | RC | B | Reads tabs, deep links, composer section | Smoke test covers both sub-items. **Built on `v2/rc-b`: awaiting approval** ✅ |
-| 6 | PC | B | Podcasts section and admin; Blog removed; `#blog` redirect | Smoke test; owner publishes a podcast link. **Built on `v2/pc-b`: awaiting approval** ✅ (owner's real publish of a podcast link still to do) |
+| 5 | RC | B | Reads tabs, deep links, composer section | Smoke test covers both sub-items. **Merged (PR #16); shipped in v1.6** ✅ |
+| 6 | PC | B | Podcasts section and admin; Blog removed; `#blog` redirect | Smoke test; owner publishes a podcast link. **Merged (PR #21)** ✅ (independent review PC-B; owner's real publish of a podcast link still to do) |
 | 7 | UX | A | Fixed order, section pattern, matching navs, stable links | Navs identical; anchors verified |
 | 8 | UX | B | Accessibility and responsiveness pass, first-screen clarity | Keyboard, contrast, zoom, 375 px; owner walk-through |
-| 9 | SH, RC, PC, UX | C | Fallback proofs, asset rules, books in sub-items, seed podcasts | P1 rows ✅ or deferred in writing |
+| 9 | SH, RC, PC, UX | C | Fallback proofs, asset rules, books in sub-items, seed podcasts, **check the footer date** (see "Revisit later") | P1 rows ✅ or deferred in writing |
 | 10 | all | Release | Changelog 2.0, REQ rows, security log, architecture, learning guide, product intro; tag `v2.0` | Exit criteria in all four test plans |
 
 Steps 3-4 can run in either order; steps 5 and 6 can swap; everything else is sequential.
@@ -107,6 +107,7 @@ Heavy edits to `js/app.js`: keep new logic in small tested modules and watch the
 |------|--------|----------|
 | N2: if Node itself is SIGKILLed (OOM, `kill -9`, a runner killing the tree), headless Chrome from the smoke test stays running with its DevTools port open. Possible fix: `--remote-debugging-pipe` (no TCP port; Chrome exits when the pipe closes) | [reviews/SH-02.md](reviews/SH-02.md) | **Accepted by the owner 2026-10-23 for now.** Revisit before v2.0 or if the smoke test ever runs on shared machines |
 | Reviewed-but-unchanged info items: checkout `persist-credentials: false`, `--no-sandbox` keyed on `GITHUB_ACTIONS` instead of `CI`, string-only fetch stub | [reviews/SH-02.md](reviews/SH-02.md) | Proposed as accepted; owner has not yet confirmed |
+| Footer shows an old date ("Synced from GitHub · 19 Oct 2026") although the sync runs nightly | Owner, 2026-10-23 | **Check in Phase C.** Diagnosis (2026-10-23): by design since v1.2, `synced_at` only moves when product data changes (so a quiet week makes no commit), and the footer prints that date; the sync itself last succeeded on 22 Oct. The label is misleading, not the sync broken. Options: (a) reword to "Product data last changed 19 Oct 2026" (no new data, recommended); (b) show the last successful sync, which needs a new daily write or a third-party/API call (churn or CSP cost). Owner decides |
 
 ## Not in this plan
 

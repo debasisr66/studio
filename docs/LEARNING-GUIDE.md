@@ -132,7 +132,7 @@ Studio uses **two tokens, one per job**. Create them separately, name them diffe
 
 | | **Admin token** (`studio-admin`) | **Dispatch token** (`studio-dispatch`) |
 |---|---|---|
-| Job | You publish blog posts, reads and your photo from the ⚙ screen | A product repo (Penny) tells Studio "I released something, sync now" |
+| Job | You publish reads, books, podcasts and your photo from the ⚙ screen | A product repo (Penny) tells Studio "I released something, sync now" |
 | Used by | You, by hand, in the browser | A GitHub Actions workflow in the product repo, unattended |
 | Stored | **Nowhere.** Pasted into the open tab; forgotten when the tab closes or after 30 minutes idle | GitHub Actions secret `STUDIO_DISPATCH_TOKEN` in **each product repo** |
 | Suggested expiry | 30–90 days (you will paste a fresh one from your password manager) | 90 days to 1 year (it runs unattended) |
@@ -452,9 +452,9 @@ curl -s -o /dev/null -w "%{http_code}\n" https://debasisr66.github.io/studio/
 curl -s https://debasisr66.github.io/studio/content/cache.json | head -20
 ```
 
-## Step 18 — Studio 2.0: what changes for the owner (planned; nothing here exists yet)
+## Step 18 — Studio 2.0: what changes for the owner (partly built)
 
-This step is written ahead of the build so you know what to expect. It is updated for real when each phase ships; commands marked *planned* do not work yet.
+Written ahead of the build and updated as phases ship. **Built and live so far (2026-10-23):** the Technical / Others tabs and the Section choice in the composer, Podcasts with "Share a podcast", the retired Blog (`#blog` goes to Podcasts), and the cautious publish (it refuses to write over content it could not load or that changed on GitHub; if so, wait a minute, reload, try again). **Still to come:** the fixed page order and matching navs, seed podcasts, final checks. Commands marked *planned* do not work yet.
 
 **What you will see**
 - Reads has two sections, **Technical** and **Others**. When you add a read, the form asks which one. Your five current reads and the book are proposed as Technical; you confirm this before the migration.
