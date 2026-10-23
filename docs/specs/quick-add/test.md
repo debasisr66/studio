@@ -79,12 +79,12 @@ Spec: [spec.md](spec.md) (`SPEC-QA`). IDs `TC-QA-<group><nn>`. ⬜ not run, ✅ 
 
 | ID | Req | Case | Expected | Status |
 |----|-----|------|----------|--------|
-| TC-QA-F01 | QA-09 | `#add=<encoded link>` | Link filled, "Prefilled from a link: check it" banner, **not** submitted | ⬜ |
-| TC-QA-F02 | QA-09 | `&t=<encoded title>` | Title filled | ⬜ |
-| TC-QA-F03 | QA-09 | Malformed encoding, 5,000-character value, `javascript:`/`data:` link | Ignored with a message; sheet opens empty | ⬜ |
-| TC-QA-F04 | QA-09 | After reading, the fragment is gone from the address bar; the draft key carries the values | pass | ⬜ |
-| TC-QA-F05 | QA-09 | Odd keys (`__proto__`, `constructor`, repeated `add=`) ignored; no exception | pass | ⬜ |
-| TC-QA-F06 | QA-09 | The Shortcut recipe is documented with both the `https://` and the `googlechromes://` form (static doc test) | pass | ⬜ |
+| TC-QA-F01 | QA-09 | `#add=<encoded link>` | Link filled, "Prefilled from a link: check it" banner, **not** submitted | ✅ |
+| TC-QA-F02 | QA-09 | `&t=<encoded title>` | Title filled | ✅ |
+| TC-QA-F03 | QA-09 | Malformed encoding, 5,000-character value, `javascript:`/`data:` link | Ignored with a message; sheet opens empty | ✅ |
+| TC-QA-F04 | QA-09 | After reading, the fragment is gone from the address bar; the draft key carries the values | pass | ✅ |
+| TC-QA-F05 | QA-09 | Odd keys (`__proto__`, `constructor`, repeated `add=`) ignored; no exception | pass | ✅ |
+| TC-QA-F06 | QA-09 | The Shortcut recipe is documented with both the `https://` and the `googlechromes://` form (static doc test) | pass | ✅ |
 
 ## Security (S) and regression (X)
 
@@ -118,3 +118,4 @@ Exit criteria: P0 rows ✅ (QA-01 … QA-06); P1 rows ✅ or deferred in writing
 - 2026-10-23: **Phase A built** (branch `v2/qa-a-build`). Every group except F and O is ✅: unit cases in `tests/spec-qa-phase-a.test.js` (19) and `tests/make-sandbox.test.js` (1 new), browser cases in `scripts/smoke.js` (45, ids `TC-QA-*`); all failed before the build. O01-O04, O06, O07 are the owner's, run first on the sandbox preview. Notes: TC-QA-S03 holds except that the `reads-lib.js` size budget went from 20 to 26 KB (the file was at 20,198 of 20,480 bytes before any Quick add code; the total budget is unchanged); TC-QA-D03 reads "a visitor who never opens the sheet" literally: a person who opens the sheet and types gets the draft key in their own tab (their own text, cleared by Cancel; nothing is sent), because the page cannot tell the owner from a visitor before the token is given.
 - 2026-10-23: Owner on the sandbox in Chrome on the iPhone: paste, post, publish and the auto-lock after a publish work; O01 (token autofill) and O03 (draft kept) reported working. O04 and O07 reported as: the unpublished link is retained and can be published after logging in again; the Home Screen icon opening in Chrome with `#add` intact was not explicitly confirmed, so O04, O07 and the O06 timing stay open. Owner feedback: the unlock-only path was a small link; it is now an **Edit or delete items** button (case TC-QA-E06).
 - 2026-10-23: Owner confirmed the Home Screen icon (from the sandbox address) opened the Add to Studio sheet by itself, found by accident of a tap rather than as a timed cold-start test. O04 and O07 recorded as passed on the owner's report; the strict cold-start wording and the O06 timing were not measured. Repeat O04, O07 and one real publish on the live address after the merge.
+- 2026-10-23: **Phase B built** (branch `v2/qa-b-build`; Phase A merged as PR #24). F01-F06 ✅: 9 unit cases in `tests/spec-qa-phase-b.test.js` and 9 browser cases in `scripts/smoke.js` (F01 x3, F02, F03 x2, F04, F05, S01 with `#add=`), all failed before the build. O05 (the Shortcut on the owner's phone) is the owner's. Independent review G5 pending.

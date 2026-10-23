@@ -212,6 +212,7 @@ const QA_INIT = `
 window.__clip = { text: '', reads: 0 };
 Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { readText: () => { window.__clip.reads++; return Promise.resolve(window.__clip.text); }, writeText: () => Promise.resolve() } });
 window.__console = [];
+window.__apiEarly = []; { const rf = window.fetch.bind(window); window.fetch = (u, o) => { if (String(u).startsWith('https://api.github.com')) window.__apiEarly.push(String(u)); return rf(u, o); }; }
 for (const k of ['log', 'info', 'warn', 'error', 'debug']) { const o = console[k].bind(console); console[k] = (...a) => { try { window.__console.push(a.map(String).join(' ')); } catch (e) {} o(...a); }; }
 window.__q = {
   set(id, v) { const e = document.getElementById('qa-' + id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); },
@@ -224,7 +225,7 @@ window.__q = {
   state() {
     const v = id => (document.getElementById(id) || {}).value, t = id => (document.getElementById(id) || {}).textContent;
     const open = id => document.getElementById(id).classList.contains('open');
-    return { sheet: open('addBg'), tok: open('tokBg'), admin: document.body.classList.contains('admin'), active: document.activeElement && document.activeElement.id,
+    return { sheet: open('addBg'), tok: open('tokBg'), banner: (document.getElementById('qa-prefill') || {}).textContent || '', bannerShown: !!(document.getElementById('qa-prefill') && document.getElementById('qa-prefill').offsetParent), admin: document.body.classList.contains('admin'), active: document.activeElement && document.activeElement.id,
       session: Object.keys(sessionStorage).sort(), local: Object.keys(localStorage).sort(),
       fields: { url: v('qa-url'), title: v('qa-title'), comment: v('qa-comment'), tags: v('qa-tags'), show: v('qa-show') },
       kind: (document.querySelector('#qa-kind input:checked') || {}).value, section: (document.querySelector('#qa-section-opts input:checked') || {}).value,
@@ -794,6 +795,41 @@ const CASES = [
     const f = []; await ctx.ev("delete snap['content/reads.json']; state.reads.articles = []; true"); await ctx.ev("document.getElementById('addOpen').click()");
     await qaFill(ctx, { url: 'https://example.com/n1', title: 'N1' }); await qaClick(ctx, 'qa-draft', 30); const s = await qs(ctx);
     if (!/not finished loading|reload/i.test(s.msg)) f.push('no refusal message: "' + s.msg + '"'); if (!s.sheet) f.push('the sheet closed, losing the input'); if (await ctx.ev("state.dirty.reads")) f.push('marked as a pending change'); return f; } },
+  { id: 'TC-QA-F01 #add=<encoded link>: the sheet opens with the link filled and "Prefilled from a link: check it"; nothing is posted or sent', width: 1280, hash: '#add=' + encodeURIComponent('https://example.com/f01?utm_source=x&id=1#frag'), fixtures: TWO, ...qaWith(), noErrors: true, check: async ctx => {
+    const f = [], s = await qs(ctx);
+    if (!s.sheet || s.tok) f.push('sheet ' + s.sheet + ', prompt ' + s.tok); if (s.fields.url !== 'https://example.com/f01?id=1') f.push('link: ' + s.fields.url); if (!s.bannerShown || s.banner !== 'Prefilled from a link: check it') f.push('banner: "' + s.banner + '" shown=' + s.bannerShown);
+    if (s.active !== 'qa-title') f.push('focus is on ' + s.active + ', expected the title (the link is already in)'); if (s.admin) f.push('the admin was switched on');
+    const r = await ctx.ev("[window.__apiEarly.length, state.reads.articles.length, !!state.dirty.reads, !!state.dirty.podcasts]"); if (r[0]) f.push(r[0] + ' API call(s) were made'); if (r[1] !== 6 || r[2] || r[3]) f.push('the lists changed: ' + JSON.stringify(r)); return f; } },
+  { id: 'TC-QA-F01 a prefill arriving while the page is open replaces what was in the sheet (an older draft) and the banner goes when the owner edits', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://old.example.com/x', title: 'Old title', comment: 'old take', tags: 'old' });
+    await ctx.ev("location.hash = '#add=' + encodeURIComponent('https://open.spotify.com/episode/f01b') + '&t=' + encodeURIComponent('New title')"); await sleep(250); let s = await qs(ctx);
+    if (s.fields.url !== 'https://open.spotify.com/episode/f01b' || s.fields.title !== 'New title') f.push('values: ' + JSON.stringify(s.fields)); if (s.fields.comment || s.fields.tags) f.push('an older take or tags were kept: ' + JSON.stringify(s.fields)); if (s.kind !== 'podcast') f.push('kind ' + s.kind); if (!s.bannerShown) f.push('no banner');
+    await qaFill(ctx, { title: 'Edited by owner' }); s = await qs(ctx); if (s.bannerShown) f.push('the banner stayed after the owner edited the title'); return f; } },
+  { id: 'TC-QA-F02 &t=<encoded title> fills the title; a Spotify link preselects Podcast', width: 1280, hash: '#add=' + encodeURIComponent('https://open.spotify.com/episode/f02') + '&t=' + encodeURIComponent('Ep 42: A talk'), fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = [], s = await qs(ctx); if (s.fields.title !== 'Ep 42: A talk') f.push('title: "' + s.fields.title + '"'); if (s.fields.url !== 'https://open.spotify.com/episode/f02') f.push('link ' + s.fields.url); if (s.kind !== 'podcast') f.push('kind ' + s.kind); return f; } },
+  { id: 'TC-QA-F03 malformed encoding, a 5,000-character value and javascript:/data:/credentials links are ignored with a message; the sheet opens empty', width: 1280, fixtures: TWO, ...qaWith(), noErrors: true, check: async ctx => {
+    const f = [], bad = ['#add=%E0%A4%A', '#add=' + encodeURIComponent('x'.repeat(5000)), '#add=' + encodeURIComponent('javascript:alert(1)'), '#add=' + encodeURIComponent('data:text/html,<b>x</b>'), '#add=' + encodeURIComponent('https://user:pw@evil.example.com/x'), '#add='];
+    for (const h of bad) {
+      await ctx.ev(`location.hash = ${JSON.stringify(h)}`); await sleep(220); const s = await qs(ctx), tag = h.slice(0, 30);
+      if (!s.sheet) f.push(tag + ': the sheet did not open'); if (s.fields.url || s.fields.title) f.push(tag + ': not empty: ' + JSON.stringify(s.fields)); if (!/could not be used|ignored|nothing was prefilled/i.test(s.msg)) f.push(tag + ': no message ("' + s.msg + '")'); if (s.bannerShown) f.push(tag + ': a prefill banner is shown');
+      await qaClose(ctx);
+    }
+    return f; } },
+  { id: 'TC-QA-F03 a good link with a bad title keeps the link, drops the title and says so', width: 1280, hash: '#add=' + encodeURIComponent('https://example.com/f03b') + '&t=' + encodeURIComponent('x'.repeat(300)), fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = [], s = await qs(ctx); if (s.fields.url !== 'https://example.com/f03b') f.push('link lost: ' + s.fields.url); if (s.fields.title) f.push('title kept'); if (!/title/i.test(s.msg)) f.push('no message about the title: "' + s.msg + '"'); return f; } },
+  { id: 'TC-QA-F04 after reading, the fragment is gone from the address bar (no new history entry); the draft key carries the values', width: 1280, hash: '#add=' + encodeURIComponent('https://example.com/f04') + '&t=F04', fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = [], r = await ctx.ev("[location.hash, location.href, JSON.parse(sessionStorage.getItem('studio-quick-draft') || 'null')]");
+    if (r[0] !== '') f.push('the address still has "' + r[0] + '"'); if (!r[2] || r[2].url !== 'https://example.com/f04' || r[2].title !== 'F04') f.push('draft: ' + JSON.stringify(r[2])); if (/#/.test(r[1])) f.push('href: ' + r[1]);
+    await reloadPage(ctx); const s = await qs(ctx); if (s.sheet) f.push('a reload reopened the sheet'); await qaOpenGear(ctx); const t = await qs(ctx); if (t.fields.title !== 'F04') f.push('the values did not survive a reload through the draft'); return f; } },
+  { id: 'TC-QA-F05 odd keys (__proto__, constructor, repeated add=) are ignored: the first link wins, no exception', width: 1280, hash: '#add=' + encodeURIComponent('https://example.com/f05') + '&__proto__=x&constructor=y&add=' + encodeURIComponent('https://evil.example.com/') + '&t=First&t=Second&__proto__[x]=1', fixtures: TWO, ...qaWith(), noErrors: true, check: async ctx => {
+    const f = [], s = await qs(ctx); if (s.fields.url !== 'https://example.com/f05' || s.fields.title !== 'First') f.push('got ' + JSON.stringify(s.fields)); if (await ctx.ev("({}).x !== undefined || Object.prototype.hasOwnProperty.call(Object.prototype, 'x')")) f.push('Object.prototype was changed'); return f; } },
+  { id: 'TC-QA-S01 XSS payloads in #add= (link and title) stay inert in the sheet, the preview and the published card', width: 1280, token: true, hash: '#add=' + encodeURIComponent('https://example.com/s01b?q=%3Cimg%20src%3Dx%20onerror%3Dwindow.__x%3D1%3E') + '&t=' + encodeURIComponent(QA_P), fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; let bad = await ctx.ev("[window.__x, document.querySelectorAll('#addSheet img, #addSheet svg, #addSheet script').length, document.getElementById('qa-dest').innerHTML, document.getElementById('qa-prefill').innerHTML]");
+    if (bad[0] || bad[1]) f.push('active in the sheet: ' + JSON.stringify(bad)); if (/</.test(bad[2] + bad[3])) f.push('markup in the destination or banner');
+    await qaClick(ctx, 'qa-draft', 300); bad = await ctx.ev("[window.__x, document.querySelectorAll('#reads img[src=x], #reads svg[onload], #reads script').length, document.getElementById('articlesFeed').textContent.includes('<img')]");
+    if (bad[0] || bad[1]) f.push('active in the list: ' + JSON.stringify(bad)); if (!bad[2]) f.push('the payload should show as plain text'); return f; } },
+  { id: 'TC-QA-F01 a prefill never posts: even with an unlocked admin it stays in the sheet and nothing is written', width: 1280, token: true, hash: '#add=' + encodeURIComponent('https://example.com/f01c') + '&t=Unlocked', fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = [], s = await qs(ctx); if (!s.sheet || !s.admin) f.push('sheet ' + s.sheet + ' admin ' + s.admin); const r = await ctx.ev("[window.__apiEarly.length, state.reads.articles.length, !!state.dirty.reads]"); if (r[0] || r[1] !== 6 || r[2]) f.push('something was sent or added: ' + JSON.stringify(r)); return f; } },
   { id: 'TC-QA-D01 fill the sheet, reload the page in the same tab, open the sheet: the values are restored', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
     const f = []; await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://open.spotify.com/episode/d01', title: 'D01 title', comment: 'D01 take', tags: 'ai, x', kind: 'podcast' }); await reloadPage(ctx);
     let s = await qs(ctx); if (s.sheet) f.push('the sheet reopened by itself without #add'); await qaOpenGear(ctx); s = await qs(ctx);

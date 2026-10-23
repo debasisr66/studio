@@ -454,7 +454,7 @@ curl -s https://debasisr66.github.io/studio/content/cache.json | head -20
 
 ## Step 18 — Studio 2.0: what changes for the owner (partly built)
 
-Written ahead of the build and updated as phases ship. **Built and live so far (2026-10-23):** the Technical / Others tabs and the Section choice in the composer, Podcasts with "Share a podcast", the retired Blog (`#blog` goes to Podcasts), and the cautious publish (it refuses to write over content it could not load or that changed on GitHub; if so, wait a minute, reload, try again). **Built, not yet merged:** Quick add (below). **Still to come:** prefill by link, the fixed page order and matching navs, seed podcasts, final checks.
+Written ahead of the build and updated as phases ship. **Built and live so far (2026-10-23):** the Technical / Others tabs and the Section choice in the composer, Podcasts with "Share a podcast", the retired Blog (`#blog` goes to Podcasts), and the cautious publish (it refuses to write over content it could not load or that changed on GitHub; if so, wait a minute, reload, try again). **Built:** Quick add (Phase A merged; Phase B, prefill by link, open as a pull request). **Still to come:** the fixed page order and matching navs, seed podcasts, final checks.
 
 **Quick add (built, [SPEC-QA](specs/quick-add/spec.md) Phase A; waiting for your phone checks):** you copy a link by instinct while reading in Chrome, tap one icon on your iPhone Home Screen, tap **Paste from clipboard**, fill the title, press **Post and publish**, give the token (your password manager can fill it) and Studio locks itself again. The order no longer matters: the token is asked for only when you post.
 
@@ -464,7 +464,9 @@ Written ahead of the build and updated as phases ship. **Built and live so far (
 3. Copy a link, tap the icon, **Paste from clipboard** (iOS may ask permission), title, **Post and publish**, token. It publishes and locks.
 4. Save the token in your password manager under `debasisr66.github.io` with the username `studio-admin` (the prompt has a fixed username field so the manager recognises it as a login). Whether Face ID is asked first is that manager's setting.
 5. If the icon opens Safari or loses the `#add`: use a Chrome **bookmark** to the same address, or an iPhone **Shortcut** that opens `googlechromes://debasisr66.github.io/studio/#add` (Chrome's own address form for https links).
-Before it is merged you can try all of this on a throwaway copy (`docs/build.md` §18.2b); it uses its own token and the username `studio-admin-sandbox`. Prefill by link (`#add=…`, a Shortcut in the Share Sheet) is Phase B and does not work yet.
+Before it is merged you can try all of this on a throwaway copy (`docs/build.md` §18.2b); it uses its own token and the username `studio-admin-sandbox`. Prefill by link (`#add=…`) is Phase B (below).
+
+**Prefill by link (Phase B, built).** A Share Sheet Shortcut on your iPhone can send the article you are reading straight into the sheet: Shortcuts, new shortcut **Add to Studio**, show in the Share Sheet for URLs, actions **URL Encode**, then **Text** `https://debasisr66.github.io/studio/#add=` plus the encoded link (and optionally `&t=` plus the encoded title), then **Open URLs**. In Chrome: Share, **Add to Studio**. If that opens the wrong browser, use `googlechromes://debasisr66.github.io/studio/#add=` instead. The address only *prefills* the sheet ("Prefilled from a link: check it"); it never posts: you still press Post and give the token. Bad values are ignored with a message. Details: `docs/OPERATIONS.md`.
 
 **What you will see**
 - Reads has two sections, **Technical** and **Others**. When you add a read, the form asks which one. Your five current reads and the book are proposed as Technical; you confirm this before the migration.

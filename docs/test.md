@@ -6,7 +6,7 @@ Releases: **v2.0 (in progress)** · **v1.6 (intermediate, 2026-10-22: SPEC-SH A 
 
 # v2.0 — Studio 2.0 (in progress: SH A and B, RC A and B, PC A and B merged; UX, Phase C and the release remain)
 
-Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22), [SPEC-QA](specs/quick-add/test.md) (56, added 2026-10-23): **172 new cases**, on top of the former **142 passing unit tests** (**262** now, plus a **117-case** browser smoke test). Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12), SH Phase B (PR #13), RC Phase A (PR #14), PC Phase A (PR #15), RC Phase B (PR #16) and PC Phase B (PR #21) are run:** see §G, §H, §I, §J, §K and §L. **QA Phase A is built (PR open):** §M.
+Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22), [SPEC-QA](specs/quick-add/test.md) (56, added 2026-10-23): **172 new cases**, on top of the former **142 passing unit tests** (**271** now, plus a **126-case** browser smoke test). Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12), SH Phase B (PR #13), RC Phase A (PR #14), PC Phase A (PR #15), RC Phase B (PR #16) and PC Phase B (PR #21) are run:** see §G, §H, §I, §J, §K and §L. **QA Phase A is built (PR open):** §M.
 
 ## A. Requirements (release level)
 
@@ -173,6 +173,17 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | Independent review | [reviews/QA-A.md](reviews/QA-A.md) (Opus 5.5). First verdict REJECT (a Post before the page had loaded could have replaced the whole published list; Cancel during the token check still stored the token), plus lower findings. All fixed tests-first; the re-check verdict is in the record |
 | Owner device checks (sandbox, Chrome on iPhone, 2026-10-23) | Paste, post, publish and auto-lock work; **O01 and O03 reported working**; the unpublished link is kept and can be published after logging in again. Feedback: unlock-only was a small link, now an **Edit or delete items** button (TC-QA-E06, added after the review: a layout and label change only) |
 | Not done or not verified | O02 and the O06 timing were only reported informally; **O04 and O07 reported passed**: the Home Screen icon opened the sheet by itself (an accidental tap, not a timed cold-start test; the browser it opened in was not recorded separately). Real GitHub API behaviour (stubs only). Whether Chrome's password manager offers and saves the token on a readonly-username form is unknown until O01. Reads publish still has no whole-file validation (older code; podcasts has it). Phase B (`#add=`) not started |
+
+## N. Results: QA Phase B, prefill by link (2026-10-23)
+
+| Check | Result |
+|-------|--------|
+| Unit tests | **271 of 271 pass** (262 before; +9 in `tests/spec-qa-phase-b.test.js`); all 9 failed first |
+| Browser smoke | **126 of 126 pass** in about 78 s locally (117 before; +9 cases, F01 x3, F02, F03 x2, F04, F05, S01 for `#add=`); all 9 failed first, the 117 old ones passed |
+| What the cases prove | a prefill fills the link (normalised, tracking and fragment dropped) and the title, suggests Podcast for Spotify, shows "Prefilled from a link: check it", and sends nothing and posts nothing, even with the admin already unlocked (F01); a prefill arriving while the page is open replaces the sheet's older draft and the banner goes when the owner edits (F01); malformed encoding, 5,000-character values, `javascript:`, `data:` and credential links are ignored with a message and the sheet opens empty; a bad title is dropped, the link kept (F03); the address is cleaned, no new history entry, the draft key carries the values through a reload (F04); `__proto__`, `constructor`, repeated keys: first wins, no error, no prototype change (F05); XSS payloads in link and title stay inert in the sheet, preview, banner and published card (S01) |
+| Validator | OK; `reads-lib.js` is 26,005 of 26,624 bytes (tight: the next addition needs the budget or a split) |
+| Independent review | [reviews/QA-B.md](reviews/QA-B.md) |
+| Not done or not verified | O05 (the Share Sheet Shortcut on a real iPhone: whether the fragment survives the plain `https://` and the `googlechromes://` forms) is the owner's; the Shortcut is described in OPERATIONS, not shipped |
 
 ---
 

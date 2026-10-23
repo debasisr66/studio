@@ -331,3 +331,17 @@ These are the author's notes only. The independent review is [reviews/QA-A.md](r
 | T33 guards | one function, `publishContent`, used by Publish changes and Quick add; `publishFile` also refuses when the page has not finished loading the file (review finding F1, fixed) | smoke L06, L09 |
 
 Other changes to review: publish requests now time out after 20 s where `AbortSignal.timeout` exists (F6); the whole file is written, so pending inline changes to the same file go public with a Quick add and the sheet warns first (F3); `reads-lib.js` budget 20 to 26 KB. Known and accepted: the sandbox and the real site share the origin `debasisr66.github.io`, so in one tab the token key and the draft key are shared between `/studio` and `/studio-sandbox` (F11); a model review is not a human audit; Face ID autofill may not work (convenience only).
+
+### 11.13 SPEC-QA Phase B: author's notes (2026-10-23; the verdict is the reviewer's, not the author's)
+
+Author's notes only. The independent review is [reviews/QA-B.md](reviews/QA-B.md); this section says nothing about pass or fail.
+
+| Threat | What was built | Evidence |
+|--------|----------------|----------|
+| T25 injection via `#add=` | `RL.parseAddHash` reads only the keys `add` and `t` (first of each), decodes in a try, accepts only an explicit http(s) link that `normalizeUrl` accepts (2,048 limit, 8,000 for the whole address), cleans and limits the title; the sheet shows values with `textContent` or `esc` | unit F01-F05, smoke F03, F05, S01 |
+| T26 a crafted link posts or misleads | the prefill function only sets fields, shows the banner "Prefilled from a link: check it", clears the address; it has no call to post, publish, submit or the token prompt (a code-shape test pins that); the owner must press Post and give the token | unit F01, smoke F01 (also with the admin already unlocked) |
+| Stale draft riding along | a prefill replaces every field, so an older take or tags cannot be published with a new link | smoke F01 (replace) |
+| Fragment lingering | `history.replaceState` removes it after reading; the draft key (tab only) carries the values | smoke F04 |
+| Object-prototype keys | the parser collects keys in a prototype-less object and only `add` and `t` count | unit F05, smoke F05 |
+
+Residual and not covered: the Shortcut and whether Chrome keeps the fragment through `googlechromes://` (owner O05); a link a third party crafts can still pre-fill a plausible-looking title the owner must read; the 26 KB `reads-lib.js` budget is nearly used.

@@ -104,7 +104,7 @@ async function boot() {
   if (followBlogLink()) showId('podcasts');
   if (RL.isReadsHash(location.hash) && location.hash !== '#reads') showReads();   // '#reads/others' matches no element id, so the browser cannot scroll to it
   if (tokenStore.get()) enableAdmin();   // always reached: renderAll never throws
-  if (RL.isAddHash(location.hash)) openAdd();   // the Home Screen entry (QA-08)
+  if (RL.isAddEntry(location.hash)) openAdd();   // the Home Screen entry (QA-08) and prefill by link (QA-09)
 }
 
 /* ---------- render: products, updates ---------- */
@@ -784,7 +784,7 @@ function qaBusy(on) {
   if (!on && $('#addBg').classList.contains('open') && document.activeElement === $('#addTitle')) $('#qa-publish').focus();
 }
 function openAdd() {
-  if ($('#addBg').classList.contains('open')) { qf('url').focus(); return; }
+  if ($('#addBg').classList.contains('open')) { qf('url').focus(); qaApplyHash(); return; }
   qa.warned = '';
   qa.back = document.activeElement;
   const d = RL.parseDraft(draftStore.get());
@@ -795,12 +795,13 @@ function openAdd() {
   qaClearErrors(); qaCount(); qaDest(); qaBusy(false);
   $('#qa-unlock').parentElement.hidden = document.body.classList.contains('admin');
   $('#addBg').classList.add('open'); qf('url').focus();
+  qaApplyHash();
 }
 /* clear = true for Cancel, Escape and success (the draft is dropped); false to keep it (unlock-only) */
 function closeAdd(clear) {
   $('#addBg').classList.remove('open');
   if (clear) draftStore.del();
-  if (RL.isAddHash(location.hash)) { try { history.replaceState(null, '', location.pathname + location.search); } catch {} }   // so a reload does not reopen it, and a later #add is a change the page sees
+  if (RL.isAddEntry(location.hash)) { try { history.replaceState(null, '', location.pathname + location.search); } catch {} }   // so a reload does not reopen it, and a later #add is a change the page sees
   if (qa.back && document.contains(qa.back)) qa.back.focus(); qa.back = null;
 }
 /* a link arrived from the clipboard (the Paste button, or a paste into the field): normalised link, destination, suggested kind, and a title when there is none yet */
@@ -810,6 +811,18 @@ function qaTake(text) {
   qaClearErrors(); qf('url').value = link; qa.kindTouched = false; qaDest(); qaSetKind(RL.suggestKind(link));
   if (!qf('title').value.trim()) qf('title').value = RL.extractTitle(text);
   qaSave(); return true;
+}
+/* #add=<link>[&t=<title>] (QA-09): fills the sheet and says so. It only prefills: it never posts, publishes or asks for a token, and the address is cleaned afterwards. */
+function qaApplyHash() { const p = RL.parseAddHash(location.hash); if (p) qaPrefill(p); }
+function qaPrefill(p) {
+  qaClearErrors(); qf('url').value = ''; qf('title').value = ''; qf('comment').value = ''; qf('tags').value = ''; qf('show').value = ''; qa.kindTouched = false; $('#qa-prefill').hidden = true;
+  if (p.url) {
+    qf('url').value = p.url; qf('title').value = p.title; qaSetKind(RL.suggestKind(p.url)); $('#qa-prefill').textContent = 'Prefilled from a link: check it'; $('#qa-prefill').hidden = false;
+    if (p.titleError) $('#qa-msg').textContent = p.titleError;
+  } else $('#qa-msg').textContent = p.error;
+  qaCount(); qaDest(); qaSave();
+  try { history.replaceState(null, '', location.pathname + location.search); } catch {}   // the fragment is read once; the draft key carries the values on
+  (p.url ? qf('title') : qf('url')).focus();
 }
 $('#qa-paste').onclick = async () => {   // the ONLY place the clipboard is read: inside the tap, so the browser's own paste confirmation applies
   let t = '';
@@ -823,6 +836,7 @@ qf('url').addEventListener('paste', e => {   // a paste by hand: share text with
 $('#addForm').addEventListener('input', e => {
   if (e.target.id === 'qa-url') { qaDest(); if (!qa.kindTouched) { const n = RL.normalizeUrl(qf('url').value); if (n) qaSetKind(RL.suggestKind(n)); } }
   if (e.target.id === 'qa-comment') qaCount();
+  $('#qa-prefill').hidden = true;   // once the owner edits, the banner no longer applies
   qaSave();
 });
 $('#qa-kind').addEventListener('change', () => { qa.kindTouched = true; qaShowKind(); qaSave(); });
@@ -924,7 +938,7 @@ document.addEventListener('keydown', e => {
   if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
   else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
 });
-window.addEventListener('hashchange', () => { if (RL.isAddHash(location.hash)) openAdd(); });
+window.addEventListener('hashchange', () => { if (RL.isAddEntry(location.hash)) openAdd(); });
 
 boot();
 
