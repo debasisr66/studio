@@ -45,6 +45,11 @@ test('TC-QA-P05 extractLink and extractTitle never throw and stay bounded on hos
   assert.ok(Date.now() - t0 < 2000, 'took ' + (Date.now() - t0) + ' ms');
   assert.equal(RL.extractLink('\u0000https://example.com/x\u0007'), 'https://example.com/x');
 });
+test('TC-QA-P05 review F8: extractLink time grows linearly with trailing brackets', () => {
+  const t = n => { const t0 = process.hrtime.bigint(); RL.extractLink('https://example.com/x' + ')'.repeat(n)); return Number(process.hrtime.bigint() - t0) / 1e6; };
+  t(1000); const a = t(20000), b = t(5000);
+  assert.ok(a < 100, '20,000 brackets took ' + a + ' ms'); assert.ok(b < 50, b + ' ms');
+});
 test('TC-QA-P05 extractTitle: the line that is not the link, cleaned, at most 140 characters', () => {
   const L = 'https://example.com/x';
   assert.equal(RL.extractTitle('A good title\n' + L), 'A good title');

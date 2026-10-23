@@ -248,6 +248,7 @@ const stubGh = (ctx, o = {}) => ctx.ev(`(() => { window.__calls = []; window.__p
   window.fetch = async (u, init) => { u = String(u); if (!u.startsWith('https://api.github.com')) return real(u, init);
     window.__inflight = (window.__inflight || 0) + 1; try { return await (async () => {
     const method = (init && init.method) || 'GET'; window.__calls.push({ method, u, auth: init && init.headers && init.headers.Authorization });
+    if (u.endsWith('/user')) { if (o.userDelay) await new Promise(r => setTimeout(r, o.userDelay)); }
     if (u.endsWith('/user')) return o.user === 401 ? new Response('{}', { status: 401 }) : new Response(JSON.stringify({ login: o.login || 'debasisr66' }), { status: 200 });
     const m = u.match(/contents\\/(content\\/[a-z]+\\.json)/); if (!m) return new Response('{}', { status: 404 });
     if (method === 'PUT') { if (o.put) return new Response('boom', { status: o.put }); window.__puts.push({ u, b: JSON.parse(init.body) }); return new Response('{}', { status: 200 }); }
@@ -573,7 +574,7 @@ const CASES = [
     if (!s.sheet) f.push('the sheet did not open'); if (s.tok) f.push('the token prompt opened first'); if (s.admin) f.push('opening the sheet unlocked the admin'); return f; } },
   { id: 'TC-QA-E02 cold load of #add, locked: the sheet is open and the link field has the focus', width: 1280, hash: '#add', fixtures: TWO, ...qaWith(), check: async ctx => {
     const s = await qs(ctx); return [...(s.sheet ? [] : ['the sheet is not open']), ...(s.active === 'qa-url' ? [] : ['focus is on ' + s.active])]; } },
-  { id: 'TC-QA-E03 a visitor sees nothing of it: no sheet, no prompt, no link to #add anywhere', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+  { id: 'TC-QA-E03 a visitor sees no sheet or prompt and no link to #add (the gear itself is visible to everyone, by design)', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
     const f = [], r = await ctx.ev(`({ bg: getComputedStyle(document.getElementById('addBg')).display, tok: getComputedStyle(document.getElementById('tokBg')).display, links: document.querySelectorAll('a[href="#add"], nav a[href*="add"]').length, bar: getComputedStyle(document.getElementById('adminbar')).display })`);
     if (r.bg !== 'none' || r.tok !== 'none') f.push('a dialog is displayed: ' + JSON.stringify(r)); if (r.links) f.push('a link to #add exists'); if (r.bar !== 'none') f.push('the owner bar shows to a visitor'); return f; } },
   { id: 'TC-QA-E04 Escape and Cancel close the sheet and return the focus to where it was', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
@@ -762,6 +763,25 @@ const CASES = [
   { id: 'TC-QA-L06 an invalid entry already in podcasts.json blocks a Quick add podcast publish (whole-file validation)', width: 1280, fixtures: ['podcasts-bad-entry', 'healthy'], ...qaWith(), check: async ctx => {
     await stubGh(ctx); await qaOpenGear(ctx); await qaFill(ctx, { kind: 'podcast', url: 'https://example.com/l06d', title: 'L06d' }); await qaClick(ctx, 'qa-publish', 200); await qaToken(ctx, QA_TOKEN, 900);
     const s = await qs(ctx); return [...(/podcast tags must be/.test(s.msg) ? [] : ['the rule that failed is not named: "' + s.msg + '"']), ...((await putsOf(ctx)).length ? ['an invalid file was written'] : [])]; } },
+  { id: 'TC-QA-L09 review F1: Post before the page knows what is on GitHub (boot not finished) is refused; nothing is written, so the published list cannot be replaced', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx); await ctx.ev("delete snap['content/reads.json']; state.reads.articles = []; true"); await qaOpenGear(ctx);
+    await qaFill(ctx, { url: 'https://example.com/early', title: 'Early' }); await qaClick(ctx, 'qa-publish', 30); await qaToken(ctx); const s = await qs(ctx);
+    if ((await putsOf(ctx)).length) f.push('it wrote a file with only the new entry'); if (!/not finished loading|reload/i.test(s.msg)) f.push('no refusal message: "' + s.msg + '"'); if (!s.admin || !s.sheet) f.push('should stay unlocked with the sheet open'); return f; } },
+  { id: 'TC-QA-U08 review F2: Cancel while the token is being checked stores nothing, unlocks nothing and shows no internal error', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx, { userDelay: 400 }); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/u08', title: 'U08' }); await qaClick(ctx, 'qa-publish', 30);
+    await ctx.ev(`(() => { document.getElementById('pat').value = ${JSON.stringify(QA_TOKEN)}; document.getElementById('tokForm').requestSubmit(); })()`); await sleep(100); await qaClick(ctx, 'tok-cancel'); await sleep(700);
+    const s = await qs(ctx); if (s.session.includes('studio-admin-pat')) f.push('the token was stored after Cancel'); if (s.admin) f.push('admin switched on after Cancel'); if (/not a function|undefined/.test(s.tokErr + s.msg)) f.push('internal error text shown: ' + s.tokErr + s.msg); if ((await putsOf(ctx)).length) f.push('something was written'); if (!s.sheet || s.tok) f.push('should be back on the sheet'); return f; } },
+  { id: 'TC-QA-L10 review F3: pending inline changes to the same file are announced before a Quick add publishes them', width: 1280, token: true, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx); await ctx.ev("window.confirm = () => true; [...document.querySelectorAll('#articlesFeed [data-del]')][0].click()"); await ctx.ev("document.getElementById('addOpen').click()");
+    await qaFill(ctx, { url: 'https://example.com/l10', title: 'L10' }); await qaClick(ctx, 'qa-publish', 30); const s = await qs(ctx);
+    if ((await putsOf(ctx)).length) f.push('published without telling the owner about the other pending change'); if (!/unpublished changes/i.test(s.msg)) f.push('no warning: "' + s.msg + '"');
+    await qaClick(ctx, 'qa-publish', 30); await settle(ctx); const puts = await putsOf(ctx); if (puts.length !== 1) f.push('the second press did not publish (' + puts.length + ' PUTs)'); return f; } },
+  { id: 'TC-QA-L11 review F5 and F7: text in an inline composer survives the lock after a publish; focus is kept sensible on failure and success', width: 1280, token: true, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await ctx.ev("document.getElementById('composerOpen').click(); const e = document.getElementById('cf-title'); e.value = 'typed inline'; e.dispatchEvent(new Event('input', { bubbles: true }))");
+    await stubGh(ctx, { put: 500 }); await ctx.ev("document.getElementById('addOpen').click()"); await qaFill(ctx, { url: 'https://example.com/l11', title: 'L11' }); await qaClick(ctx, 'qa-publish', 30); await settle(ctx);
+    let s = await qs(ctx); if (s.active !== 'qa-publish') f.push('after a failure focus is on "' + s.active + '"');
+    await stubGh(ctx); await qaClick(ctx, 'qa-publish', 30); await settle(ctx); s = await qs(ctx); if (s.active !== 'gear') f.push('after the lock focus is on "' + s.active + '"');
+    const v = await ctx.ev("document.getElementById('cf-title').value"); if (v !== 'typed inline') f.push('inline composer text was cleared: "' + v + '"'); return f; } },
   { id: 'TC-QA-D01 fill the sheet, reload the page in the same tab, open the sheet: the values are restored', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
     const f = []; await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://open.spotify.com/episode/d01', title: 'D01 title', comment: 'D01 take', tags: 'ai, x', kind: 'podcast' }); await reloadPage(ctx);
     let s = await qs(ctx); if (s.sheet) f.push('the sheet reopened by itself without #add'); await qaOpenGear(ctx); s = await qs(ctx);

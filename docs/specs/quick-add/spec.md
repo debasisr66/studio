@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-QA` (requirements `QA-01` … `QA-10`) |
-| Status | **Approved by the owner (2026-10-23), including the one owner-only draft key (QA-07); not started** |
+| Status | **Approved by the owner (2026-10-23), including the one owner-only draft key (QA-07). Phase A (QA-01 … QA-08) built 2026-10-23 on `v2/qa-a-build`, independent review G4 in [reviews/QA-A.md](../../reviews/QA-A.md), awaiting the owner's device checks and merge; Phase B not started** |
 | Owner | Debasis Ray |
 | Created | 2026-10-23 |
 | Parent | [PRD](../../PRD.md) §9.4, §11.3, §14; [§22](../../PRD.md) |
@@ -157,3 +157,4 @@ Rollback: revert the merge commit; no content file or schema changes, the existi
 - 2026-10-23: Re-checked for Chrome on the iPhone (section 6b): token prompt as a real login form, Chrome as the default browser for the Home Screen icon, `googlechromes://` fallback, draft storage decided after owner check O03. Order (Quick add before UX Phase A) and plain bookmark confirmed.
 - 2026-10-23: **Approved by the owner**, including the amendment of the PRD storage target to allow the one owner-only draft key. Next: tests first, Phase A. The owner asked how to test on the phone before merge: see the preview options discussed in the session (a separate sandbox copy is recommended; the method is recorded here once chosen).
 - 2026-10-23: Phone preview chosen by the owner (separate sandbox repository). `debasisr66/studio-sandbox` created (public, Pages on `main`, HTTPS enforced) and filled with a copy of the current site by `scripts/make-sandbox.js` (tests in `tests/make-sandbox.test.js`; six tests, all failed before the script existed). The owner creates the sandbox-only token and runs the device checks when Phase A is ready.
+- 2026-10-23: **Phase A built** (tests first: 19 unit + 1 sandbox + 45 smoke cases, all red before the build). One decision on the way: the token prompt and the sheet are two static dialogs in `index.html` (a real `<form>` for the prompt), not the shared `#modal`. `Escape` is treated like Cancel (clears the draft); the sheet has no tap-outside-to-close, so a stray tap cannot discard a draft. A visitor who types into the sheet gets the draft key in their own tab (see the test plan's status log). The 20 KB budget of `reads-lib.js` was raised to 26 KB. Phone preview: `docs/build.md` 18.2b. Awaiting: independent review G4, owner device checks O01-O04, O06, O07, owner "merge".

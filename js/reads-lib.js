@@ -300,15 +300,12 @@
   var SCAN_MAX = 20000;   // only this much of a pasted text is looked at
   /* trailing punctuation is not part of a link; a closing bracket stays only when its opener is inside the link (Wikipedia-style addresses) */
   function trimLink(s) {
-    var open = { ')': '(', ']': '[', '}': '{' };
+    var pair = { ')': '(', ']': '[', '}': '{' }, n = { '(': 0, '[': 0, '{': 0, ')': 0, ']': 0, '}': 0 }, i;
+    for (i = 0; i < s.length; i++) { var c = s.charAt(i); if (own(n, c)) n[c]++; }   // counted once, so trimming stays linear
     for (;;) {
       var last = s.charAt(s.length - 1);
       if (last && '.,;:!?\'"*_>'.indexOf(last) >= 0) { s = s.slice(0, -1); continue; }
-      if (own(open, last)) {
-        var o = open[last], opens = 0, closes = 0;
-        for (var i = 0; i < s.length; i++) { var c = s.charAt(i); if (c === o) opens++; else if (c === last) closes++; }
-        if (closes > opens) { s = s.slice(0, -1); continue; }
-      }
+      if (own(pair, last) && n[last] > n[pair[last]]) { n[last]--; s = s.slice(0, -1); continue; }
       return s;
     }
   }

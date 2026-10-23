@@ -355,13 +355,14 @@ const io = new IntersectionObserver(es => es.forEach(e => {
 document.querySelectorAll('section.block').forEach(s => io.observe(s));
 
 /* ---------- admin: GitHub contents API ---------- */
-const ghApi = (path, opts = {}) => fetch('https://api.github.com' + path, {...opts, headers: {
+const ghApi = (path, opts = {}) => fetch('https://api.github.com' + path, {...(typeof AbortSignal.timeout === 'function' ? {signal: AbortSignal.timeout(20000)} : {}), ...opts, headers: {
   Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + tokenStore.get(), ...(opts.headers || {})}});
 const b64enc = s => { const b = new TextEncoder().encode(s); let bin = ''; b.forEach(x => bin += String.fromCharCode(x)); return btoa(bin); };
 const b64dec = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g, '')), c => c.charCodeAt(0)));
 
 /* GET current sha -> validate -> skip if unchanged -> PUT with sha. One file per commit. */
 async function publishFile(path, obj, message, guard) {
+  if (guard && snap[path] === undefined) throw new Error(path + ': this page has not finished loading it (or could not), so nothing was written. Reload the page and try again.');   // review QA-A F1: boot sets 'absent' or the loaded text for every known state
   let text;
   try { text = JSON.stringify(JSON.parse(JSON.stringify(obj)), null, 2) + '\n'; }
   catch (e) { throw new Error('Refusing to publish ' + path + ': invalid JSON (' + e.message + ')'); }
@@ -405,7 +406,7 @@ const onActivity = () => { if (document.body.classList.contains('admin')) idle.a
 ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, onActivity, {passive: true}));
 
 function enableAdmin() { document.body.classList.add('admin'); updateDirty(); idle.arm(); }
-function lock() { tokenStore.del(); document.body.classList.remove('admin'); idle.disarm(); closeComposer(); closePodcastComposer(); }
+function lock(keepForms) { tokenStore.del(); document.body.classList.remove('admin'); idle.disarm(); if (!keepForms) { closeComposer(); closePodcastComposer(); } }   // after a publish the forms are kept (they are hidden while locked): review QA-A F5
 function updateDirty() {
   const LABEL = {podcasts: 'podcasts.json', reads: 'reads.json', profile: 'profile photo'};
   const d = Object.entries(state.dirty).filter(([,v]) => v).map(([k]) => LABEL[k] || k);
@@ -699,7 +700,7 @@ $('#publishBtn').onclick = async () => {
   updateDirty();
   modal.open('<h3 id="modalTitle">Publish result</h3><pre class="mono pre-result">' + esc(out.join('\n')) + '</pre><p class="muted-xs">GitHub Pages usually reflects changes within a minute or two.' + (failed ? '' : ' Admin locked again (SPEC-QA QA-06).') + '</p><div class="btns"><button type="button" class="cta" id="mc">Close</button></div>');
   $('#mc').onclick = modal.close;
-  if (!failed) { lock(); say('Published and locked.'); }   // QA-06: the admin never stays open after a successful publish; a failure keeps it open with the error
+  if (!failed) { lock(true); say('Published and locked.'); }   // QA-06: the admin never stays open after a successful publish; a failure keeps it open with the error
 };
 window.addEventListener('beforeunload', e => { if (Object.values(state.dirty).some(Boolean)) { e.preventDefault(); e.returnValue = ''; } });
 
@@ -778,10 +779,13 @@ function qaShowErrors(errors) {
 }
 function qaBusy(on) {
   qa.busy = on; $('#addSheet').setAttribute('aria-busy', String(on));
+  if (on) $('#addTitle').focus();   // the focused button is about to be disabled: keep the focus inside the dialog (review QA-A F7)
   ['qa-paste', 'qa-draft', 'qa-publish', 'qa-cancel', 'qa-unlock'].forEach(id => { $('#' + id).disabled = on; });
+  if (!on && $('#addBg').classList.contains('open') && document.activeElement === $('#addTitle')) $('#qa-publish').focus();
 }
 function openAdd() {
   if ($('#addBg').classList.contains('open')) { qf('url').focus(); return; }
+  qa.warned = '';
   qa.back = document.activeElement;
   const d = RL.parseDraft(draftStore.get());
   qf('url').value = d ? d.url : ''; qf('title').value = d ? d.title : ''; qf('comment').value = d ? d.comment : ''; qf('tags').value = d ? d.tags : ''; qf('show').value = ''; qf('type').value = 'article';
@@ -841,16 +845,19 @@ $('#tok-cancel').onclick = () => { if (qa.tokDone) qa.tokDone(false); };
 $('#tokForm').addEventListener('submit', async ev => {
   ev.preventDefault();
   if (!qa.tokDone) return;
+  const done = qa.tokDone;
   const pat = $('#pat').value.trim(), err = m => { $('#tok-err').textContent = m; };
   if (!pat) return err('Paste your token to continue.');
   $('#tok-go').disabled = true;
   try {
     const r = await fetch('https://api.github.com/user', {headers: {Authorization: 'Bearer ' + pat, Accept: 'application/vnd.github+json'}});
+    if (qa.tokDone !== done) return;   // Cancel (or a newer prompt) arrived while GitHub was answering: this result is stale, nothing is stored (review QA-A F2)
     if (!r.ok) throw new Error('GitHub rejected the token (' + r.status + '). Check it has not expired.');
     const u = await r.json();
+    if (qa.tokDone !== done) return;
     if (u.login !== OWNER) throw new Error('This token belongs to "' + u.login + '", but admin is limited to "' + OWNER + '".');
-    tokenStore.set(pat); enableAdmin(); qa.tokDone(true);
-  } catch (e) { err(e.message); $('#tok-go').disabled = false; }
+    tokenStore.set(pat); enableAdmin(); done(true);
+  } catch (e) { if (qa.tokDone === done) { err(e.message); $('#tok-go').disabled = false; } }
 });
 $('#qa-unlock').onclick = async () => {   // unlock without posting (to edit or delete); the draft stays
   if (qa.busy) return;
@@ -883,18 +890,22 @@ async function qaPost(mode) {
     add(); state.dirty[key] = true; updateDirty(); closeAdd(true); renderAll(); say('Added as a draft. Use Publish changes to make it public.');
     return;
   }
+  if (state.dirty[key] && qa.warned !== key) {   // review QA-A F3: the file is written whole, so pending inline changes to it go public too: say so first
+    qa.warned = key; $('#qa-msg').textContent = 'This also publishes your other unpublished changes to ' + CONTENT_FILES[key][0] + ' (for example a deleted or edited item). Press Post and publish again to continue, or Post as draft.';
+    return;
+  }
   qaBusy(true); $('#qa-note').textContent = 'Publishing…';
   try {
     const data = key === 'reads' ? RL.serializeReads({books: state.reads.books, articles: [entry, ...state.reads.articles]}) : RL.serializePodcasts({podcasts: [entry, ...state.podcasts.podcasts]});
     await publishContent(key, data);
   } catch (e) {   // stays unlocked, the sheet and the draft stay, the owner can retry
     qaBusy(false); $('#qa-note').textContent = '';
-    $('#qa-msg').textContent = e.message + (/\((401)\)/.test(e.message) ? '\nGitHub did not accept the token. Use "Lock & sign out" and unlock again with a fresh one.' : '');
+    $('#qa-msg').textContent = e.message + (/\((401)\)/.test(e.message) && document.body.classList.contains('admin') ? '\nGitHub did not accept the token. Use "Lock & sign out" and unlock again with a fresh one.' : '');
     return;
   }
   add(); state.dirty[key] = false; updateDirty(); qaBusy(false);
   const others = Object.values(state.dirty).some(Boolean);
-  closeAdd(true); lock(); renderAll();   // QA-06: published, so the admin locks at once
+  closeAdd(true); lock(true); renderAll(); $('#gear').focus();   // QA-06: published, so the admin locks at once
   say('Published and locked. It appears on the site in about a minute.' + (others ? ' Other unpublished changes stay on this page until you reload.' : ''));
 }
 $('#qa-publish').onclick = () => qaPost('publish');
