@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-QA` (requirements `QA-01` … `QA-10`) |
-| Status | **Draft (2026-10-23); awaiting the owner's approval; not started** |
+| Status | **Draft (2026-10-23); order, home-screen entry and Chrome-on-iPhone confirmed by the owner; spec approval and the draft-key decision (QA-07) pending; not started** |
 | Owner | Debasis Ray |
 | Created | 2026-10-23 |
 | Parent | [PRD](../../PRD.md) §9.4, §11.3, §14; [§22](../../PRD.md) |
@@ -15,6 +15,8 @@
 
 Adding a read or a podcast from the owner's iPhone is a planning task: unlock first (paste a long token), then go back to the article, copy its link, return, open the right composer, paste, fill in, Post, Publish, Lock. Copy the link first and the clipboard is overwritten by the token. This spec makes the owner's real scenario work **in any order, with the fewest steps, without weakening the token rules**:
 
+**The owner uses Chrome on the iPhone, not Safari.** On an iPhone every browser, Chrome included, runs Apple's WebKit engine (Apple's rule outside the EU), so the page's code behaves the same; what differs is the browser's own password manager, Home Screen handling and URL scheme. Section 6b records what was checked for Chrome.
+
 > The owner is reading an article, likes it and copies its link by instinct. **One tap** opens a box that is ready to take that link. Pasting it starts the add; the token is asked for only when the owner presses Post; the item is published and the admin **locks itself again**.
 
 ## 2. Evidence
@@ -23,7 +25,7 @@ Adding a read or a podcast from the owner's iPhone is a planning task: unlock fi
 |---|---------|----------|
 | F1 | The clipboard holds one thing: a link copied first is lost when the token is pasted, so today the order is forced (unlock, then copy) | `#pat` prompt, `openUnlock` in `js/app.js` |
 | F2 | The composers are hidden until admin mode, so there is nothing to paste into before unlocking | `body.admin .composer` in `css/site.css` |
-| F3 | The token field is `type="password"` with `autocomplete="off"`; Safari honours `off` on login fields and suppresses its password manager, which is a likely reason Face ID autofill never appears | `index.html`/`js/app.js` token prompt; secondary sources: [Discourse thread on `autocomplete="off"` disabling Safari's password manager](https://meta.discourse.org/t/autocomplete-off-disables-safari-password-manager/14472?tl=en), [PanicVault guide on iOS AutoFill attributes](https://www.panicvault.org/apple/autofill-iphone-guide/). Not confirmed on the owner's device: see Q1 |
+| F3 | The token prompt is a bare `type="password"` input with `autocomplete="off"`, not a real login form (no username field, no submit). Safari honours `off` on login fields and suppresses its password manager; Chrome is reported to ignore `off` on password fields, so for a Chrome user the likelier reason autofill never appears is that the prompt does not look like a login form to Chrome's password manager | `index.html`/`js/app.js` token prompt; secondary sources: [Discourse thread on `autocomplete="off"` disabling Safari's password manager](https://meta.discourse.org/t/autocomplete-off-disables-safari-password-manager/14472?tl=en), [PanicVault guide on iOS AutoFill attributes](https://www.panicvault.org/apple/autofill-iphone-guide/). Not confirmed on the owner's device: see Q1 |
 | F4 | Posting a draft, publishing and locking are three separate actions | `#composerForm` submit, `#publishBtn`, `lock()` |
 | F5 | There are two composers (Share a read, Share a podcast) and the owner must find the right one first | `index.html` |
 | F6 | The token lives only in the tab (`sessionStorage`) and locks after 30 idle minutes: good, and to be kept | `js/token-store.js`, `IDLE_MS` |
@@ -54,17 +56,17 @@ Adding a read or a podcast from the owner's iPhone is a planning task: unlock fi
 
 **QA-03 (P0): Read or Podcast.** After the link is in, one choice: **Read** or **Podcast**. The sheet suggests Podcast for Spotify and Apple Podcasts links and Read otherwise; the owner can change it. Read shows Section (the last used, else the tab being viewed), Type, Tags and Take; Podcast shows Show, Tags and Take. Validation and limits are exactly those of the existing composers (`RL.validateEntry`, `RL.validatePodcastEntry`); no rule is duplicated.
 
-**QA-04 (P0): Unlock just in time.** Pressing **Post** or **Post and publish** while locked opens the token prompt over the sheet. On success the same action continues; the draft is never lost. A wrong or expired token shows a clear message and stays on the prompt; Cancel returns to the sheet with the draft intact and nothing written. The token field is autofill-friendly for the iPhone Passwords app: a labelled username field (`autocomplete="username"`) with the password field (`autocomplete="current-password"`) in a form, and **no `autocomplete="off"`**. The token itself is still kept only in the tab's `sessionStorage`, never logged, never in the DOM text.
+**QA-04 (P0): Unlock just in time.** Pressing **Post** or **Post and publish** while locked opens the token prompt over the sheet. On success the same action continues; the draft is never lost. A wrong or expired token shows a clear message and stays on the prompt; Cancel returns to the sheet with the draft intact and nothing written. The prompt becomes a real login form that the browser's password manager recognises, whichever one the owner uses (Chrome's own, or the iPhone Passwords app when it is the AutoFill provider): a labelled username field (`autocomplete="username"`, fixed value `studio-admin`, not secret) with the password field (`autocomplete="current-password"`) inside a `<form>`, submitted with its button, and **no `autocomplete="off"`**. Whether Face ID or the passcode is asked before filling is the password manager's own setting, not something the page controls. The token itself is still kept only in the tab's `sessionStorage`, never logged, never in the DOM text.
 
 **QA-05 (P0): Post and publish in one action.** The primary button is **Post and publish** (adds the item and publishes the one affected file through the existing guarded flow of SPEC-PC PC-03: GET sha, refuse on unloaded or changed content, validate the whole file, skip identical, PUT). A secondary **Post as draft** keeps today's batching (Publish changes later).
 
 **QA-06 (P0): Auto-lock after every successful publish.** On success the admin locks immediately: the token is removed, admin mode ends, a status line says "Published and locked". This applies to Quick add and to the existing **Publish changes** button. A failed or refused publish **stays unlocked** with the error, and the draft is kept so the owner can retry. The 30-minute idle lock and the manual lock stay.
 
-**QA-07 (P1): The draft survives app switches.** The in-progress link, title, take, tags and kind are kept in this tab's `sessionStorage` under one owner-only key, written only after the owner uses the sheet, and restored when the sheet reopens in the same tab. It never contains the token. It is cleared on a successful publish, on Cancel and when the tab closes; an idle lock does not clear it (the owner resumes with a fresh unlock). A visitor never writes it. *This is the one new storage key in 2.0: the PRD release target "no new storage key" is amended to "no storage about visitors; one owner-only draft key".*
+**QA-07 (P1): The draft survives app switches.** The in-progress link, title, take, tags and kind are kept in this tab's `sessionStorage` under one owner-only key, written only after the owner uses the sheet, and restored when the sheet reopens in the same tab. It never contains the token. It is cleared on a successful publish, on Cancel and when the tab closes; if the spike (TC-QA-O03) shows that Chrome on the iPhone does not keep `sessionStorage` when it reloads or restores a tab, the draft moves to `localStorage` with a 24-hour expiry (same contents, same clearing rules, owner-only), a change the owner is asked to confirm at that point; an idle lock does not clear it (the owner resumes with a fresh unlock). A visitor never writes it. *This is the one new storage key in 2.0: the PRD release target "no new storage key" is amended to "no storage about visitors; one owner-only draft key".*
 
-**QA-08 (P1): One-tap entry on iPhone.** Opening `…/#add` shows the sheet with the link field focused and the Paste button visible, from a cold start. The documented iPhone recipe is: open that address in Safari, Share, **Add to Home Screen**; the icon is the one tap. It works whether the icon opens in Safari or as a standalone web app (nothing relies on shared storage).
+**QA-08 (P1): One-tap entry on iPhone.** Opening `…/#add` shows the sheet with the link field focused and the Paste button visible, from a cold start. The documented recipe for **Chrome**: set Chrome as the iPhone's default browser (Settings, the Chrome app, Default Browser App); open `…/#add` in Chrome, Share, **Add to Home Screen** (available to third-party browsers since iOS 16.4); the icon is the one tap. A Home Screen icon without a web-app manifest is a plain bookmark and opens in the *default* browser, which is why Chrome must be the default. Fallbacks, in order: a Chrome bookmark in the toolbar (two taps); an iPhone Shortcut on the Home Screen that opens `googlechromes://debasisr66.github.io/studio/#add` (Chrome's own scheme for https links). Nothing relies on shared storage between browsers.
 
-**QA-09 (P1, Phase B): Prefill by link.** `…/#add=<encoded link>` (optionally `&t=<encoded title>`) opens the sheet with those values filled. It only prefills: it never submits, and it shows "Prefilled from a link: check it". Values go through the same normalisation and validation; malformed, oversized or non-`http(s)` values are ignored with a message. The fragment is cleared from the address bar after it is read (the draft key carries the values on). The documented iPhone recipe is a **Shortcut** "Add to Studio" in the Share Sheet that opens this address with the shared link; it lives on the phone and is described, not shipped.
+**QA-09 (P1, Phase B): Prefill by link.** `…/#add=<encoded link>` (optionally `&t=<encoded title>`) opens the sheet with those values filled. It only prefills: it never submits, and it shows "Prefilled from a link: check it". Values go through the same normalisation and validation; malformed, oversized or non-`http(s)` values are ignored with a message. The fragment is cleared from the address bar after it is read (the draft key carries the values on). The documented iPhone recipe is a **Shortcut** "Add to Studio" in the Share Sheet that opens this address with the shared link (first with the plain `https://` address, which opens in the default browser; if that opens the wrong browser, with the `googlechromes://` form); it lives on the phone and is described, not shipped.
 
 **QA-10 (P2): Not now.** See section 4.
 
@@ -75,9 +77,21 @@ Adding a read or a podcast from the owner's iPhone is a planning task: unlock fi
 - **The sheet is reachable by anyone who types `#add`.** It does nothing for a visitor: without the owner's token no write is possible (the API refuses), the sheet holds no data, and it says it is an owner tool.
 - **`#add=` links** can be crafted by a third party. They can only prefill a form the owner must review and submit with the token; they are validated like typed input and never auto-submit.
 - **Draft key:** link, title, take, tags, kind only; owner-only; cleared on success and Cancel; never the token.
-- **Autofill:** the token is stored by the iPhone Passwords app if the owner chooses (hardware-backed, biometric), not by the site. The site stores nothing new about the token.
+- **Autofill:** the token is stored by the owner's password manager if the owner chooses (Chrome's Google Password Manager, or the iPhone Passwords app when it is the AutoFill provider; iOS allows one active provider), not by the site. The site stores nothing new about the token. Adding the entry by hand under `debasisr66.github.io` with the username `studio-admin` works even if the browser never offers to save it.
 - **Decisions recorded:** D1 a PIN-protected stored token is rejected: a short PIN protecting a copy of the token on the device can be guessed offline by anyone who gets the stored copy (a 6-digit PIN has 1,000,000 possibilities, and slow key derivation only adds a constant factor), and it would end the rule that the site never keeps the token. D2 passkey/PRF unlock is rejected for now: Safari support was reported to arrive in stages and with cross-device gaps ([Apple developer forum](https://developer.apple.com/forums/thread/774112), [Corbado write-up](https://dev.to/corbado/webauthn-prf-extension-related-origins-passkey-upgrades-5748)), too uncertain and complex for a static site.
 - Full pre-implementation review: [security.md](../../security.md) §11.11.
+
+## 6b. What was checked for Chrome on the iPhone (2026-10-23)
+
+Secondary sources only (no device); the owner device checks are the proof.
+
+| Topic | Finding | Effect on the plan |
+|-------|---------|--------------------|
+| Engine | Every iPhone browser uses WebKit outside the EU | Page code, clipboard read and `sessionStorage` follow WebKit; no Chrome-only code paths |
+| Password manager | Chrome can be the iPhone's AutoFill provider (Settings, Passwords, Password Options) and has its own Google Password Manager; iOS allows one active provider ([Google help](https://support.google.com/chrome/answer/7378684?hl=en), [Chrome Story guide](https://chromestory.com/2026/07/chrome-passwords-not-autofilling-iphone-ipad/)); Chrome is reported to ignore `autocomplete="off"` on password fields ([ownCloud forum](https://central.owncloud.org/t/autocomplete-off-on-password-field/1075)) | QA-04 now makes the prompt a real login form for any manager; Face ID before filling is the manager's setting, not promised |
+| Home Screen | Third-party browsers can add Home Screen shortcuts since iOS 16.4; a plain bookmark opens in the default browser, a web app with a manifest opens in its own view ([9to5Mac](https://9to5mac.com/2023/02/16/iphone-web-app-new-features-ios-16-4/), [GadgetHacks](https://ios.gadgethacks.com/how-to/these-browsers-let-you-add-web-apps-and-bookmarks-your-iphones-home-screen-0385351/); sources partly conflict) | QA-08: set Chrome as the default browser, add from Chrome; fallbacks a Chrome bookmark or a Shortcut |
+| URL scheme | Chrome registers `googlechrome://` (http) and `googlechromes://` (https) ([Chromium docs](https://chromium.googlesource.com/chromium/src/+/7fed2b3a20996b3751bf23798f52beffe7956fd9/docs/ios/opening_links.md)); whether a `#fragment` survives is not documented | The Shortcut recipe and the fallback icon use it; TC-QA-O05 and O04 verify the fragment |
+| Tab restore | Not found | Draft storage decided after TC-QA-O03 (Q5) |
 
 ## 7. Edge cases
 
@@ -101,12 +115,13 @@ Adding a read or a podcast from the owner's iPhone is a planning task: unlock fi
 
 | # | Question | Owner | Blocking? |
 |---|----------|-------|-----------|
-| Q1 | Does the iPhone Passwords app offer the saved token (with Face ID) on our prompt once `autocomplete="off"` is gone and the username field exists? Cannot be confirmed from here; owner device check TC-QA-O01 | Owner | Not for the build; decides whether Face ID fill is part of the experience |
-| Q2 | Home-screen icon as a plain Safari bookmark (recommended; no manifest, no new files) or as a standalone web app? | Owner | No (default: plain bookmark) |
+| Q1 | Does the token manager you use (Chrome's, or the iPhone Passwords app) offer the saved token on our prompt once it is a real login form? Does it ask for Face ID or the passcode first? Cannot be confirmed from here; owner device check TC-QA-O01 | Owner | Not for the build; decides whether one-tap token fill is part of the experience |
+| Q2 | Home-screen icon as a plain bookmark (confirmed 2026-10-23) with Chrome as the default browser: does it open in Chrome on your phone? Cannot be confirmed from here; TC-QA-O04, O07 | Owner | No (fallbacks in QA-08) |
 | Q3 | Keep the two inline composers after Quick add exists? | Owner, with SPEC-UX | No (default: keep) |
+| Q5 | Does Chrome on the iPhone keep the tab's `sessionStorage` when you switch apps and come back (TC-QA-O03)? If not, the draft moves to `localStorage` with a 24-hour expiry | Owner | Decided after the spike |
 | Q4 | Should an auto-locked session ever stay open for a second item (a "keep open" option)? Recommended: no | Owner | No (default: always lock) |
 
-**Decisions (owner, 2026-10-23):** the scenario above is the target (link copied by instinct, one tap to paste, unlock only when needed, lock again); Auto-Lock after publishing is the default and the rule; iPhone first; build the build-order A (just-in-time unlock), B (autofill-friendly token field), C (post and publish, auto-lock) and G (home-screen entry) first, then D (prefill by link).
+**Decisions (owner, 2026-10-23):** the owner uses **Chrome on the iPhone**; the home-screen entry is a **plain bookmark**; Quick add is built **before SPEC-UX Phase A** so that nothing in this change can be confused with a layout regression; the scenario above is the target (link copied by instinct, one tap to paste, unlock only when needed, lock again); Auto-Lock after publishing is the default and the rule; iPhone first; build the build-order A (just-in-time unlock), B (autofill-friendly token field), C (post and publish, auto-lock) and G (home-screen entry) first, then D (prefill by link).
 
 ## 9. Rollout and phasing
 

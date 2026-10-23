@@ -96,7 +96,8 @@ Added by the owner after RC and PC Phase B went live: [SPEC-QA](specs/quick-add/
 
 | ID | Risk | Likelihood | Impact | Mitigation | Status |
 |----|------|------------|--------|------------|--------|
-| Q1 | Face ID autofill does not appear on the owner's iPhone even after the attribute fix | Medium | Low (convenience only) | Owner device check O01; fallback is to paste the token after the link is posted (the clipboard is free by then) | Open until O01 |
+| Q1 | One-tap token fill does not appear in **Chrome on the owner's iPhone** even after the prompt becomes a real login form | Medium | Low (convenience only) | Owner device check O01; add the token to the password manager by hand (username `studio-admin`); fallback is to paste the token after the link is posted (the clipboard is free by then) | Open until O01 |
+| Q7 | The Home Screen icon opens in Safari, or drops `#add`, instead of Chrome | Medium | Low | Chrome as default browser; fallbacks: a Chrome bookmark, or a Shortcut with `googlechromes://`; checks O04, O07 | Open until O04 |
 | Q2 | Auto-lock after publish forces a new token entry for the next item | High | Low | Intended (security first); autofill makes it one tap; owner agreed | Accepted |
 | Q3 | iOS discards the tab while the owner fetches the token | Medium | Medium (draft lost) | Draft key (QA-07); the link is usually still on the clipboard | Mitigated |
 | Q4 | A crafted `#add=` link prefills something misleading | Low | Low | Prefill only, banner, validation, never auto-submit, the owner must press Post and give the token | Mitigated (Phase B) |

@@ -36,7 +36,7 @@ Edit `name`, `tagline` or `category` in `products.json`; no sync needed (these a
 
 Unlock ⚙ with `studio-admin` (Step 9 B). Reads: **Share a read** (choose the **Section**, Technical or Others; it starts on the one you used last, else the tab you are viewing), edit or delete, then **Publish changes**. Podcasts: **Share a podcast** (link and title, optionally show, take and tags), edit or delete, then **Publish changes**. Photo: **Change photo**. Lock when finished.
 
-*Planned (SPEC-QA, awaiting approval):* an **Add to Studio** sheet opened from a Home Screen icon (`…/#add`): paste the link, press **Post and publish**, give the token only then, and the admin locks itself after every successful publish. The Home Screen and Shortcut recipe is written here when it ships.
+*Planned (SPEC-QA, awaiting approval):* an **Add to Studio** sheet opened from a Home Screen icon (`…/#add`): paste the link, press **Post and publish**, give the token only then, and the admin locks itself after every successful publish. The Home Screen and Shortcut recipe for Chrome on the iPhone is written here when it ships.
 
 Publish is deliberately cautious: if a content file could not be loaded when the page opened, or GitHub's copy differs from the one the page loaded (another device published, or Pages has not caught up), nothing is written and you are told to wait a minute, reload and try again. Changes not yet published are lost on reload, so note anything you need first. There is no blog editor any more; `content/blog.json` is an archive.
 

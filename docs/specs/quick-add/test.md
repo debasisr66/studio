@@ -73,7 +73,7 @@ Spec: [spec.md](spec.md) (`SPEC-QA`). IDs `TC-QA-<group><nn>`. ⬜ not run, 🔒
 |----|-----|------|----------|--------|
 | TC-QA-H01 | QA-08 | Cold load `#add` at 375 px: sheet open, link field focused, Paste button visible, no horizontal overflow, targets ≥ 44 px | pass | ⬜ |
 | TC-QA-H02 | QA-08 | `#add/anything` and `#adds` do not open the sheet; `#add` while unlocked opens it with no prompt | pass | ⬜ |
-| TC-QA-H03 | QA-08 | OPERATIONS and LEARNING-GUIDE contain the iPhone Add to Home Screen recipe (static doc test) | pass | ⬜ |
+| TC-QA-H03 | QA-08 | OPERATIONS and LEARNING-GUIDE contain the iPhone recipe for Chrome (default browser, Add to Home Screen from Chrome, the Chrome-bookmark and `googlechromes://` Shortcut fallbacks) (static doc test) | pass | ⬜ |
 
 ## Prefill by link (F), QA-09, Phase B
 
@@ -84,7 +84,7 @@ Spec: [spec.md](spec.md) (`SPEC-QA`). IDs `TC-QA-<group><nn>`. ⬜ not run, 🔒
 | TC-QA-F03 | QA-09 | Malformed encoding, 5,000-character value, `javascript:`/`data:` link | Ignored with a message; sheet opens empty | ⬜ |
 | TC-QA-F04 | QA-09 | After reading, the fragment is gone from the address bar; the draft key carries the values | pass | ⬜ |
 | TC-QA-F05 | QA-09 | Odd keys (`__proto__`, `constructor`, repeated `add=`) ignored; no exception | pass | ⬜ |
-| TC-QA-F06 | QA-09 | The Shortcut recipe is documented (static doc test) | pass | ⬜ |
+| TC-QA-F06 | QA-09 | The Shortcut recipe is documented with both the `https://` and the `googlechromes://` form (static doc test) | pass | ⬜ |
 
 ## Security (S) and regression (X)
 
@@ -100,16 +100,17 @@ Spec: [spec.md](spec.md) (`SPEC-QA`). IDs `TC-QA-<group><nn>`. ⬜ not run, 🔒
 
 | ID | Req | Case | Expected | Status |
 |----|-----|------|----------|--------|
-| TC-QA-O01 | QA-04 | With the token saved in the Passwords app, focus the token field on our prompt | iOS offers the saved token with Face ID (answers Q1). If it does not, record what iOS shows; fallback is pasting the token after the link is posted | 🔒 |
-| TC-QA-O02 | QA-02 | Tap Paste with a link copied in Safari | iOS may ask to allow paste; the link fills | 🔒 |
-| TC-QA-O03 | QA-07 | Fill the sheet, switch to another app and back (and, if you can, leave it for a minute) | Draft still there | 🔒 |
-| TC-QA-O04 | QA-08 | Add `…/#add` to the Home Screen, copy a link in Safari, tap the icon | Sheet opens ready for the paste | 🔒 |
-| TC-QA-O05 | QA-09 | Phase B: share an article to the "Add to Studio" Shortcut | Sheet opens with the link filled | 🔒 |
-| TC-QA-O06 | all | End to end, timed: link copied → icon → Paste → title → Post and publish → token → published and locked | At most 6 actions; admin locked at the end; item live after about a minute | 🔒 |
+| TC-QA-O01 | QA-04 | In **Chrome on the iPhone**, with the token saved (in Chrome's password manager, or in the iPhone Passwords app with Chrome as AutoFill provider; add it by hand under `debasisr66.github.io`, username `studio-admin`, if Chrome never offers to save), focus the token field on our prompt | The saved token is offered and fills; note whether Face ID or the passcode was asked first (answers Q1). If nothing is offered, record what Chrome shows; fallback is pasting the token after the link is posted | 🔒 |
+| TC-QA-O02 | QA-02 | Copy a link in Chrome (Share, Copy, or long-press the address bar, Copy Link), then tap Paste | iOS may ask to allow paste; the link fills | 🔒 |
+| TC-QA-O03 | QA-07 | In Chrome, fill the sheet, switch to another app and back (and, if you can, leave it for a minute or two) | Draft still there. If it is not, the draft moves to `localStorage` with a 24-hour expiry (answers Q5) | 🔒 |
+| TC-QA-O04 | QA-08 | With Chrome as the default browser, open `…/#add` in Chrome, Share, Add to Home Screen; copy a link; tap the icon | Opens in Chrome with the sheet ready for the paste, the `#add` part intact. If it opens elsewhere or loses `#add`, use the fallbacks of QA-08 | 🔒 |
+| TC-QA-O05 | QA-09 | Phase B: share an article from Chrome to the "Add to Studio" Shortcut (plain `https://` form first, `googlechromes://` form if the wrong browser opens) | Sheet opens in Chrome with the link filled, the fragment intact | 🔒 |
+| TC-QA-O07 | QA-08 | Settings, Chrome, Default Browser App is Chrome; tap the Home Screen icon from a cold start | Chrome opens (not Safari) | 🔒 |
+| TC-QA-O06 | all | End to end, timed in Chrome: link copied → icon → Paste → title → Post and publish → token → published and locked | At most 6 actions; admin locked at the end; item live after about a minute | 🔒 |
 
 Regression: all existing tests; CSP clean; no new third-party request.
 
-Exit criteria: P0 rows ✅ (QA-01 … QA-06); P1 rows ✅ or deferred in writing; independent review done and acknowledged by the owner; O01-O04 and O06 done on the owner's phone (O05 with Phase B).
+Exit criteria: P0 rows ✅ (QA-01 … QA-06); P1 rows ✅ or deferred in writing; independent review done and acknowledged by the owner; O01-O04, O06 and O07 done on the owner's phone in Chrome (O05 with Phase B).
 
 ## Status log
 - 2026-10-23: Draft created; nothing run.

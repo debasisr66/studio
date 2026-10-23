@@ -6,7 +6,7 @@ Releases: **v2.0 (in progress)** · **v1.6 (intermediate, 2026-10-22: SPEC-SH A 
 
 # v2.0 — Studio 2.0 (in progress: SH A and B, RC A and B, PC A and B merged; UX, Phase C and the release remain)
 
-Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22), [SPEC-QA](specs/quick-add/test.md) (55, added 2026-10-23): **171 new cases**, on top of the former **142 passing unit tests** (**235** now, plus a **66-case** browser smoke test). Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12), SH Phase B (PR #13), RC Phase A (PR #14), PC Phase A (PR #15), RC Phase B (PR #16) and PC Phase B (PR #21) are run:** see §G, §H, §I, §J, §K and §L.
+Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22), [SPEC-QA](specs/quick-add/test.md) (56, added 2026-10-23): **172 new cases**, on top of the former **142 passing unit tests** (**235** now, plus a **66-case** browser smoke test). Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12), SH Phase B (PR #13), RC Phase A (PR #14), PC Phase A (PR #15), RC Phase B (PR #16) and PC Phase B (PR #21) are run:** see §G, §H, §I, §J, §K and §L.
 
 ## A. Requirements (release level)
 
@@ -39,7 +39,7 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | REQ-57 | TC-UX-S01–S02, P01–P04, N01–N05, L01–L05, A01–A05, F01 | ⬜ (F01 owner step 🔒) |
 | REQ-58 | Regression suite (§D) | ⬜ |
 | REQ-59 | Artefact checklist ([plan.md](plan.md) "Artefact update matrix") | ⬜ |
-| REQ-60 | TC-QA-E01–E05, P01–P07, K01–K05, U01–U07, L01–L07, D01–D04, H01–H03, S01–S03, X01–X02, O01–O04, O06 | ⬜ (O: owner steps 🔒) |
+| REQ-60 | TC-QA-E01–E05, P01–P07, K01–K05, U01–U07, L01–L07, D01–D04, H01–H03, S01–S03, X01–X02, O01–O04, O06, O07 | ⬜ (O: owner steps 🔒) |
 | REQ-61 | TC-QA-F01–F06, O05 | ⬜ (O05 owner step 🔒) |
 
 ## C. Test strategy by layer

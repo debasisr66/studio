@@ -59,7 +59,7 @@ Steps 3-4 can run in either order; steps 5 and 6 can swap; steps 7-8 (Quick add)
 | Labels | "Others", "Podcasts" | **As written** |
 | QA scenario | The owner copies a link by instinct; one tap opens a box that takes it; unlock only when posting; publish; the admin locks again | **Confirmed 2026-10-23** |
 | QA Auto-lock | Lock after every successful publish | **Always on, not optional** (owner 2026-10-23) |
-| QA platform | iPhone first (owner-driven) | **Yes**; no Android share target, no PWA |
+| QA platform | iPhone first (owner-driven), **Chrome** (not Safari); QA before UX | **Yes**; no Android share target, no PWA; plain bookmark with Chrome as the default browser (fallbacks in SPEC-QA QA-08) |
 | QA token handling | PIN-protected stored token, passkey/PRF unlock | **Rejected** (spec decisions D1, D2); the token stays in the tab only, autofilled by the iPhone Passwords app if the owner chooses |
 
 ## Milestones
