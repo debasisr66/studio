@@ -784,7 +784,7 @@ function qaBusy(on) {
   if (!on && $('#addBg').classList.contains('open') && document.activeElement === $('#addTitle')) $('#qa-publish').focus();
 }
 function openAdd() {
-  if ($('#addBg').classList.contains('open')) { qf('url').focus(); qaApplyHash(); return; }
+  if ($('#addBg').classList.contains('open')) { if (!qa.busy && !qa.tokDone) qf('url').focus(); qaApplyHash(); return; }
   qa.warned = '';
   qa.back = document.activeElement;
   const d = RL.parseDraft(draftStore.get());

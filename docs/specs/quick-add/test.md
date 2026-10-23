@@ -81,7 +81,7 @@ Spec: [spec.md](spec.md) (`SPEC-QA`). IDs `TC-QA-<group><nn>`. ⬜ not run, ✅ 
 |----|-----|------|----------|--------|
 | TC-QA-F01 | QA-09 | `#add=<encoded link>` | Link filled, "Prefilled from a link: check it" banner, **not** submitted | ✅ |
 | TC-QA-F02 | QA-09 | `&t=<encoded title>` | Title filled | ✅ |
-| TC-QA-F03 | QA-09 | Malformed encoding, 5,000-character value, `javascript:`/`data:` link | Ignored with a message; sheet opens empty | ✅ |
+| TC-QA-F03 | QA-09 | Malformed encoding, 5,000-character value, `javascript:`/`data:` link | Ignored with a message; a fresh sheet opens empty, typed text and the draft are left alone | ✅ |
 | TC-QA-F04 | QA-09 | After reading, the fragment is gone from the address bar; the draft key carries the values | pass | ✅ |
 | TC-QA-F05 | QA-09 | Odd keys (`__proto__`, `constructor`, repeated `add=`) ignored; no exception | pass | ✅ |
 | TC-QA-F06 | QA-09 | The Shortcut recipe is documented with both the `https://` and the `googlechromes://` form (static doc test) | pass | ✅ |
