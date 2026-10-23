@@ -50,23 +50,20 @@
   <noscript><div class="wrap"><div class="notice">This site needs JavaScript to show products and reading lists. The source is at <a href="https://github.com/debasisr66/studio">github.com/debasisr66/studio</a>.</div></div></noscript>
 
   <section class="block" id="products" aria-labelledby="h-products"><div class="wrap">
-    <div class="sec-head"><h2 id="h-products">Products</h2><span class="sub" id="syncnote"></span></div>
+    <div class="sec-head"><h2 id="h-products">Products</h2><p class="sec-desc">Small, focused apps, built and maintained in the open. <span id="syncnote"></span></p></div>
     <div id="notice"></div>
     <div class="grid" id="grid" aria-busy="true"><div class="card skel" aria-hidden="true"></div><div class="card skel" aria-hidden="true"></div></div>
   </div></section>
 
   <section class="block" id="updates" aria-labelledby="h-updates"><div class="wrap">
-    <div class="sec-head"><h2 id="h-updates">Updates</h2><span class="sub">Latest releases</span></div>
+    <div class="sec-head"><h2 id="h-updates">Updates</h2><p class="sec-desc">Latest releases, with notes and downloads.</p></div>
     <div class="feed" id="updatesFeed"></div>
   </div></section>
 
   <section class="block" id="reads" aria-labelledby="h-reads"><div class="wrap">
-    <div class="sec-head"><h2 id="h-reads">Reads</h2><span class="sub">Articles, videos &amp; books worth your time</span></div>
+    <div class="sec-head"><h2 id="h-reads">Reads</h2><p class="sec-desc">Articles, videos and books worth your time.</p></div>
     <div class="tabs" id="readTabs" role="tablist" aria-label="Reads sections"></div>
-    <div class="two reads" id="readsPanel" role="tabpanel" aria-labelledby="tab-technical">
-      <div>
-        <h3 class="sub-h">Reading list</h3>
-
+    <div class="reads" id="readsPanel" role="tabpanel" aria-labelledby="tab-technical">
         <div class="composer" id="composer">
           <button class="composer-open" id="composerOpen" type="button" aria-expanded="false" aria-controls="composerForm">
             <span class="avatar" aria-hidden="true">D</span><span>Share a read…</span>
@@ -104,8 +101,7 @@
         </div>
         <p class="count" id="readCount" aria-live="polite"></p>
         <div class="feed" id="articlesFeed"></div>
-      </div>
-      <div>
+      <div class="books" id="booksBlock">
         <h3 class="sub-h">Books</h3>
         <button class="addbtn" id="addBook" type="button">+ Add book</button>
         <div class="feed" id="booksFeed"></div>
@@ -114,7 +110,7 @@
   </div></section>
 
   <section class="block" id="podcasts" aria-labelledby="h-podcasts"><div class="wrap">
-    <div class="sec-head"><h2 id="h-podcasts">Podcasts</h2><span class="sub">Shows and episodes worth a listen</span></div>
+    <div class="sec-head"><h2 id="h-podcasts">Podcasts</h2><p class="sec-desc">Shows and episodes worth a listen.</p></div>
 
     <div class="composer" id="podcastComposer">
       <button class="composer-open" id="podcastComposerOpen" type="button" aria-expanded="false" aria-controls="podcastForm">
@@ -161,7 +157,7 @@
 </div></footer>
 
 <nav class="bottom" id="navbottom" aria-label="Sections">
-  <a href="#products"><b aria-hidden="true">◧</b>Products</a><a href="#reads"><b aria-hidden="true">☰</b>Reads</a><a href="#podcasts"><b aria-hidden="true">♪</b>Podcasts</a>
+  <a href="#products"><b aria-hidden="true">◧</b>Products</a><a href="#updates"><b aria-hidden="true">↻</b>Updates</a><a href="#reads"><b aria-hidden="true">☰</b>Reads</a><a href="#podcasts"><b aria-hidden="true">♪</b>Podcasts</a>
 </nav>
 
 <button id="gear" type="button" aria-label="Add to Studio (owner)" aria-haspopup="dialog">⚙</button>
