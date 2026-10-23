@@ -63,7 +63,7 @@ Measured contrast (WCAG ratios):
 |-------|----------|
 | ≥ 861 px | 3-column product grid; Reads is one column (the reads, then Books; SPEC-UX UX-02); top nav |
 | 621–860 px | 2-column product grid; Reads stacks |
-| ≤ 620 px | 1 column; top links replaced by a bottom nav (Products, Blog, Reads); admin bar sits above it; the gear is hidden while admin is on |
+| ≤ 620 px | 1 column; top links replaced by a bottom nav (Products, Updates, Reads, Podcasts); admin bar sits above it; the gear is hidden while admin is on |
 
 Grids use `minmax(0, 1fr)` and text uses `overflow-wrap: anywhere`, so one long URL can never widen the page.
 

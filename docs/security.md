@@ -334,7 +334,7 @@ Other changes to review: publish requests now time out after 20 s where `AbortSi
 
 ### 11.13 SPEC-UX Phase A: author's notes (2026-10-23; the verdict is the reviewer's, not the author's)
 
-These are the author's notes only. The independent review is [reviews/UX-04.md](reviews/UX-04.md); this section says nothing about pass or fail.
+These are the author's notes only. The independent review is [reviews/UX-04.md](reviews/UX-04.md); this section says nothing about pass or fail. Independent review: [reviews/UX-04.md](reviews/UX-04.md), verdict APPROVE WITH CONDITIONS.
 
 | Item | What was built | Evidence |
 |------|----------------|----------|

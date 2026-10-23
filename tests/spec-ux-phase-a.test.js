@@ -58,7 +58,7 @@ test('TC-UX-P02 the owner add actions are hidden until unlocked, and Products an
   assert.ok(/body\.admin \.composer/.test(css) && /body\.admin \.addbtn/.test(css), 'shown only in admin mode');
 });
 
-test('TC-UX-P03 phone targets: the bottom nav items and the theme and What\'s new buttons are at least 44 px (the header links are hidden on a phone)', () => {
+test('TC-UX-P03 phone targets: the bottom nav items and the theme button are at least 44 px (the header links are hidden on a phone)', () => {
   assert.ok(/nav\.bottom a\{[^}]*min-height:44px/.test(css), 'bottom nav item');
   assert.ok(/\.icon-btn\{width:44px;height:44px\}/.test(css));
 });
