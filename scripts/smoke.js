@@ -765,8 +765,8 @@ const CASES = [
     const s = await qs(ctx); return [...(/podcast tags must be/.test(s.msg) ? [] : ['the rule that failed is not named: "' + s.msg + '"']), ...((await putsOf(ctx)).length ? ['an invalid file was written'] : [])]; } },
   { id: 'TC-QA-L09 review F1: Post before the page knows what is on GitHub (boot not finished) is refused; nothing is written, so the published list cannot be replaced', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
     const f = []; await stubGh(ctx); await ctx.ev("delete snap['content/reads.json']; state.reads.articles = []; true"); await qaOpenGear(ctx);
-    await qaFill(ctx, { url: 'https://example.com/early', title: 'Early' }); await qaClick(ctx, 'qa-publish', 30); await qaToken(ctx); const s = await qs(ctx);
-    if ((await putsOf(ctx)).length) f.push('it wrote a file with only the new entry'); if (!/not finished loading|reload/i.test(s.msg)) f.push('no refusal message: "' + s.msg + '"'); if (!s.admin || !s.sheet) f.push('should stay unlocked with the sheet open'); return f; } },
+    await qaFill(ctx, { url: 'https://example.com/early', title: 'Early' }); await qaClick(ctx, 'qa-publish', 30); const s = await qs(ctx);
+    if ((await putsOf(ctx)).length) f.push('it wrote a file with only the new entry'); if (!/not finished loading|reload/i.test(s.msg)) f.push('no refusal message: "' + s.msg + '"'); if (!s.sheet || s.tok) f.push('should refuse on the sheet, before any token prompt'); if (await apiCalls(ctx)) f.push('API calls were made'); return f; } },
   { id: 'TC-QA-U08 review F2: Cancel while the token is being checked stores nothing, unlocks nothing and shows no internal error', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
     const f = []; await stubGh(ctx, { userDelay: 400 }); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/u08', title: 'U08' }); await qaClick(ctx, 'qa-publish', 30);
     await ctx.ev(`(() => { document.getElementById('pat').value = ${JSON.stringify(QA_TOKEN)}; document.getElementById('tokForm').requestSubmit(); })()`); await sleep(100); await qaClick(ctx, 'tok-cancel'); await sleep(700);
@@ -782,6 +782,10 @@ const CASES = [
     let s = await qs(ctx); if (s.active !== 'qa-publish') f.push('after a failure focus is on "' + s.active + '"');
     await stubGh(ctx); await qaClick(ctx, 'qa-publish', 30); await settle(ctx); s = await qs(ctx); if (s.active !== 'gear') f.push('after the lock focus is on "' + s.active + '"');
     const v = await ctx.ev("document.getElementById('cf-title').value"); if (v !== 'typed inline') f.push('inline composer text was cleared: "' + v + '"'); return f; } },
+  { id: 'TC-QA-L12 review N1: Post as draft before the page knows what is on GitHub is refused, so the entry is not silently lost when boot replaces the lists', width: 1280, token: true, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await ctx.ev("delete snap['content/reads.json']; state.reads.articles = []; true"); await ctx.ev("document.getElementById('addOpen').click()");
+    await qaFill(ctx, { url: 'https://example.com/n1', title: 'N1' }); await qaClick(ctx, 'qa-draft', 30); const s = await qs(ctx);
+    if (!/not finished loading|reload/i.test(s.msg)) f.push('no refusal message: "' + s.msg + '"'); if (!s.sheet) f.push('the sheet closed, losing the input'); if (await ctx.ev("state.dirty.reads")) f.push('marked as a pending change'); return f; } },
   { id: 'TC-QA-D01 fill the sheet, reload the page in the same tab, open the sheet: the values are restored', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
     const f = []; await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://open.spotify.com/episode/d01', title: 'D01 title', comment: 'D01 take', tags: 'ai, x', kind: 'podcast' }); await reloadPage(ctx);
     let s = await qs(ctx); if (s.sheet) f.push('the sheet reopened by itself without #add'); await qaOpenGear(ctx); s = await qs(ctx);

@@ -884,6 +884,7 @@ async function qaPost(mode) {
     if (!r.ok) return qaShowErrors(r.errors);
     entry = {id: Date.now(), added: today(), ...r.value};
   }
+  if (snap[CONTENT_FILES[key][0]] === undefined) { $('#qa-msg').textContent = CONTENT_FILES[key][0] + ': this page has not finished loading it, or it could not be loaded, so nothing was added. Reload the page and try again.'; return; }   // review QA-A N1: boot would replace the lists and the entry would vanish
   const add = () => { if (key === 'reads') { state.reads.articles.unshift(entry); state.lastSection = entry.category; } else state.podcasts.podcasts.unshift(entry); };
   if (!document.body.classList.contains('admin') && !(await askToken($(mode === 'draft' ? '#qa-draft' : '#qa-publish')))) return;   // QA-04: the token is asked for now; Cancel leaves the draft as it was
   if (mode === 'draft') {
@@ -917,7 +918,7 @@ document.addEventListener('keydown', e => {
   if (!tok && !add) return;
   if (e.key === 'Escape') { if (tok) { if (qa.tokDone) qa.tokDone(false); } else if (!qa.busy) closeAdd(true); return; }
   if (e.key !== 'Tab') return;
-  const f = [...$(tok ? '#tokPrompt' : '#addSheet').querySelectorAll('button:not([disabled]),input,textarea,select,a[href]')].filter(x => x.offsetParent !== null);
+  const f = [...$(tok ? '#tokPrompt' : '#addSheet').querySelectorAll((qa.busy ? 'h3[tabindex],' : '') + 'button:not([disabled]),input,textarea,select,a[href]')].filter(x => x.offsetParent !== null);
   if (!f.length) return;
   const first = f[0], last = f[f.length - 1];
   if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }

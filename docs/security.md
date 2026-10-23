@@ -314,3 +314,20 @@ Author's pre-review. The independent reviewer's verdicts for the two phases (gat
 - [ ] Owner device checks O01-O06 recorded.
 
 **Residual risks expected (to confirm after the build):** Face ID autofill may not work on the owner's phone (convenience only); a discarded tab can still lose a draft; a model review is not a human audit.
+
+### 11.12 SPEC-QA Phase A: author's notes (2026-10-23; the verdict is the reviewer's, not the author's)
+
+These are the author's notes only. The independent review is [reviews/QA-A.md](reviews/QA-A.md); this section says nothing about pass or fail.
+
+| Threat | What was built | Evidence |
+|--------|----------------|----------|
+| T25 injection | `extractLink` accepts only explicit http(s) links and runs them through `normalizeUrl`; titles are text; values reach the DOM through `textContent` or `esc` | unit P04/P05, smoke P04, S01 |
+| T27 clipboard | one `readText` call, inside the Paste click handler; a hand paste uses the event's own data | unit P07, smoke P07 |
+| T28 draft key | `studio-quick-draft`, five text fields (`RL.serializeDraft`), tab `sessionStorage`; cleared by Cancel, Escape and success. **Deviation from the wording of QA-07 and T28:** the page cannot tell the owner from a visitor before the token is given, so anyone who types in the sheet gets the key in their own tab (their own text, nothing sent, cleared by Cancel). A visitor who never uses the sheet has none | smoke D01-D04, unit D01-D03 |
+| T29 token | unchanged store; prompt is a separate form, field cleared on close; stale check results after Cancel are ignored (review finding F2, fixed) | smoke U02-U08 |
+| T30 lock | `lock(true)` after every successful publish (sheet and Publish changes); failure keeps the session, the sheet and the draft | smoke L03-L05, L11 |
+| T31 visitor | no API call before a token; token must belong to the owner login | smoke S02, U07, U03 |
+| T32 autofill | real form, readonly `studio-admin` username, `current-password`, no `autocomplete="off"`; sandbox uses `studio-admin-sandbox`. Unknown until O01: whether Chrome saves and fills it | unit U05, smoke U05 |
+| T33 guards | one function, `publishContent`, used by Publish changes and Quick add; `publishFile` also refuses when the page has not finished loading the file (review finding F1, fixed) | smoke L06, L09 |
+
+Other changes to review: publish requests now time out after 20 s where `AbortSignal.timeout` exists (F6); the whole file is written, so pending inline changes to the same file go public with a Quick add and the sheet warns first (F3); `reads-lib.js` budget 20 to 26 KB. Known and accepted: the sandbox and the real site share the origin `debasisr66.github.io`, so in one tab the token key and the draft key are shared between `/studio` and `/studio-sandbox` (F11); a model review is not a human audit; Face ID autofill may not work (convenience only).
