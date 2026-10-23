@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "podcasts": [
+    {
+      "id": 1,
+      "added": "2026-10-22",
+      "title": "Show on Spotify",
+      "url": "https://open.spotify.com/show/abc123",
+      "show": "Lex Fridman Podcast",
+      "comment": "A long conversation worth the time.",
+      "tags": [
+        "ai"
+      ]
+    },
+    {
+      "id": 2,
+      "added": "2026-10-21",
+      "title": "Apple episode",
+      "url": "https://podcasts.apple.com/us/podcast/x/id1?i=2",
+      "show": "ThePrimeagen",
+      "comment": "Opinionated and fun.",
+      "tags": [
+        "ai",
+        "code"
+      ]
+    },
+    {
+      "id": 3,
+      "added": "2026-10-20",
+      "title": "A YouTube video",
+      "url": "https://www.youtube.com/watch?v=abc",
+      "show": "",
+      "comment": "Seen on video.",
+      "tags": [
+        "history"
+      ]
+    },
+    {
+      "id": 4,
+      "added": "2026-10-19",
+      "title": "Elsewhere",
+      "url": "https://www.example.org/ep",
+      "show": "",
+      "comment": "",
+      "tags": []
+    },
+    {
+      "id": 5,
+      "added": "2026-10-18",
+      "title": "Oldest",
+      "url": "https://example.com/five",
+      "show": "Some show",
+      "comment": "Older one.",
+      "tags": [
+        "history",
+        "ai"
+      ]
+    }
+  ]
+}

@@ -59,23 +59,35 @@ function md(text) {
 }
 
 /* ---------- state ---------- */
-const state = { changelog: null, registry: [], cache: null, blog: {posts: []}, reads: {books: [], articles: []}, profile: {photo: null, updated: null}, profileDraft: null, profileShown: null, dirty: {blog:false, reads:false, profile:false}, filter: {tag:'', q:''}, editing: -1, cat: null, lastSection: null };
+const state = { changelog: null, registry: [], cache: null, podcasts: {podcasts: []}, reads: {books: [], articles: []}, profile: {photo: null, updated: null}, profileDraft: null, profileShown: null, dirty: {podcasts:false, reads:false, profile:false}, filter: {tag:'', q:''}, editing: -1, cat: null, lastSection: null, pfilter: {tag:'', q:''}, pediting: -1, pEntry: null, editEntry: null, podcastsUnsupported: false, podcastsFailed: false, readsFailed: false };
+/* the content of reads.json and podcasts.json as this page loaded (or last wrote) it: publish refuses when GitHub's copy is different (another device published, or a stale page) */
+const snap = {};
 
 /* time-limited (SafeLib.FETCH_TIMEOUT_MS): a content file that never answers degrades its section instead of holding the page forever */
 const loadJson = path => window.SafeLib.fetchJson(fetch, path + '?t=' + Date.now(), { init: { cache: 'no-store' } });
 
 async function boot() {
   $('#yr').textContent = new Date().getFullYear();
-  const [reg, cache, blog, reads, changelog, profile] = await Promise.allSettled([
+  const [reg, cache, podcasts, reads, changelog, profile] = await Promise.allSettled([
     loadJson('content/products.json'), loadJson('content/cache.json'),
-    loadJson('content/blog.json'), loadJson('content/reads.json'), loadJson('content/changelog.json'), loadJson('content/profile.json')]);
+    loadJson('content/podcasts.json'), loadJson('content/reads.json'), loadJson('content/changelog.json'), loadJson('content/profile.json')]);
   // a file that loaded as JSON `null` or a bare value must not abort boot: only objects are used
   const obj = r => (r.status === 'fulfilled' && r.value && typeof r.value === 'object') ? r.value : null;
-  const vProfile = obj(profile), vCache = obj(cache), vBlog = obj(blog), vReads = obj(reads), vLog = obj(changelog);
+  // 404 = the file does not exist yet (an empty list); any other failure (timeout, 5xx, malformed JSON, a bare `null`) means the content is unknown, so nothing may be published over it
+  const notFound = r => r.status === 'rejected' && !!r.reason && r.reason.status === 404;
+  const unknown = r => (r.status === 'rejected' && !notFound(r)) || (r.status === 'fulfilled' && !(r.value && typeof r.value === 'object'));
+  state.readsFailed = unknown(reads); state.podcastsFailed = unknown(podcasts) || (obj(podcasts) !== null && !Array.isArray(obj(podcasts).podcasts) && RL.isSupportedPodcastsVersion(obj(podcasts).schema_version));
+  const vProfile = obj(profile), vCache = obj(cache), vPods = obj(podcasts), vReads = obj(reads), vLog = obj(changelog);
   if (vProfile) state.profile = vProfile;
   if (reg.status === 'fulfilled' && Array.isArray(reg.value)) state.registry = reg.value;
   if (vCache && typeof vCache.products === 'object') state.cache = vCache;
-  if (vBlog && Array.isArray(vBlog.posts)) state.blog = vBlog;
+  snap['content/podcasts.json'] = vPods ? JSON.stringify(vPods) : notFound(podcasts) ? 'absent' : undefined;
+  snap['content/reads.json'] = vReads ? JSON.stringify(vReads) : notFound(reads) ? 'absent' : undefined;
+  if (vPods && !state.podcastsFailed) {
+    // same rule as reads: a file newer than this page understands is not shown or edited, and nothing can be published over it
+    if (!RL.isSupportedPodcastsVersion(vPods.schema_version)) state.podcastsUnsupported = true;
+    else state.podcasts = { podcasts: Array.isArray(vPods.podcasts) ? vPods.podcasts : [] };
+  }
   if (vReads) {
     // a file newer than this page understands is not shown or edited (Reads falls back, nothing can be published over it)
     if (!RL.isSupportedReadsVersion(vReads.schema_version)) state.readsUnsupported = true;
@@ -89,11 +101,12 @@ async function boot() {
   $('#grid').removeAttribute('aria-busy');
   state.cat = RL.categoryFromHash(location.hash) || RL.defaultCategory(RL.categoryCounts(state.reads.articles.concat(state.reads.books)));
   renderAll();
+  if (followBlogLink()) showId('podcasts');
   if (RL.isReadsHash(location.hash) && location.hash !== '#reads') showReads();   // '#reads/others' matches no element id, so the browser cannot scroll to it
   if (tokenStore.get()) enableAdmin();   // always reached: renderAll never throws
 }
 
-/* ---------- render: products, updates, blog ---------- */
+/* ---------- render: products, updates ---------- */
 function productView(e) {
   const live = state.cache && state.cache.products[e.repo];
   const name = e.name || e.repo.split('/')[1];
@@ -162,15 +175,6 @@ function renderUpdates() {
 
 const tools = (kind, i, what) => `<span class="tools"><button type="button" data-edit="${kind}:${i}" aria-label="Edit ${esc(what)}">Edit</button><button type="button" data-del="${kind}:${i}" aria-label="Delete ${esc(what)}">Delete</button></span>`;
 
-function renderBlog() {
-  const posts = [...state.blog.posts].sort((a,b) => String(b.date).localeCompare(String(a.date)));
-  $('#blogFeed').innerHTML = posts.length ? posts.map(p => {
-    const i = state.blog.posts.indexOf(p), link = safeUrl(p.link);
-    return `<article class="item">${tools('post', i, 'post ' + (p.title || ''))}<div class="when">${esc(fmtDate(p.date))}</div><h3>${esc(p.title)}</h3>
-      <div class="body">${md(p.body)}${link ? `<a class="more" href="${esc(link)}" rel="noopener noreferrer" target="_blank">Read more →${NEWTAB}</a>` : ''}</div></article>`;
-  }).join('') : '<div class="empty">No posts yet.</div>';
-}
-
 /* ---------- render: reads ---------- */
 function readCard(entry, index, preview) {
   const v = RL.entryView(entry), url = RL.normalizeUrl(v.url), dom = url ? RL.domainOf(url) : null;
@@ -200,7 +204,8 @@ function renderTabs(tabs) {
   $('#readsPanel').setAttribute('aria-labelledby', 'tab-' + sectionSlug(state.cat));
 }
 /* '#reads/others' matches no element id, so the browser cannot scroll to it: bring the section into view ourselves, instantly (smooth scrolling is cancelled by layout changes during load). */
-const showReads = () => $('#reads').scrollIntoView({behavior: 'instant', block: 'start'});
+const showId = id => $('#' + id).scrollIntoView({behavior: 'instant', block: 'start'});
+const showReads = () => showId('reads');
 function selectCategory(c, focusTab) {
   if (!RL.CATEGORIES.includes(c)) return;
   state.cat = c; state.filter = {tag: '', q: ''}; $('#readSearch').value = '';
@@ -240,6 +245,43 @@ function renderReads() {
     <article class="item">${tools('book', i, 'book ' + (x.title || ''))}<h3>${esc(x.title)}</h3><div class="when">${esc(x.author)}${x.year ? ' · ' + esc(x.year) : ''}</div>${x.note ? `<div class="body">${esc(x.note)}</div>` : ''}</article>`).join('') : '<div class="empty">Nothing here yet.</div>';
 }
 
+/* ---------- render: podcasts (SPEC-PC PC-02): links only, nothing embedded, no third-party image ---------- */
+function podcastCard(entry, index, preview) {
+  const v = RL.podcastView(entry), url = RL.normalizeUrl(v.url);
+  const meta = [v.show, v.platform, v.added ? fmtDate(v.added) : ''].filter(Boolean).map(esc).join(' · ');
+  const share = !preview && url ? RL.shareLinks(url) : null;
+  const title = v.title ? esc(v.title) : '<em>Untitled</em>';
+  return `<article class="item read podcast"${preview ? ' aria-hidden="true"' : ''}>${preview ? '' : tools('podcast', index, 'podcast ' + v.title)}
+    <div class="read-head"><span class="avatar" aria-hidden="true" data-h="${hue(v.platform || v.title)}">${esc((v.show || v.platform || v.title || '?').charAt(0))}</span>
+      <div>${url && !preview ? `<a class="read-title podcast-title" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${title}${NEWTAB}</a>` : `<span class="read-title podcast-title">${title}</span>`}
+      <div class="when podcast-meta">${meta}</div></div></div>
+    ${v.comment ? `<p class="read-comment">${esc(v.comment)}</p>` : ''}
+    ${v.tags.length ? `<div class="read-tags">${v.tags.map(t => preview ? `<span class="tag">#${esc(t)}</span>` : `<button type="button" class="chip" data-ptag="${esc(t)}" aria-label="Filter by tag ${esc(t)}">#${esc(t)}</button>`).join('')}</div>` : ''}
+    ${share ? `<div class="share-row">
+      <a class="listen" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Listen →${NEWTAB}</a>
+      <a href="${esc(share.linkedin)}" target="_blank" rel="noopener noreferrer">Share on LinkedIn${NEWTAB}</a>
+      <button type="button" data-pcopy="${index}">Copy link</button>
+      ${navigator.share ? `<button type="button" data-pshare="${index}">Share…</button>` : ''}</div>` : ''}
+  </article>`;
+}
+
+function renderPodcasts() {
+  if (state.podcastsFailed) throw new Error('podcasts.json could not be loaded');   // guarded: shows the fallback line
+  if (state.podcastsUnsupported) throw new Error('podcasts.json has a newer schema_version than this page supports');   // guarded: shows the fallback line
+  const all = state.podcasts.podcasts.map((e, i) => ({e, i}));
+  all.sort((a, b) => { const da = (a.e && a.e.added) || '', db = (b.e && b.e.added) || ''; return da === db ? a.i - b.i : (da < db ? 1 : -1); });   // newest first
+  const shown = new Set(RL.filterPodcasts(all.map(x => x.e), state.pfilter)), rows = all.filter(x => shown.has(x.e));
+  const tags = RL.podcastTags(all.map(x => x.e)), n = all.length;
+  $('#podcastToolbar').hidden = n < 4;
+  $('#podcastChips').innerHTML = tags.length ? [['', 'All'], ...tags.map(t => [t, '#' + t])].map(([t, lab]) =>
+    `<button type="button" class="chip" data-pfilter="${esc(t)}" aria-pressed="${state.pfilter.tag === t}">${esc(lab)}</button>`).join('') : '';
+  $('#podcastCount').textContent = n && (state.pfilter.tag || state.pfilter.q) ? `Showing ${rows.length} of ${n}` : '';
+  $('#podcastFeed').innerHTML = rows.length ? rows.map(x => podcastCard(x.e, x.i, false)).join('')
+    : n ? '<div class="empty">No podcasts match. <button type="button" class="chip" data-pfilter="">Clear filters</button></div>'
+    : '<div class="empty">No podcasts yet. Check back soon.</div>';
+  paint($('#podcastFeed'));
+}
+
 /* Profile photo: shown when the manifest names one (path restricted to content/*.jpg, versioned by its timestamp so a new photo
    is never served stale), or when the owner has a draft. Otherwise the monogram stays. */
 function renderProfile() {
@@ -256,11 +298,10 @@ function renderProfile() {
 
 /* One section failing must never stop another, or the admin unlock (SPEC-SH SH-01). Each renderer runs guarded; a failed one shows the
    fixed fallback line in its content box and logs the real error to the console only. */
-const SECTION_BOX = { products: ['#grid'], updates: ['#updatesFeed'], blog: ['#blogFeed'], reads: ['#articlesFeed', '#booksFeed'] };
+const SECTION_BOX = { products: ['#grid'], updates: ['#updatesFeed'], podcasts: ['#podcastFeed'], reads: ['#articlesFeed', '#booksFeed'] };
 function renderAll() {
   window.SafeLib.runGuarded([
-    { name: 'products', run: renderProducts }, { name: 'updates', run: renderUpdates }, { name: 'blog', run: renderBlog },
-    { name: 'reads', run: renderReads }, { name: 'version', run: renderVersion }, { name: 'profile', run: renderProfile },
+    { name: 'products', run: renderProducts }, { name: 'updates', run: renderUpdates }, { name: 'reads', run: renderReads }, { name: 'podcasts', run: renderPodcasts }, { name: 'version', run: renderVersion }, { name: 'profile', run: renderProfile },
   ], (name, err) => {
     console.error('Studio: the ' + name + ' section failed to render', err);
     (SECTION_BOX[name] || []).forEach((sel, i) => { const el = $(sel); if (el) el.innerHTML = i === 0 ? window.SafeLib.fallbackHtml() : ''; });
@@ -319,26 +360,33 @@ const b64enc = s => { const b = new TextEncoder().encode(s); let bin = ''; b.for
 const b64dec = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g, '')), c => c.charCodeAt(0)));
 
 /* GET current sha -> validate -> skip if unchanged -> PUT with sha. One file per commit. */
-async function publishFile(path, obj, message) {
+async function publishFile(path, obj, message, guard) {
   let text;
   try { text = JSON.stringify(JSON.parse(JSON.stringify(obj)), null, 2) + '\n'; }
   catch (e) { throw new Error('Refusing to publish ' + path + ': invalid JSON (' + e.message + ')'); }
-  const cur = await ghApi(`/repos/${OWNER}/${HUB}/contents/${path}?ref=${BRANCH}`);
+  const cur = await ghApi(`/repos/${OWNER}/${HUB}/contents/${path}?ref=${BRANCH}`, {cache: 'no-store'});   // never a browser-cached copy: the guard compares against GitHub's current file
   let sha;
   if (cur.status === 200) {
     const j = await cur.json(); sha = j.sha;
-    if (b64dec(j.content) === text) return 'unchanged';
+    const remote = b64dec(j.content);
+    if (guard) {   // GitHub's copy must be the one this page loaded (or last wrote); anything else would be silently overwritten
+      let theirs; try { theirs = JSON.stringify(JSON.parse(remote)); } catch { theirs = null; }
+      if (theirs === null || snap[path] === 'absent' || (snap[path] !== undefined && theirs !== snap[path]))
+        throw new Error(path + ' has changed on GitHub since this page loaded it (another device or tab published, or its version is newer than this page understands, or the site has not caught up yet). Nothing was written. Wait a minute, reload the page and try again (changes not yet published are lost on reload, so note anything you need first).');
+    }
+    if (remote === text) { if (guard) snap[path] = JSON.stringify(JSON.parse(text)); return 'unchanged'; }
   } else if (cur.status !== 404) throw new Error('Could not read ' + path + ' (' + cur.status + ')');
   const put = await ghApi(`/repos/${OWNER}/${HUB}/contents/${path}`, {
     method: 'PUT', body: JSON.stringify({message, content: b64enc(text), branch: BRANCH, ...(sha ? {sha} : {})})});
   if (!put.ok) { const t = await put.text(); throw new Error('Publish of ' + path + ' failed (' + put.status + '): ' + t.slice(0, 200)); }
+  if (guard) snap[path] = JSON.stringify(JSON.parse(text));
   return 'committed';
 }
 
 /* Binary twin of publishFile: GET sha -> skip if identical -> PUT with sha. One file per commit. */
 async function publishBinary(path, b64, message) {
   if (!/^[A-Za-z0-9+\/]+={0,2}$/.test(b64)) throw new Error('Refusing to publish ' + path + ': not valid base64');
-  const cur = await ghApi(`/repos/${OWNER}/${HUB}/contents/${path}?ref=${BRANCH}`);
+  const cur = await ghApi(`/repos/${OWNER}/${HUB}/contents/${path}?ref=${BRANCH}`, {cache: 'no-store'});   // never a browser-cached copy: the guard compares against GitHub's current file
   let sha;
   if (cur.status === 200) {
     const j = await cur.json(); sha = j.sha;
@@ -356,9 +404,9 @@ const onActivity = () => { if (document.body.classList.contains('admin')) idle.a
 ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, onActivity, {passive: true}));
 
 function enableAdmin() { document.body.classList.add('admin'); updateDirty(); idle.arm(); }
-function lock() { tokenStore.del(); document.body.classList.remove('admin'); idle.disarm(); closeComposer(); }
+function lock() { tokenStore.del(); document.body.classList.remove('admin'); idle.disarm(); closeComposer(); closePodcastComposer(); }
 function updateDirty() {
-  const LABEL = {blog: 'blog.json', reads: 'reads.json', profile: 'profile photo'};
+  const LABEL = {podcasts: 'podcasts.json', reads: 'reads.json', profile: 'profile photo'};
   const d = Object.entries(state.dirty).filter(([,v]) => v).map(([k]) => LABEL[k] || k);
   $('#dirtyinfo').innerHTML = d.length ? `<span class="dirty">Unpublished: ${d.join(', ')}</span>` : 'No pending changes';
   $('#publishBtn').disabled = !d.length;
@@ -433,7 +481,7 @@ function renderSectionRadios(value) {
 const chosenSection = () => { const r = $('#cf-category input:checked'); return r ? r.value : ''; };
 
 function openComposer(editIndex = -1) {
-  state.editing = editIndex;
+  state.editing = editIndex; state.editEntry = editIndex >= 0 ? state.reads.articles[editIndex] : null;
   const e = editIndex >= 0 ? RL.entryView(state.reads.articles[editIndex]) : {url:'', title:'', comment:'', kind:'article', tags:[]};
   cf('url').value = e.url; cf('title').value = e.title; cf('comment').value = e.comment;
   cf('kind').value = e.kind; cf('tags').value = e.tags.join(', ');
@@ -446,7 +494,7 @@ function openComposer(editIndex = -1) {
   cf('url').focus();
 }
 function closeComposer() {
-  state.editing = -1; $('#composer').classList.remove('open');
+  state.editing = -1; state.editEntry = null; $('#composer').classList.remove('open');
   $('#composerOpen').setAttribute('aria-expanded', 'false'); $('#composerForm').reset();
 }
 function clearErrors() {
@@ -481,16 +529,18 @@ $('#composerForm').addEventListener('submit', ev => {
   if (!document.body.classList.contains('admin')) return;
   const r = RL.validateEntry(composerValue(), {requireCategory: true});
   const errors = {...r.errors};
-  if (r.ok && RL.isDuplicate(state.reads.articles, r.value.url, state.editing >= 0 ? state.reads.articles[state.editing].id : undefined) &&
-      !(state.editing >= 0 && RL.normalizeUrl(state.reads.articles[state.editing].url) === r.value.url)) errors.url = 'This link is already in your reading list.';
+  const ei = state.editing >= 0 ? state.reads.articles.indexOf(state.editEntry) : -1;   // where the entry being edited is now
+  if (state.editing >= 0 && ei < 0) return showErrors({url: 'That read was deleted while you were editing. Close this form and start again.'});
+  if (r.ok && RL.isDuplicate(state.reads.articles, r.value.url, ei >= 0 ? state.reads.articles[ei].id : undefined) &&
+      !(ei >= 0 && RL.normalizeUrl(state.reads.articles[ei].url) === r.value.url)) errors.url = 'This link is already in your reading list.';
   if (r.errors.kind) errors.title = errors.title || r.errors.kind;
   if (Object.keys(errors).length) return showErrors(errors);
 
-  if (state.editing >= 0) {
-    const old = state.reads.articles[state.editing], next = {...old, ...r.value};
+  if (ei >= 0) {
+    const old = state.reads.articles[ei], next = {...old, ...r.value};
     delete next.note;   // legacy field replaced by "comment"
     if (!next.id) next.id = Date.now();
-    state.reads.articles[state.editing] = next;
+    state.reads.articles[ei] = next;
     say(next.category !== state.cat ? `Changes saved. Moved to ${RL.categoryLabel(next.category)}. Publish to make them public.` : 'Changes saved. Publish to make them public.');
   } else {
     state.reads.articles.unshift({id: Date.now(), added: new Date().toISOString().slice(0, 10), ...r.value});
@@ -500,14 +550,69 @@ $('#composerForm').addEventListener('submit', ev => {
   state.dirty.reads = true; updateDirty(); closeComposer(); renderAll(); $('#composerOpen').focus();
 });
 
-/* ---------- generic editor for blog posts and books ---------- */
+/* ---------- podcasts composer (SPEC-PC PC-03): the reads composer's pattern; link and title required, the rest optional ---------- */
+const pf = id => $('#pf-' + id);
+const PODCAST_FIELDS = ['url', 'title', 'show', 'comment'];
+function openPodcastComposer(editIndex = -1) {
+  state.pediting = editIndex; state.pEntry = editIndex >= 0 ? state.podcasts.podcasts[editIndex] : null;   // the entry itself, not its position: the list may change while the form is open
+  const e = editIndex >= 0 ? RL.podcastView(state.podcasts.podcasts[editIndex]) : {url:'', title:'', show:'', comment:'', tags:[]};
+  pf('url').value = e.url; pf('title').value = e.title; pf('show').value = e.show; pf('comment').value = e.comment; pf('tags').value = e.tags.join(', ');
+  $('#podcastFormTitle').textContent = editIndex >= 0 ? 'Edit podcast' : 'Share a podcast';
+  pf('submit').textContent = editIndex >= 0 ? 'Save changes' : 'Post';
+  clearPodcastErrors(); updatePodcastCount(); updatePodcastPreview();
+  $('#podcastComposer').classList.add('open'); $('#podcastComposerOpen').setAttribute('aria-expanded', 'true');
+  $('#podcastComposer').scrollIntoView({block: 'nearest'});
+  pf('url').focus();
+}
+function closePodcastComposer() {
+  state.pediting = -1; state.pEntry = null; $('#podcastComposer').classList.remove('open');
+  $('#podcastComposerOpen').setAttribute('aria-expanded', 'false'); $('#podcastForm').reset();
+}
+function clearPodcastErrors() { PODCAST_FIELDS.forEach(f => { pf(f + '-err').textContent = ''; pf(f).removeAttribute('aria-invalid'); }); }
+function showPodcastErrors(errors) {
+  clearPodcastErrors();
+  PODCAST_FIELDS.forEach(f => { if (errors[f]) { pf(f + '-err').textContent = errors[f]; pf(f).setAttribute('aria-invalid', 'true'); } });
+  const first = PODCAST_FIELDS.find(f => errors[f]); if (first) pf(first).focus();
+}
+const podcastValue = () => ({url: pf('url').value, title: pf('title').value, show: pf('show').value, comment: pf('comment').value, tags: pf('tags').value});
+function updatePodcastCount() { const n = pf('comment').value.length, c = $('#pf-count'); c.textContent = n; c.parentElement.classList.toggle('bad', n > RL.LIMITS.comment); }
+function updatePodcastPreview() {
+  const v = podcastValue(), n = RL.normalizeUrl(v.url);
+  $('#pf-preview').innerHTML = (n || v.title) ? podcastCard({url: n || '', title: v.title.trim(), show: v.show.trim(), comment: v.comment.trim(), tags: RL.parseTags(v.tags), added: new Date().toISOString().slice(0, 10)}, -1, true)
+    : '<div class="empty">Your post will appear here as you type.</div>';
+  paint($('#pf-preview'));
+}
+$('#podcastComposerOpen').onclick = () => openPodcastComposer(-1);
+$('#pf-cancel').onclick = () => { closePodcastComposer(); $('#podcastComposerOpen').focus(); };
+$('#podcastForm').addEventListener('input', () => { updatePodcastCount(); updatePodcastPreview(); });
+$('#podcastForm').addEventListener('keydown', e => { if (e.key === 'Escape') { closePodcastComposer(); $('#podcastComposerOpen').focus(); } });
+$('#podcastForm').addEventListener('submit', ev => {
+  ev.preventDefault();
+  if (!document.body.classList.contains('admin')) return;
+  if (state.podcastsUnsupported || state.podcastsFailed) return showPodcastErrors({url: 'podcasts.json could not be loaded, or is newer than this page understands. Reload the page before adding.'});
+  const r = RL.validatePodcastEntry(podcastValue());
+  if (!r.ok) return showPodcastErrors(r.errors);
+  if (state.pediting >= 0) {
+    const at = state.podcasts.podcasts.indexOf(state.pEntry);
+    if (at < 0) return showPodcastErrors({url: 'That podcast was deleted while you were editing. Close this form and start again.'});
+    const next = {...state.podcasts.podcasts[at], ...r.value};
+    if (!next.id) next.id = Date.now();
+    state.podcasts.podcasts[at] = next; say('Changes saved. Publish to make them public.');
+  } else {
+    state.podcasts.podcasts.unshift({id: Date.now(), added: new Date().toISOString().slice(0, 10), ...r.value}); say('Added. Publish to make it public.');
+  }
+  state.dirty.podcasts = true; updateDirty(); closePodcastComposer(); renderAll(); $('#podcastComposerOpen').focus();
+});
+
+/* ---------- generic editor for books (and the delete handler for podcasts) ---------- */
 const SCHEMAS = {
-  post: {title:'Blog post', fields:[['title','Title','input',1],['date','Date (YYYY-MM-DD)','input',1],['body','Body (supports - bullets, **bold**)','textarea',1],['link','Link (optional)','input']], list:()=>state.blog.posts, file:'blog', make:()=>({id:Date.now(), date:new Date().toISOString().slice(0,10), title:'', body:'', link:''})},
+  podcast: {title:'Podcast', list:()=>state.podcasts.podcasts, file:'podcasts'},
   article: {title:'Read', list:()=>state.reads.articles, file:'reads'},
   book: {title:'Book', fields:[['title','Title','input',1],['author','Author','input',1],['year','Year','input'],['note','Note','textarea'],['category','Section','select',1]], list:()=>state.reads.books, file:'reads', make:()=>({title:'', author:'', year:'', note:'', category:defaultSection()})},
 };
 function editItem(kind, idx) {
   if (kind === 'article') return openComposer(idx);
+  if (kind === 'podcast') return openPodcastComposer(idx);
   const s = SCHEMAS[kind], list = s.list(), isNew = idx < 0, item = isNew ? s.make() : {...list[idx]};
   modal.open(`<h3 id="modalTitle">${isNew ? 'Add' : 'Edit'} ${s.title.toLowerCase()}</h3>` + s.fields.map(([k,l,t]) =>
     `<label for="f-${k}">${esc(l)}</label>${t === 'select' ? `<select id="f-${k}" data-k="${k}">${RL.CATEGORIES.map(c => `<option value="${esc(c)}"${c === RL.categoryOf(item) ? ' selected' : ''}>${esc(RL.categoryLabel(c))}</option>`).join('')}</select>` : t === 'textarea' ? `<textarea id="f-${k}" data-k="${k}">${esc(item[k])}</textarea>` : `<input id="f-${k}" data-k="${k}" value="${esc(item[k])}">`}`).join('') +
@@ -519,15 +624,12 @@ function editItem(kind, idx) {
       if (req && !v) return modal.err('Please fill in: ' + s.fields.find(f => f[0] === k)[1]);
       item[k] = v;
     }
-    if (kind === 'post' && !/^\d{4}-\d{2}-\d{2}$/.test(item.date)) return modal.err('Date must be YYYY-MM-DD');
-    if (kind === 'post' && item.link && !safeUrl(item.link)) return modal.err('Link must start with http:// or https://');
     if (kind === 'book') item.year = item.year && /^\d+$/.test(item.year) ? Number(item.year) : item.year;
     if (kind === 'book') state.lastSection = item.category;
     if (isNew) list.push(item); else list[idx] = item;
     state.dirty[s.file] = true; updateDirty(); renderAll(); modal.close();
   };
 }
-$('#addPost').onclick = () => editItem('post', -1);
 $('#addBook').onclick = () => editItem('book', -1);
 
 /* ---------- delegated clicks: edit, delete, filter, share ---------- */
@@ -552,6 +654,20 @@ document.addEventListener('click', async e => {
     if (flt && flt.dataset.filter === '') { state.filter.q = ''; $('#readSearch').value = ''; }
     renderReads(); return;
   }
+  const pflt = e.target.closest('[data-pfilter]'), ptag = e.target.closest('[data-ptag]');
+  if (pflt || ptag) {
+    state.pfilter.tag = pflt ? pflt.dataset.pfilter : (state.pfilter.tag === ptag.dataset.ptag ? '' : ptag.dataset.ptag);
+    if (pflt && pflt.dataset.pfilter === '') { state.pfilter.q = ''; $('#podcastSearch').value = ''; }
+    renderPodcasts(); return;
+  }
+  const pcp = e.target.closest('[data-pcopy]'), psh = e.target.closest('[data-pshare]');
+  if (pcp || psh) {
+    const entry = state.podcasts.podcasts[+(pcp || psh).dataset[pcp ? 'pcopy' : 'pshare']], links = entry && RL.shareLinks(entry.url);
+    if (!links) return;
+    if (pcp) say(await copyText(links.url) ? 'Link copied.' : 'Could not copy. Select the link and copy it manually.');
+    else { try { await navigator.share({title: entry.title, url: links.url}); } catch {} }
+    return;
+  }
   const cp = e.target.closest('[data-copy]'), sh = e.target.closest('[data-share]');
   if (cp || sh) {
     const entry = state.reads.articles[+(cp || sh).dataset[cp ? 'copy' : 'share']], links = entry && RL.shareLinks(entry.url);
@@ -561,17 +677,24 @@ document.addEventListener('click', async e => {
   }
 });
 $('#readSearch').addEventListener('input', e => { state.filter.q = e.target.value; renderReads(); });
+$('#podcastSearch').addEventListener('input', e => { state.pfilter.q = e.target.value; renderPodcasts(); });
 
 $('#publishBtn').onclick = async () => {
-  const files = [['blog', 'content/blog.json', () => ({posts: state.blog.posts}), 'blog'], ['reads', 'content/reads.json', () => RL.serializeReads(state.reads), 'reading list']];
+  const files = [['podcasts', 'content/podcasts.json', () => RL.serializePodcasts(state.podcasts), 'podcasts'], ['reads', 'content/reads.json', () => RL.serializeReads(state.reads), 'reading list']];
   const todo = files.filter(f => state.dirty[f[0]]);
   const hasPhoto = !!(state.dirty.profile && state.profileDraft);
   if (!todo.length && !hasPhoto) return;
   $('#publishBtn').disabled = true;
   const out = [];
   for (const [key, path, get, label] of todo) {   // one file per commit; a failure leaves the others untouched
+    if ((key === 'podcasts' && state.podcastsFailed) || (key === 'reads' && state.readsFailed)) { out.push(path + ': not published: it could not be loaded when this page opened, so its content is unknown (reload the page)'); continue; }
+    if (key === 'podcasts') {   // the same rules CI applies, before anything is written: a bad entry already in the file blocks the publish
+      const bad = RL.validatePodcastsFile(get()).errors;
+      if (bad.length) { out.push(path + ': not published: ' + bad[0] + (bad.length > 1 ? ` (and ${bad.length - 1} more)` : '')); continue; }
+    }
+    if (key === 'podcasts' && state.podcastsUnsupported) { out.push(path + ': not published: this file is newer than the page understands (reload the page)'); continue; }
     if (key === 'reads' && state.readsUnsupported) { out.push(path + ': not published: this file is newer than the page understands (reload the page)'); continue; }
-    try { const r = await publishFile(path, get(), `cms: update ${label}`); state.dirty[key] = false; out.push(path + ': ' + r); }
+    try { const r = await publishFile(path, get(), `cms: update ${label}`, key === 'podcasts' || key === 'reads'); state.dirty[key] = false; out.push(path + ': ' + r); }
     catch (e) { out.push(path + ': ' + e.message); }
   }
   if (hasPhoto) {   // photo first, then the manifest that shows it, so the manifest never points at a missing file
@@ -641,6 +764,9 @@ $('#readTabs').addEventListener('keydown', e => {
   if (n < 0) return;
   e.preventDefault(); selectCategory(tabs[n].dataset.cat, true);
 });
+/* the retired blog's links (PC-05): #blog and #blog/... land on Podcasts */
+function followBlogLink() { const to = RL.redirectHash(location.hash); if (to) location.replace(to); return !!to; }
+window.addEventListener('hashchange', () => { if (followBlogLink()) showId('podcasts'); });
 window.addEventListener('hashchange', () => {
   if (!RL.isReadsHash(location.hash) || state.readsUnsupported) return;
   const c = RL.categoryFromHash(location.hash);

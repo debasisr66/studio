@@ -18,7 +18,7 @@
   <div class="wrap">
     <a class="brand" href="#top" aria-label="Studio by Debasis Ray, back to top"><img class="logo" src="assets/logo.svg" alt="" width="28" height="28"> Studio <small>by Debasis Ray</small></a>
     <nav class="links" id="navlinks" aria-label="Sections">
-      <a href="#products">Products</a><a href="#updates">Updates</a><a href="#blog">Blog</a><a href="#reads">Reads</a>
+      <a href="#products">Products</a><a href="#updates">Updates</a><a href="#reads">Reads</a><a href="#podcasts">Podcasts</a>
     </nav>
     <div class="hdr-actions">
       <button class="whatsnew" id="whatsNewBtn" type="button" aria-haspopup="dialog" aria-label="What's new" hidden><span class="wn-text" aria-hidden="true">What's new</span><span class="wn-icon" aria-hidden="true">✦</span><span class="wn-dot" id="wnDot" aria-hidden="true" hidden></span></button>
@@ -58,12 +58,6 @@
   <section class="block" id="updates" aria-labelledby="h-updates"><div class="wrap">
     <div class="sec-head"><h2 id="h-updates">Updates</h2><span class="sub">Latest releases</span></div>
     <div class="feed" id="updatesFeed"></div>
-  </div></section>
-
-  <section class="block" id="blog" aria-labelledby="h-blog"><div class="wrap">
-    <div class="sec-head"><h2 id="h-blog">Blog</h2></div>
-    <button class="addbtn" id="addPost" type="button">+ New post</button>
-    <div class="feed" id="blogFeed"></div>
   </div></section>
 
   <section class="block" id="reads" aria-labelledby="h-reads"><div class="wrap">
@@ -118,6 +112,47 @@
       </div>
     </div>
   </div></section>
+
+  <section class="block" id="podcasts" aria-labelledby="h-podcasts"><div class="wrap">
+    <div class="sec-head"><h2 id="h-podcasts">Podcasts</h2><span class="sub">Shows and episodes worth a listen</span></div>
+
+    <div class="composer" id="podcastComposer">
+      <button class="composer-open" id="podcastComposerOpen" type="button" aria-expanded="false" aria-controls="podcastForm">
+        <span class="avatar" aria-hidden="true">D</span><span>Share a podcast…</span>
+      </button>
+      <form id="podcastForm" novalidate aria-labelledby="podcastFormTitle">
+        <h4 id="podcastFormTitle" class="sr">Share a podcast</h4>
+        <div class="field"><label for="pf-url">Link</label>
+          <input id="pf-url" name="url" type="text" inputmode="url" autocomplete="off" placeholder="https://…" aria-describedby="pf-url-err">
+          <div class="field-err" id="pf-url-err" role="alert"></div></div>
+        <div class="field"><label for="pf-title">Title</label>
+          <input id="pf-title" name="title" type="text" autocomplete="off" aria-describedby="pf-title-err">
+          <div class="field-err" id="pf-title-err" role="alert"></div></div>
+        <div class="fields-2">
+          <div class="field"><label for="pf-show">Show <span class="opt">(optional)</span></label>
+            <input id="pf-show" name="show" type="text" autocomplete="off" aria-describedby="pf-show-err">
+            <div class="field-err" id="pf-show-err" role="alert"></div></div>
+          <div class="field"><label for="pf-tags">Tags <span class="opt">(comma separated, up to 5)</span></label>
+            <input id="pf-tags" name="tags" type="text" autocomplete="off" placeholder="ai, history"></div>
+        </div>
+        <div class="field"><label for="pf-comment">Your take <span class="opt">(optional)</span></label>
+          <textarea id="pf-comment" name="comment" aria-describedby="pf-comment-help pf-comment-err" placeholder="Why is this worth a listen?"></textarea>
+          <div class="help"><span id="pf-comment-err" class="field-err m0" role="alert"></span><span id="pf-comment-help" aria-live="off"><span id="pf-count">0</span>/280</span></div></div>
+        <div class="preview"><h4>Preview</h4><div id="pf-preview"></div></div>
+        <div class="form-btns">
+          <button type="button" class="cta ghost" id="pf-cancel">Cancel</button>
+          <button type="submit" class="cta" id="pf-submit">Post</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="toolbar" id="podcastToolbar" hidden>
+      <input type="search" id="podcastSearch" aria-label="Search podcasts" placeholder="Search podcasts" autocomplete="off">
+      <div class="chips" id="podcastChips" role="group" aria-label="Filter by tag"></div>
+    </div>
+    <p class="count" id="podcastCount" aria-live="polite"></p>
+    <div class="feed" id="podcastFeed"></div>
+  </div></section>
 </main>
 
 <footer><div class="wrap">
@@ -126,7 +161,7 @@
 </div></footer>
 
 <nav class="bottom" id="navbottom" aria-label="Sections">
-  <a href="#products"><b aria-hidden="true">◧</b>Products</a><a href="#blog"><b aria-hidden="true">✎</b>Blog</a><a href="#reads"><b aria-hidden="true">☰</b>Reads</a>
+  <a href="#products"><b aria-hidden="true">◧</b>Products</a><a href="#reads"><b aria-hidden="true">☰</b>Reads</a><a href="#podcasts"><b aria-hidden="true">♪</b>Podcasts</a>
 </nav>
 
 <button id="gear" type="button" aria-label="Admin sign in" aria-haspopup="dialog">⚙</button>

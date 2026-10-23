@@ -39,7 +39,7 @@
     });
     var init = Object.assign({}, opts.init || {}, { signal: ctrl.signal });
     var work = Promise.resolve(fetchImpl(url, init)).then(function (r) {
-      if (!r.ok) throw new Error(url + ' ' + r.status);
+      if (!r.ok) { var err = new Error(url + ' ' + r.status); err.status = r.status; throw err; }   // the status is for callers that must tell 'no such file' from 'unknown'
       return r.json();
     });
     return Promise.race([work, limit]).then(

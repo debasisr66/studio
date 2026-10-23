@@ -7,8 +7,8 @@
 | `content/products.json` | Which repositories to show and how | Owner (edit the file) | `validateProducts`, `productWarnings` |
 | `content/cache.json` | Last synced GitHub data per product | Sync workflow only | `validateCache` |
 | `content/reads.json` | Reading list and books | Owner (admin screen) | `validateReads` |
-| `content/podcasts.json` | Podcast links. Validated since v2.0 PC Phase A; the page does not show it until PC Phase B | Owner (admin screen, from PC Phase B) | `validatePodcasts` |
-| `content/blog.json` | Blog posts. Archive after 2.0 (*planned*: not loaded) | Owner | `validateBlog` |
+| `content/podcasts.json` | Podcast links. Validated since v2.0 PC Phase A; shown in the Podcasts section since PC Phase B. A newer `schema_version` than the page knows shows that section's fallback line and blocks publishing over it | Owner (admin screen: Share a podcast) | `validatePodcasts` |
+| `content/blog.json` | Blog posts. An unrendered archive since v2.0 PC Phase B: the page no longer loads it; CI still validates it and the health check still confirms it is served | Owner (file only; there is no editor) | `validateBlog` |
 | `content/changelog.json` | What's new and the visible version | Owner, in the release PR | `validateChangelog` |
 | `content/profile.json`, `content/profile.jpg` | Profile photo manifest and image | Owner (admin screen) | `validateProfileManifest`, `validateProfileImage` |
 
@@ -52,11 +52,11 @@ Only `title` and `url` are required; `id` (unique when present), `added` (`YYYY-
 
 Rule ids: `podcast-url-clean`, `podcast-title`, `podcast-schema-version`, `podcast-tags`, `podcast-comment`, `podcast-show`, `podcast-duplicate-id`; a repeated link only warns (`podcast-duplicate-url`, compared with the query string kept, so two YouTube videos are different links).
 
-The platform label on a card (*planned, PC Phase B*) comes from a closed host list in `js/reads-lib.js` (`platformOf`: Spotify, Apple Podcasts, YouTube; any other host shows its plain domain).
+The platform label on a card comes from a closed host list in `js/reads-lib.js` (`platformOf`: Spotify, Apple Podcasts, YouTube; any other host shows its plain domain).
 
 ## blog.json
 
-`{ "posts": [ { id, date (YYYY-MM-DD), title (required), body (required), link (optional, clean) } ] }` Rule ids: `blog-date`, `blog-title`, `blog-link-clean`. Currently zero posts. *Planned (PC-05):* kept as an unrendered archive.
+`{ "posts": [ { id, date (YYYY-MM-DD), title (required), body (required), link (optional, clean) } ] }` Rule ids: `blog-date`, `blog-title`, `blog-link-clean`. Currently zero posts. Kept as an unrendered archive (PC-05, built in PC Phase B): not fetched by the page, not editable in the admin screen, `#blog` links go to `#podcasts`.
 
 ## changelog.json
 

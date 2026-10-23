@@ -97,13 +97,11 @@ test('TC-PC-V06 every new rule is enumerated with a fixture, a contract entry an
   }
   assert.deepEqual(V.checkContractDoc(read('docs/CONTRACT.md'), ['podcasts.json'], ids), []);
 });
-test('TC-PC-V07 the real content/podcasts.json exists, passes, and is not loaded by the page yet', () => {
+test('TC-PC-V07 the real content/podcasts.json exists and passes (it is shown by the page from Phase B on)', () => {
   const real = JSON.parse(read('content/podcasts.json'));
   assert.deepEqual(val(real).errors, []);
   assert.equal(real.schema_version, RL.PODCASTS_SCHEMA_VERSION);
   assert.ok(Array.isArray(real.podcasts));
-  assert.ok(!/podcasts\.json/.test(read('js/app.js')), 'Phase A is invisible: app.js does not fetch it');
-  assert.ok(!/id="podcasts"|href="#podcasts"/.test(read('index.html')), 'Phase A is invisible: no Podcasts section or nav link yet');
 });
 test('TC-PC-V07 run() validates podcasts.json (a bad file would fail CI)', () => {
   assert.equal(V.run === undefined, false);

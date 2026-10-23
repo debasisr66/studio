@@ -272,3 +272,15 @@ A successful smoke test proves rendering in one browser engine only. CI still ca
 | State and storage | No new storage key or cookie; the remembered section lives only in memory for the session; `history.replaceState` changes the fragment only |
 | Surface | No new network call, host, secret, dependency or permission; CSP and workflows untouched; `changelog.json` untouched |
 | Residual | The mobile nav highlight and the single-column books layout are UI work in later phases; keyboard and contrast pass for the whole page is SPEC-UX Phase B |
+
+### 11.10 PC Phase B (2026-10-23)
+
+Author's notes only; the verdict belongs to the independent reviewer.
+
+| Item | Note |
+|------|------|
+| Independent review | [reviews/PC-B.md](reviews/PC-B.md): reviewer Claude Opus 5.5; see the record for the verdict, the findings (three medium: a failed load could be published over, a concurrent or stale publish could lose newer content, an edit index could go stale after a delete; two low) and what was not checked |
+| New input paths | The podcast composer (link, title, show, take, tags; validated by `RL.validatePodcastEntry`, the same limits and strict link rule as CI), the `#blog` fragment (anchored regex, constant target) and `podcasts.json` as a rendered file (escaped in every context; newer version or failed load shows the fallback line) |
+| Publish path | One file per commit through the existing flow; now also refuses when GitHub's copy differs from the one this page loaded (conservative: wait, reload, retry) and runs the CI rules on the whole file first |
+| Surface | No new network host, storage key, cookie, secret, dependency or permission; nothing embedded; CSP and workflows unchanged; `changelog.json` untouched |
+| Residual | Reads has the older whole-file validation gap (its entries are only JSON round-tripped before publish); the Reads composer still offers the Podcast format until Phase C |

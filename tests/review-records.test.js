@@ -42,8 +42,13 @@ test('review gate: a missing or made-up verdict, a missing acknowledgement or co
 test('review gate: SH-02 (the CI tool, merged before the gate existed) has a record', () => {
   assert.ok(fs.existsSync(path.join(DIR, 'SH-02.md')), 'docs/reviews/SH-02.md is missing: the CI tool needs an independent review');
 });
+test('review gate: the file-name pattern covers requirement ids and phase names (SH-02.md, PC-B.md) and ignores README', () => {
+  const re = /^[A-Z]{2}-[A-Z0-9]+.*\.md$/;
+  for (const n of ['SH-02.md', 'PC-B.md', 'UX-04.md']) assert.ok(re.test(n), n);
+  assert.ok(!re.test('README.md'));
+});
 test('review gate: every record in docs/reviews/ is well-formed', () => {
-  const files = fs.existsSync(DIR) ? fs.readdirSync(DIR).filter(f => /^[A-Z]{2}-\d{2}.*\.md$/.test(f)) : [];
+  const files = fs.existsSync(DIR) ? fs.readdirSync(DIR).filter(f => /^[A-Z]{2}-[A-Z0-9]+.*\.md$/.test(f)) : [];
   assert.ok(files.length >= 1, 'no review records yet');
   for (const f of files) assert.deepEqual(checkRecord(f, fs.readFileSync(path.join(DIR, f), 'utf8')), []);
 });
