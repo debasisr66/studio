@@ -355,7 +355,7 @@ Spec: [SPEC-TR](specs/product-trust-reliability/spec.md) (draft, awaiting approv
 - Add better recovery guidance for failed syncs and stale data
 - Review whether branch protection or required CI should be enforced for this repo
 
-### Phase 2.5: Studio 2.0 (proposed, this revision)
+### Phase 2.5: Studio 2.0 (in progress; SH, RC and PC phases A and B built, v1.6 intermediate release live; UX and Phase C remain)
 Four specs, built in this order (each later one depends on the earlier):
 1. [SPEC-SH](specs/stabilize-core-hub/spec.md): stabilise the core hub (section isolation, browser smoke test, content contract, owner operations, schema versions)
 2. [SPEC-RC](specs/reads-categories/spec.md): Reads split into Technical and Others
@@ -432,11 +432,12 @@ Studio is a lightweight, privacy-first product studio hub that presents a portfo
 | Stabilize the core hub | [SPEC-SH](specs/stabilize-core-hub/spec.md) | SH-01 … SH-08 | 9.1, 9.2, 10.2, 11, 13, 16 (Phase 1) | none (first) |
 | Reads has two sub-items: Technical and Others | [SPEC-RC](specs/reads-categories/spec.md) | RC-01 … RC-09 | 7, 9.4, 11.3 | SH (schema versions, smoke test) |
 | Blog replaced with Podcast links | [SPEC-PC](specs/podcast-links/spec.md) | PC-01 … PC-09 | 7, 9.4, 11.3 | SH |
+| Adding an item must be quick and work in any order from the owner's iPhone: paste first, unlock only when posting, publish, lock again (added 2026-10-23) | [SPEC-QA](specs/quick-add/spec.md) | QA-01 … QA-10 | 9.4, 11.3, 14 | RC, PC (the composers and the guarded publish) |
 | Simpler, more intuitive layout (usage-based ordering was part of the request and was dropped by the owner on 2026-10-21) | [SPEC-UX](specs/simple-layout/spec.md) | UX-01 … UX-07 | 7, 8 | RC, PC (final section set) |
 
 Release targets for 2.0 (measurable, checked in each spec's test plan):
 - 0 sections that can take the page down: one failing section never stops the others (SH-01)
 - 100% of content files covered by a contract and a validator rule with a fixture (SH-03)
 - 0 broken old links: `#blog`, `#reads` and every existing deep link still land somewhere sensible (PC-05, UX-04)
-- No new third-party request, cookie or storage key; nothing about visitors is recorded (CSP unchanged)
+- No new third-party request or cookie; no storage about visitors; the only new storage key is one owner-only draft key in the owner's tab, written after the owner uses Quick add and never holding the token (SPEC-QA QA-07; CSP unchanged)
 - Page weight stays within the existing budgets (`validate-site.js` `BUDGETS`)

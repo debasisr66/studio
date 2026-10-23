@@ -1,12 +1,12 @@
 # Test Plan and Traceability — Studio
 
-Releases: **v2.0 (planned, nothing run)** · **v1.6 (intermediate, 2026-10-22: SPEC-SH A and B, SPEC-RC A and B, SPEC-PC A, review gate)** · **v1.5 (shipped 2026-10-21: SPEC-TR)** · v1.4 (shipped 2026-10-20) · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
+Releases: **v2.0 (in progress)** · **v1.6 (intermediate, 2026-10-22: SPEC-SH A and B, SPEC-RC A and B, SPEC-PC A, review gate)** · **v1.5 (shipped 2026-10-21: SPEC-TR)** · v1.4 (shipped 2026-10-20) · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped). Result key: ✅ pass · ❌ fail (fixed) · ⏳ not run · 🔒 needs owner
 
 ---
 
-# v2.0 — Studio 2.0 (in progress: SH A and B, RC A and B, PC A merged and live in v1.6, PC Phase B built, rest planned)
+# v2.0 — Studio 2.0 (in progress: SH A and B, RC A and B, PC A and B merged; UX, Phase C and the release remain)
 
-Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22): **116 new cases**, on top of the existing **142 passing unit tests**. Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12), SH Phase B (PR #13), RC Phase A (PR #14), PC Phase A (PR #15) and RC Phase B and PC Phase B are run:** see §G, §H, §I, §J, §K and §L.
+Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22), [SPEC-QA](specs/quick-add/test.md) (56, added 2026-10-23): **172 new cases**, on top of the former **142 passing unit tests** (**262** now, plus a **117-case** browser smoke test). Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12), SH Phase B (PR #13), RC Phase A (PR #14), PC Phase A (PR #15), RC Phase B (PR #16) and PC Phase B (PR #21) are run:** see §G, §H, §I, §J, §K and §L. **QA Phase A is built (PR open):** §M.
 
 ## A. Requirements (release level)
 
@@ -22,6 +22,8 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | REQ-57 | Simpler layout: one fixed order, one section pattern, both navs identical and in page order, all deep links stable, accessibility and first-screen clarity | UX-01 … UX-06 |
 | REQ-58 | Nothing else breaks: products, updates, sync, health, keep-alive, profile, What's new, admin publish, CSP, budgets | all |
 | REQ-59 | All artefacts updated and traceable PRD → spec → test → release | all |
+| REQ-60 | Quick add: paste first, Read or Podcast in one sheet, just-in-time unlock with an autofill-friendly token field, post and publish in one action, auto-lock after every successful publish, owner-only draft, `#add` home-screen entry | QA-01 … QA-08 |
+| REQ-61 | Prefill by link (`#add=…`) that only prefills and never submits | QA-09 |
 
 ## B. Traceability (requirement → spec → cases → status)
 
@@ -37,6 +39,8 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | REQ-57 | TC-UX-S01–S02, P01–P04, N01–N05, L01–L05, A01–A05, F01 | ⬜ (F01 owner step 🔒) |
 | REQ-58 | Regression suite (§D) | ⬜ |
 | REQ-59 | Artefact checklist ([plan.md](plan.md) "Artefact update matrix") | ⬜ |
+| REQ-60 | TC-QA-E01–E05, P01–P07, K01–K05, U01–U07, L01–L07, D01–D04, H01–H03, S01–S03, X01–X02 ✅ (§M); O01–O04, O06, O07 | ✅ except O: owner steps 🔒 |
+| REQ-61 | TC-QA-F01–F06, O05 | ⬜ (O05 owner step 🔒) |
 
 ## C. Test strategy by layer
 
@@ -155,6 +159,20 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | Test fix found on the way | `TC-SH-S08` (hardening test) failed once in a full run: its "is it dead" check could see a killed process as a zombie for several seconds on a loaded machine. It now treats a zombie as dead and waits up to 10 s; 6 further full runs and a run under CPU load were green. The failure could not be reproduced, so this is the likely cause, not a proven one |
 | Independent review | [reviews/PC-B.md](reviews/PC-B.md): Opus 5.5, first verdict APPROVE WITH CONDITIONS (three medium findings: a failed load could be published over, a stale or concurrent publish could lose content, an edit index could go stale after a delete), after the fixes **APPROVE**; three small follow-ups fixed after the verdict and not re-checked by the reviewer |
 | Not done | PC-06 (Reads composer still offers Podcast), PC-07 duplicate warning in the composer, PC-08 seed podcasts (owner supplies the links), R05 (the 2.0 changelog), a real publish of a podcast by the owner, real-phone and screen-reader passes |
+
+## M. Results: QA Phase A, Quick add (2026-10-23)
+
+| Check | Result |
+|-------|--------|
+| Unit tests | **262 of 262 pass** (241 before; +20 in `tests/spec-qa-phase-a.test.js`, +1 in `tests/make-sandbox.test.js`). All failed first (18 of 19 of the first set; the sandbox case; the review-fix test later) |
+| Browser smoke | **117 of 117 pass** in about 73 s locally (66 before; +51 `TC-QA-*` cases, 45 first, 5 more for review findings F1, F2, F3, F5/F7, N1, 1 for the owner's feedback). Before the build the 45 new cases all failed and the 66 old ones passed. The GitHub API and the clipboard are stubbed inside the page, so nothing left the machine and no token existed |
+| What the cases prove | sheet opens from the gear, `#add` (focus on the link) and the owner bar, closes with Escape and Cancel, focus returns, focus trap (E); paste only on the tap, share text, refusals, tracking removal, hand paste (P); kind suggestion and parity with both composers over a table of inputs (K); token prompt over the sheet, wrong and foreign token, Cancel, real login-form markup, token nowhere but its one key, no API call before a token (U); one PUT per publish with the item in the right file, draft mode writes nothing, lock after success in both publish paths and not after failure, retry works, PC-B guards hold (L); draft restore, contents, key set, Cancel and Escape clear it, idle lock keeps it (D); 375 px layout and 44 px targets, `#adds` and `#add/x` ignored (H); XSS inert, visitor Post makes no call (S) |
+| Existing case changed | `TC-PC-A05`: its second half needed the admin still unlocked, but a successful publish now locks. It unlocks again first; without that its second half would have passed vacuously. `scripts/smoke.js` also gained a per-case `init` script and a `fast` flag, prints the time of cases slower than 2 s, and its default watchdog is 110 s (CI needs about half) |
+| Validator | OK. `reads-lib.js` is 24 KB: its budget was raised from 20 to 26 KB (it stood at 20,198 of 20,480 bytes before any Quick add code); the total budget is unchanged. CSP, no inline code or style, no cookie: unchanged and tested |
+| Visual check | 375 px and about 1280 px, dark and light, in the browser pane: sheet, podcast mode, restored draft, token prompt over the sheet. No defects seen. Not a real iPhone |
+| Independent review | [reviews/QA-A.md](reviews/QA-A.md) (Opus 5.5). First verdict REJECT (a Post before the page had loaded could have replaced the whole published list; Cancel during the token check still stored the token), plus lower findings. All fixed tests-first; the re-check verdict is in the record |
+| Owner device checks (sandbox, Chrome on iPhone, 2026-10-23) | Paste, post, publish and auto-lock work; **O01 and O03 reported working**; the unpublished link is kept and can be published after logging in again. Feedback: unlock-only was a small link, now an **Edit or delete items** button (TC-QA-E06, added after the review: a layout and label change only) |
+| Not done or not verified | O02 and the O06 timing were only reported informally; **O04 and O07 reported passed**: the Home Screen icon opened the sheet by itself (an accidental tap, not a timed cold-start test; the browser it opened in was not recorded separately). Real GitHub API behaviour (stubs only). Whether Chrome's password manager offers and saves the token on a readonly-username form is unknown until O01. Reads publish still has no whole-file validation (older code; podcasts has it). Phase B (`#add=`) not started |
 
 ---
 

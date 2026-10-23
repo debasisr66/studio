@@ -8,8 +8,9 @@ Spec-based work for Studio. A spec is written **before** any change that affects
 |------|--------|--------------|-----------|--------|
 | Product trust and reliability (`SPEC-TR`) | Shipped (v1.5) | TR-01 … TR-13 | Phase 2 | [product-trust-reliability/](product-trust-reliability/spec.md) |
 | Stabilize the core hub (`SPEC-SH`) | Phases A and B merged (PRs #12, #13); C not started | SH-01 … SH-08 | Phase 1 / 2.5, **step 1 of 2.0** | [stabilize-core-hub/](stabilize-core-hub/spec.md) |
-| Reads: Technical and Others (`SPEC-RC`) | Phases A merged (PR #14); Phase B built (PR open); C not started | RC-01 … RC-09 | Phase 2.5, step 2 | [reads-categories/](reads-categories/spec.md) |
-| Podcast links replace the Blog (`SPEC-PC`) | Phases A merged (PR #15); Phase B built (PR open); C not started | PC-01 … PC-09 | Phase 2.5, step 3 | [podcast-links/](podcast-links/spec.md) |
+| Reads: Technical and Others (`SPEC-RC`) | Phases A and B merged (PRs #14, #16; live in v1.6); C not started | RC-01 … RC-09 | Phase 2.5, step 2 | [reads-categories/](reads-categories/spec.md) |
+| Podcast links replace the Blog (`SPEC-PC`) | Phases A and B merged (PRs #15, #21); C not started | PC-01 … PC-09 | Phase 2.5, step 3 | [podcast-links/](podcast-links/spec.md) |
+| Quick add: paste first, unlock when needed (`SPEC-QA`) | Approved 2026-10-23; Phase A built (PR open), Phase B not started | QA-01 … QA-10 | Phase 2.5, planned before UX | [quick-add/](quick-add/spec.md) |
 | Simpler layout (`SPEC-UX`) | Approved, not started | UX-01 … UX-07 | Phase 2.5, step 4 | [simple-layout/](simple-layout/spec.md) |
 
 ## Traceability convention

@@ -25,14 +25,16 @@ PRD updated (done) → four specs (done, this PR) → impact (done) → **plan (
 | 2 | SH | B | CONTRACT.md, schema versions, OPERATIONS.md | Contract tests green, commands executed. **Merged (PR #13)** ✅ |
 | 3 | RC | A | `category` in data, validator, migration (no UI) | Migration proves no loss; owner confirms classification. **Merged (PR #14)** ✅ (classification confirmed 2026-10-21) |
 | 4 | PC | A | `podcasts.json`, validator, fixtures (section not visible) | Fixtures and contract green. **Merged (PR #15)** ✅ |
-| 5 | RC | B | Reads tabs, deep links, composer section | Smoke test covers both sub-items. **Built on `v2/rc-b`: awaiting approval** ✅ |
-| 6 | PC | B | Podcasts section and admin; Blog removed; `#blog` redirect | Smoke test; owner publishes a podcast link. **Built on `v2/pc-b`: awaiting approval** ✅ (owner's real publish of a podcast link still to do) |
-| 7 | UX | A | Fixed order, section pattern, matching navs, stable links | Navs identical; anchors verified |
-| 8 | UX | B | Accessibility and responsiveness pass, first-screen clarity | Keyboard, contrast, zoom, 375 px; owner walk-through |
-| 9 | SH, RC, PC, UX | C | Fallback proofs, asset rules, books in sub-items, seed podcasts | P1 rows ✅ or deferred in writing |
-| 10 | all | Release | Changelog 2.0, REQ rows, security log, architecture, learning guide, product intro; tag `v2.0` | Exit criteria in all four test plans |
+| 5 | RC | B | Reads tabs, deep links, composer section | Smoke test covers both sub-items. **Merged (PR #16); shipped in v1.6** ✅ |
+| 6 | PC | B | Podcasts section and admin; Blog removed; `#blog` redirect | Smoke test; owner publishes a podcast link. **Merged (PR #21)** ✅ (independent review PC-B; owner's real publish of a podcast link still to do) |
+| 7 | QA | A | Quick add: sheet, paste first, just-in-time unlock, autofill-friendly token field, post and publish, auto-lock, owner-only draft, `#add` home-screen entry | Smoke and unit tests; **independent review (G4)**; owner device checks O01-O04, O06 on the iPhone. **Approved 2026-10-23; built 2026-10-23 (PR open, independent review [QA-A](reviews/QA-A.md)); awaiting the owner's phone checks and "merge"** |
+| 8 | QA | B | Prefill by link (`#add=…`) and the iOS Shortcut recipe | Smoke and unit tests; **independent review (G5)**; owner device check O05 |
+| 9 | UX | A | Fixed order, section pattern, matching navs, stable links | Navs identical; anchors verified; **independent review of UX-04 (G2)** |
+| 10 | UX | B | Accessibility and responsiveness pass, first-screen clarity | Keyboard, contrast, zoom, 375 px; owner walk-through; **independent review of UX-05 (G3)** |
+| 11 | SH, RC, PC, UX | C | Fallback proofs, asset rules, books in sub-items, seed podcasts, **check the footer date** (see "Revisit later") | P1 rows ✅ or deferred in writing |
+| 12 | all | Release | Changelog 2.0, REQ rows, security log, architecture, learning guide, product intro; tag `v2.0` | Exit criteria in all four test plans |
 
-Steps 3-4 can run in either order; steps 5 and 6 can swap; everything else is sequential.
+Steps 3-4 can run in either order; steps 5 and 6 can swap; steps 7-8 (Quick add) come before the layout work because they are small, owner-facing and touch the same composer markup; everything else is sequential.
 
 ## Per-phase checklist (repeat for every phase)
 
@@ -55,6 +57,10 @@ Steps 3-4 can run in either order; steps 5 and 6 can swap; everything else is se
 | PC Q2 | Keep `blog.json` as an archive | **Yes** |
 | PC Q3 | Seed podcasts | **Lex Fridman, ThePrimeagen, Yuval Noah Harari.** These are people or shows: the owner supplies the exact podcast or episode URLs when seeding (none are invented in the documents) |
 | Labels | "Others", "Podcasts" | **As written** |
+| QA scenario | The owner copies a link by instinct; one tap opens a box that takes it; unlock only when posting; publish; the admin locks again | **Confirmed 2026-10-23** |
+| QA Auto-lock | Lock after every successful publish | **Always on, not optional** (owner 2026-10-23) |
+| QA platform | iPhone first (owner-driven), **Chrome** (not Safari); QA before UX | **Yes**; no Android share target, no PWA; plain bookmark with Chrome as the default browser (fallbacks in SPEC-QA QA-08) |
+| QA token handling | PIN-protected stored token, passkey/PRF unlock | **Rejected** (spec decisions D1, D2); the token stays in the tab only, autofilled by the iPhone Passwords app if the owner chooses |
 
 ## Milestones
 
@@ -63,8 +69,9 @@ Steps 3-4 can run in either order; steps 5 and 6 can swap; everything else is se
 | M1 Safe base | Steps 1-2 merged; the existing page passes the new smoke test |
 | M2 Data ready | Steps 3-4 merged; no visible change |
 | M3 Content split | Steps 5-6 merged; Reads has two sub-items; Podcasts replaces Blog |
-| M4 Layout | Steps 7-8 merged: fixed order, matching navs, stable links, accessibility pass |
-| M5 Release | Steps 9-10; `v2.0` tagged; live smoke checklist and health green |
+| M3b Quick add | Steps 7-8 merged: the owner can add an item from the iPhone in any order, with auto-lock |
+| M4 Layout | Steps 9-10 merged: fixed order, matching navs, stable links, accessibility pass |
+| M5 Release | Steps 11-12; `v2.0` tagged; live smoke checklist and health green |
 
 ## Risks and watch points
 
@@ -107,6 +114,7 @@ Heavy edits to `js/app.js`: keep new logic in small tested modules and watch the
 |------|--------|----------|
 | N2: if Node itself is SIGKILLed (OOM, `kill -9`, a runner killing the tree), headless Chrome from the smoke test stays running with its DevTools port open. Possible fix: `--remote-debugging-pipe` (no TCP port; Chrome exits when the pipe closes) | [reviews/SH-02.md](reviews/SH-02.md) | **Accepted by the owner 2026-10-23 for now.** Revisit before v2.0 or if the smoke test ever runs on shared machines |
 | Reviewed-but-unchanged info items: checkout `persist-credentials: false`, `--no-sandbox` keyed on `GITHUB_ACTIONS` instead of `CI`, string-only fetch stub | [reviews/SH-02.md](reviews/SH-02.md) | Proposed as accepted; owner has not yet confirmed |
+| Footer shows an old date ("Synced from GitHub · 19 Oct 2026") although the sync runs nightly | Owner, 2026-10-23 | **Check in Phase C.** Diagnosis (2026-10-23): by design since v1.2, `synced_at` only moves when product data changes (so a quiet week makes no commit), and the footer prints that date; the sync itself last succeeded on 22 Oct. The label is misleading, not the sync broken. Options: (a) reword to "Product data last changed 19 Oct 2026" (no new data, recommended); (b) show the last successful sync, which needs a new daily write or a third-party/API call (churn or CSP cost). Owner decides |
 
 ## Not in this plan
 

@@ -1,10 +1,10 @@
 # Impact Analysis — Studio
 
-Releases: **v2.0 (proposed)** · v1.5 (shipped 2026-10-21) · v1.4 (shipped 2026-10-20) · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped)
+Releases: **v2.0 (in progress)** · **v1.6 (intermediate, 2026-10-22)** · v1.5 (shipped 2026-10-21) · v1.4 (shipped 2026-10-20) · v1.3 (shipped) · v1.2 (shipped) · v1.1 (shipped)
 
 ---
 
-# v2.0 — Studio 2.0 (proposed): stabilise, Reads split, Podcasts, simpler layout
+# v2.0 — Studio 2.0 (in progress): stabilise, Reads split, Podcasts, simpler layout
 
 Date: 2026-10-21 · Rollback tag: `v1.5` · Specs: [SPEC-SH](specs/stabilize-core-hub/spec.md), [SPEC-RC](specs/reads-categories/spec.md), [SPEC-PC](specs/podcast-links/spec.md), [SPEC-UX](specs/simple-layout/spec.md) · PRD: §22 · Order of work: **PRD → specs → impact (this) → plan → design → build → test → security → artefacts**
 
@@ -72,6 +72,37 @@ Date: 2026-10-21 · Rollback tag: `v1.5` · Specs: [SPEC-SH](specs/stabilize-cor
 ## 6. Rollback
 
 Tag `v1.5` is the rollback point. Because content changes are additive, `git revert` of the 2.0 merge restores the previous site and it renders the migrated `reads.json` correctly; `blog.json` is intact. The stored layout key is ignored by old code. Health and CI keep running throughout (no workflow permission changes).
+
+## 6b. Addendum: SPEC-QA, Quick add (2026-10-23)
+
+Added by the owner after RC and PC Phase B went live: [SPEC-QA](specs/quick-add/spec.md), planned before SPEC-UX Phase A. Scenario: the owner copies an article's link by instinct; one tap opens a box that takes it; the token is asked for only when posting; the admin locks itself after a successful publish.
+
+| Area | Change | Risk | Mitigation |
+|------|--------|------|------------|
+| `index.html` | One new dialog (Add to Studio); the token prompt becomes a form with a username field and an autofill-friendly password field | Markup mistakes break the existing prompt or composers | Existing composers untouched; smoke cases cover prompt, sheet, both composers |
+| `js/app.js` (about +4 KB of the 80 KB budget) | Sheet logic, just-in-time unlock, post-and-publish, auto-lock, `#add` and `#add=` routing, draft key | The most sensitive code in the site: unlock, publish, lock | Tests first, shared validators and the guarded publish reused (no copy of any rule); independent review for both phases (G4, G5) |
+| `js/reads-lib.js` | Pure helpers: `extractLink`, `extractTitle`, `suggestKind`, `parseAddFragment` | Parsing untrusted pasted text and fragments | Unit tests on hostile and oversized inputs; every value ends in the existing `normalizeUrl` and validators |
+| `js/token-store.js`, `lock()` | Lock after every successful publish | A lock that fires too early or never | Success path only; failure keeps the session and the draft; tests for both |
+| Storage | One new **owner-only** `sessionStorage` key for the in-progress draft (no token in it); the PRD target "no new storage key" is amended to "no storage about visitors; one owner-only draft key" | A reviewer or visitor sees the draft key as "tracking" | Written only after the owner uses the sheet; never for visitors; cleared on success and Cancel; test that a visitor session has no such key |
+| Clipboard | Read only on a tap of **Paste from clipboard** | Silent clipboard reads | Not read on load or open (test counts calls); browser prompts apply |
+| Content files, validators, CI, workflows, CSP, fonts | Unchanged | none | `git diff main -- .github content` shows nothing |
+| Docs | New spec and test plan, plan, design §12.10, security §11.11, review gate, PRD §22, OPERATIONS and LEARNING-GUIDE recipes (written at build time) | Drift | Doc tests (`TC-QA-H03`, `TC-QA-F06`), CONTRACT unaffected |
+
+**Data and compatibility:** none. No content file, schema or rule changes; the existing composers and the publish guards keep working, so old data and old pages are unaffected.
+
+**Rollback:** revert the merge commit of the phase (SPEC-QA is additive); nothing to migrate back.
+
+**Risk register (QA):**
+
+| ID | Risk | Likelihood | Impact | Mitigation | Status |
+|----|------|------------|--------|------------|--------|
+| Q1 | One-tap token fill does not appear in **Chrome on the owner's iPhone** even after the prompt becomes a real login form | Medium | Low (convenience only) | Owner device check O01; add the token to the password manager by hand (username `studio-admin`); fallback is to paste the token after the link is posted (the clipboard is free by then) | Open until O01 |
+| Q7 | The Home Screen icon opens in Safari, or drops `#add`, instead of Chrome | Medium | Low | Chrome as default browser; fallbacks: a Chrome bookmark, or a Shortcut with `googlechromes://`; checks O04, O07 | Open until O04 |
+| Q2 | Auto-lock after publish forces a new token entry for the next item | High | Low | Intended (security first); autofill makes it one tap; owner agreed | Accepted |
+| Q3 | iOS discards the tab while the owner fetches the token | Medium | Medium (draft lost) | Draft key (QA-07); the link is usually still on the clipboard | Mitigated |
+| Q4 | A crafted `#add=` link prefills something misleading | Low | Low | Prefill only, banner, validation, never auto-submit, the owner must press Post and give the token | Mitigated (Phase B) |
+| Q5 | The sheet becomes a second, divergent add path | Medium | Medium | Reuses the same validators and publish flow; parity test TC-QA-K05; SPEC-UX decides whether to keep the old composers | Mitigated |
+| Q6 | A bug in lock or unlock leaves the admin open or locks mid-publish | Low | High | Tests for success and failure paths; independent review G4 | Open until review |
 
 ## 7. Out of scope for 2.0
 

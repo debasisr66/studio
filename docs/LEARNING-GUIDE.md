@@ -132,7 +132,7 @@ Studio uses **two tokens, one per job**. Create them separately, name them diffe
 
 | | **Admin token** (`studio-admin`) | **Dispatch token** (`studio-dispatch`) |
 |---|---|---|
-| Job | You publish blog posts, reads and your photo from the ⚙ screen | A product repo (Penny) tells Studio "I released something, sync now" |
+| Job | You publish reads, books, podcasts and your photo from the ⚙ screen | A product repo (Penny) tells Studio "I released something, sync now" |
 | Used by | You, by hand, in the browser | A GitHub Actions workflow in the product repo, unattended |
 | Stored | **Nowhere.** Pasted into the open tab; forgotten when the tab closes or after 30 minutes idle | GitHub Actions secret `STUDIO_DISPATCH_TOKEN` in **each product repo** |
 | Suggested expiry | 30–90 days (you will paste a fresh one from your password manager) | 90 days to 1 year (it runs unattended) |
@@ -167,11 +167,11 @@ Before you leave the page, check the summary lists **1 repository: debasisr66/st
 
 ### B. Use the admin token (Studio publishing)
 
-1. Open https://debasisr66.github.io/studio/ and click **⚙**.
-2. Paste the token and click **Unlock**. The site asks GitHub who you are and unlocks only for `debasisr66`.
+1. Open https://debasisr66.github.io/studio/ and click **⚙**: the **Add to Studio** sheet opens (no token yet). For the quick way to add a link, see Step 18.
+2. To edit or delete existing items, press **Edit or delete items**; or post from the sheet and the token is asked for then. The prompt is a login form: username `studio-admin` (fixed), password = the token. The site asks GitHub who you are and unlocks only for `debasisr66`.
 3. Add or edit a read, post or your photo, then click **Publish changes**. Each file becomes one commit on `main`.
 4. Wait about a minute for Pages, then refresh to see it.
-5. Click **Lock & sign out**.
+5. **The admin now locks itself after every successful publish.** If you stopped without publishing, click **Lock & sign out**.
 
 Where the token lives: in the browser tab's memory only (`sessionStorage`). Close the tab and it is gone; a new tab asks again; 30 minutes idle locks it. It is never in `localStorage`, cookies, the page, a commit or a log. Do **not** paste it into `gh secret set`, a file or a chat.
 
@@ -243,9 +243,9 @@ A bare tag or a pre-release will **not** show: only a published GitHub Release c
 ## Step 11 — Using the admin CMS
 
 1. Create the admin token (Step 9 A, name `studio-admin`; full walk-through in Step 9 B).
-2. Open the site → click ⚙ → paste the token → Unlock (it is validated against `GET /user`). **Since v1.3 the token lives in that tab only**: it is forgotten when you close the tab, in a new tab you unlock again, and the old stored token from earlier versions was deleted, so you unlock once after upgrading.
+2. Open the site → click ⚙ → press **Edit or delete items** (or post something) → paste the token (it is validated against `GET /user`). **Since v1.3 the token lives in that tab only**: it is forgotten when you close the tab, in a new tab you unlock again, and the old stored token from earlier versions was deleted, so you unlock once after upgrading.
 3. Add/edit/delete posts, articles, books. Changes stay local until **Publish changes**.
-4. Publish commits one file at a time. Wait for Pages, then refresh. **Lock & sign out** removes the token from the browser.
+4. Publish commits one file at a time and then locks the admin by itself. Wait for Pages, then refresh. **Lock & sign out** removes the token from the browser if you leave without publishing.
 
 ## Troubleshooting (real errors seen)
 
@@ -452,9 +452,19 @@ curl -s -o /dev/null -w "%{http_code}\n" https://debasisr66.github.io/studio/
 curl -s https://debasisr66.github.io/studio/content/cache.json | head -20
 ```
 
-## Step 18 — Studio 2.0: what changes for the owner (planned; nothing here exists yet)
+## Step 18 — Studio 2.0: what changes for the owner (partly built)
 
-This step is written ahead of the build so you know what to expect. It is updated for real when each phase ships; commands marked *planned* do not work yet.
+Written ahead of the build and updated as phases ship. **Built and live so far (2026-10-23):** the Technical / Others tabs and the Section choice in the composer, Podcasts with "Share a podcast", the retired Blog (`#blog` goes to Podcasts), and the cautious publish (it refuses to write over content it could not load or that changed on GitHub; if so, wait a minute, reload, try again). **Built, not yet merged:** Quick add (below). **Still to come:** prefill by link, the fixed page order and matching navs, seed podcasts, final checks.
+
+**Quick add (built, [SPEC-QA](specs/quick-add/spec.md) Phase A; waiting for your phone checks):** you copy a link by instinct while reading in Chrome, tap one icon on your iPhone Home Screen, tap **Paste from clipboard**, fill the title, press **Post and publish**, give the token (your password manager can fill it) and Studio locks itself again. The order no longer matters: the token is asked for only when you post.
+
+**The iPhone recipe for Chrome (the icon is a plain bookmark to `…/#add`).**
+1. Settings, the Chrome app, **Default Browser App**, Chrome. (An icon without a manifest opens in the default browser, so Chrome must be it.)
+2. In Chrome open `https://debasisr66.github.io/studio/#add`, Share, **Add to Home Screen**.
+3. Copy a link, tap the icon, **Paste from clipboard** (iOS may ask permission), title, **Post and publish**, token. It publishes and locks.
+4. Save the token in your password manager under `debasisr66.github.io` with the username `studio-admin` (the prompt has a fixed username field so the manager recognises it as a login). Whether Face ID is asked first is that manager's setting.
+5. If the icon opens Safari or loses the `#add`: use a Chrome **bookmark** to the same address, or an iPhone **Shortcut** that opens `googlechromes://debasisr66.github.io/studio/#add` (Chrome's own address form for https links).
+Before it is merged you can try all of this on a throwaway copy (`docs/build.md` §18.2b); it uses its own token and the username `studio-admin-sandbox`. Prefill by link (`#add=…`, a Shortcut in the Share Sheet) is Phase B and does not work yet.
 
 **What you will see**
 - Reads has two sections, **Technical** and **Others**. When you add a read, the form asks which one. Your five current reads and the book are proposed as Technical; you confirm this before the migration.
@@ -466,7 +476,7 @@ This step is written ahead of the build so you know what to expect. It is update
 | Phase | Where to read | What to run (planned where marked) |
 |-------|---------------|------------------------------------|
 | Specs and impact | `docs/specs/*`, `docs/impact.md` | read and answer the open questions in `docs/plan.md` |
-| Plan | `docs/plan.md` | follow the ten steps in order |
+| Plan | `docs/plan.md` | follow the twelve steps in order |
 | Design | `docs/design.md` §12 | diagrams render on GitHub |
 | Build and test | `docs/build.md` §18, `docs/test.md` v2.0 | `node --test tests/*.test.js`, `node scripts/validate-site.js`, `node scripts/smoke.js` (exists since SH Phase A) |
 | Security | `docs/security.md` §11 | the checklist in §11.3 |

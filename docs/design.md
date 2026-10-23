@@ -714,3 +714,51 @@ Fixture content sets are small JSON folders under `tests/fixtures/site/` laid ov
 | Fixed order, no usage tracking | The owner dropped usage-based ordering; one order for everyone is the simplest and most predictable layout, with nothing stored about visitors |
 | Headless Chrome via `--dump-dom` | The only way to test rendering with no npm dependency; fallback documented |
 
+### 12.10 Quick add: paste first, unlock when needed, publish, lock (SPEC-QA; planned)
+
+```mermaid
+sequenceDiagram
+  actor O as Owner (iPhone)
+  participant S as Sheet (Add to Studio)
+  participant T as Token prompt
+  participant API as GitHub Contents API
+  O->>O: reads an article, copies its link
+  O->>S: one tap (home-screen icon opens #add)
+  O->>S: Paste from clipboard (a tap)
+  S->>S: extract and normalise the link, suggest Read or Podcast
+  O->>S: title, section or show, take, Post and publish
+  S->>T: locked: ask for the token now (draft kept)
+  O->>T: token (iOS Passwords fills it with Face ID, or paste)
+  T->>S: unlocked (token in this tab only)
+  S->>API: guarded publish of the one file (GET sha, checks, PUT)
+  API-->>S: success
+  S->>O: "Published and locked" (token removed, admin ends, draft cleared)
+```
+
+```mermaid
+stateDiagram-v2
+  [*] --> Locked
+  Locked --> SheetOpen: tap icon, #add, or gear
+  SheetOpen --> SheetOpen: paste, edit (no token needed)
+  SheetOpen --> Prompt: Post pressed while locked
+  Prompt --> SheetOpen: Cancel or wrong token (draft kept)
+  Prompt --> Publishing: token accepted
+  SheetOpen --> Publishing: Post pressed while unlocked
+  Publishing --> Locked: success (auto-lock, draft cleared)
+  Publishing --> SheetOpen: failure or refusal (stays unlocked, draft kept)
+  SheetOpen --> Locked: Cancel (draft cleared)
+```
+
+Any order works because nothing in the sheet needs the token until Post: the link can be copied before or after unlocking.
+
+| Decision | Why |
+|----------|-----|
+| Ask for the token at Post, not at the start | Removes the forced order (the clipboard holds one thing) and keeps the token's lifetime as short as possible |
+| Auto-lock after every successful publish, no option | Security first: an unlocked admin is only ever open while an action is in progress; autofill makes re-entering cheap |
+| No stored token, no PIN, no passkey unlock | A short PIN guarding a stored copy can be guessed offline by anyone holding the copy and ends "the site never keeps the token"; passkey PRF support is uncertain; the iPhone Passwords app already provides a hardware-backed, biometric store outside the site |
+| Make the token prompt a real login form: username field `studio-admin`, `current-password`, a `<form>`, no `autocomplete="off"` | Safari honours `off` on login fields; Chrome ignores it for passwords but needs a recognisable login form to offer or fill a saved password; either way the owner's password manager (not the site) holds the token (unconfirmed on the device until O01) |
+| Read the clipboard only on a tap | No silent clipboard access; the browser's own paste confirmation applies |
+| One owner-only draft key in `sessionStorage` | The fallback path (fetching the token elsewhere) can reload or discard the tab; losing the draft would bring the original problem back; the key never holds the token and never exists for visitors |
+| Prefill links only prefill | A crafted link must not be able to post; the owner reviews and gives the token |
+| Keep the two inline composers for now | Lowest risk; SPEC-UX decides whether they go |
+| Home-screen icon as a plain bookmark to `#add`, Chrome as the default browser | No manifest, service worker or icons to maintain; a plain bookmark opens in the default browser, so on a Chrome phone Chrome must be the default; fallbacks are a Chrome bookmark or a Shortcut with `googlechromes://` |
