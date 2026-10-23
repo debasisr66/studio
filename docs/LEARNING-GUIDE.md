@@ -464,7 +464,7 @@ Written ahead of the build and updated as phases ship. **Built and live so far (
 3. Copy a link, tap the icon, **Paste from clipboard** (iOS may ask permission), title, **Post and publish**, token. It publishes and locks.
 4. Save the token in your password manager under `debasisr66.github.io` with the username `studio-admin` (the prompt has a fixed username field so the manager recognises it as a login). Whether Face ID is asked first is that manager's setting.
 5. If the icon opens Safari or loses the `#add`: use a Chrome **bookmark** to the same address, or an iPhone **Shortcut** that opens `googlechromes://debasisr66.github.io/studio/#add` (Chrome's own address form for https links).
-Before it is merged you can try all of this on a throwaway copy (`docs/build.md` §18.2b); it uses its own token and the username `studio-admin-sandbox`. Prefill by link (`#add=…`, a Shortcut in the Share Sheet) is Phase B and does not work yet.
+Before it is merged you can try all of this on a throwaway copy (`docs/build.md` §18.2b); it uses its own token and the username `studio-admin-sandbox`. Prefill by link (`#add=…`, a Share Sheet Shortcut) was built and then dropped on 2026-10-23: the Shortcut did not work on the iPhone, so it is not part of Studio. Use the Home Screen icon.
 
 **What you will see**
 - Reads has two sections, **Technical** and **Others**. When you add a read, the form asks which one. Your five current reads and the book are proposed as Technical; you confirm this before the migration.

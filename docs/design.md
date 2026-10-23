@@ -759,6 +759,6 @@ Any order works because nothing in the sheet needs the token until Post: the lin
 | Make the token prompt a real login form: username field `studio-admin`, `current-password`, a `<form>`, no `autocomplete="off"` | Safari honours `off` on login fields; Chrome ignores it for passwords but needs a recognisable login form to offer or fill a saved password; either way the owner's password manager (not the site) holds the token (unconfirmed on the device until O01) |
 | Read the clipboard only on a tap | No silent clipboard access; the browser's own paste confirmation applies |
 | One owner-only draft key in `sessionStorage` | The fallback path (fetching the token elsewhere) can reload or discard the tab; losing the draft would bring the original problem back; the key never holds the token and never exists for visitors |
-| Prefill links only prefill | A crafted link must not be able to post; the owner reviews and gives the token |
+| ~~Prefill links only prefill~~ (dropped 2026-10-23, QA-09 not built into `main`) | A crafted link must not be able to post; the owner reviews and gives the token |
 | Keep the two inline composers for now | Lowest risk; SPEC-UX decides whether they go |
 | Home-screen icon as a plain bookmark to `#add`, Chrome as the default browser | No manifest, service worker or icons to maintain; a plain bookmark opens in the default browser, so on a Chrome phone Chrome must be the default; fallbacks are a Chrome bookmark or a Shortcut with `googlechromes://` |
