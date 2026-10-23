@@ -250,6 +250,16 @@ node scripts/smoke.js                      # real since SH Phase A: local server
 python3 -m http.server 8080                # manual look at http://localhost:8080 at 375 and 1280 px, both themes
 ```
 
+### 18.2b Phone preview before merge (SPEC-QA; sandbox)
+
+```bash
+rm -rf /tmp/sbx-out && node scripts/make-sandbox.js . /tmp/sbx-out        # site files only, admin pointed at the sandbox repository, title "SANDBOX · …"
+git clone https://github.com/debasisr66/studio-sandbox.git /tmp/sbx-repo
+cp -R /tmp/sbx-out/. /tmp/sbx-repo/ && cd /tmp/sbx-repo && git add -A && git commit -m "Sandbox copy of <branch>" && git push
+# live in about a minute at https://debasisr66.github.io/studio-sandbox/ (separate token limited to that repository; never the real token)
+```
+The sandbox is a throwaway copy: it can be overwritten at any time and nothing in it is authoritative. Delete its token when the phase is done.
+
 ### 18.3 One-time data migration (RC Phase A; done 2026-10-22, PR #14)
 
 Done as one commit with the code. The scripts below were **not** written; the migration was a one-off edit, and the before/after proof is a permanent test (`tests/spec-rc-phase-a.test.js`, `TC-RC-M01` to `M03`) against two frozen fixtures, `tests/fixtures/reads-before-rc-a.json` and `reads-after-rc-a.json`. Tests must never compare against the live `content/` files: the owner publishes at any time. The block shows the originally planned shape.

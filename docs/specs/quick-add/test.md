@@ -96,7 +96,7 @@ Spec: [spec.md](spec.md) (`SPEC-QA`). IDs `TC-QA-<group><nn>`. ⬜ not run, 🔒
 | TC-QA-X01 | all | The existing composers, edit and delete, the PC-B and RC-B publish guards and every earlier smoke case still pass | pass | ⬜ |
 | TC-QA-X02 | all | The full unit suite stays green | pass | ⬜ |
 
-## Owner device checks (O): real iPhone, Safari
+## Owner device checks (O): real iPhone, Chrome, run first on the sandbox preview (see spec section 9), then O04, O07 and one real publish again on the live address after the merge
 
 | ID | Req | Case | Expected | Status |
 |----|-----|------|----------|--------|
@@ -114,3 +114,4 @@ Exit criteria: P0 rows ✅ (QA-01 … QA-06); P1 rows ✅ or deferred in writing
 
 ## Status log
 - 2026-10-23: Draft created; nothing run.
+- 2026-10-23: Sandbox preview built (`scripts/make-sandbox.js`, `tests/make-sandbox.test.js`: 6 tests, red first, now green). Not a TC-QA case; it is the means for the O group.
