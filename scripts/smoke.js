@@ -596,6 +596,14 @@ const CASES = [
     await ctx.ev(`(() => { document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true })); })()`);
     s = await qs(ctx); if (s.active !== list[list.length - 1]) f.push('Shift+Tab from the first control went to ' + s.active + ', expected ' + list[list.length - 1]);
     return f; } },
+  { id: 'TC-QA-E06 owner feedback: an easy-to-find "Edit or delete items" button in the sheet unlocks without posting and keeps the draft', width: 375, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/e06', title: 'E06 keep' });
+    const b = await ctx.ev(`(() => { const e = document.getElementById('qa-unlock'); const r = e.getBoundingClientRect(); return { text: e.textContent.trim(), cls: e.className, h: Math.round(r.height), w: Math.round(r.width), vis: e.offsetParent !== null }; })()`);
+    if (!/Edit or delete/i.test(b.text)) f.push('label: "' + b.text + '"'); if (!/\bcta\b/.test(b.cls) || /linkbtn/.test(b.cls)) f.push('not a proper button: ' + b.cls); if (b.h < 44 || b.w < 200) f.push('small: ' + b.w + 'x' + b.h); if (!b.vis) f.push('not visible');
+    await qaClick(ctx, 'qa-unlock', 30); await qaToken(ctx); const s = await qs(ctx);
+    if (!s.admin || s.sheet || s.tok) f.push('after the token: admin ' + s.admin + ', sheet ' + s.sheet + ', prompt ' + s.tok); if (!s.session.includes('studio-quick-draft')) f.push('the draft was dropped'); if ((await putsOf(ctx)).length) f.push('something was written');
+    if (!(await ctx.ev("[...document.querySelectorAll('#articlesFeed [data-edit]')].length"))) f.push('no Edit buttons on the reads after unlocking');
+    await ctx.ev("document.getElementById('addOpen').click()"); const t = await ctx.ev("document.getElementById('qa-unlock').parentElement.hidden"); if (!t) f.push('the button still shows while unlocked'); return f; } },
   { id: 'TC-QA-P01 Paste from clipboard fills the normalised link and previews the destination in one line', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
     const f = []; await qaOpenGear(ctx); await qaClip(ctx, 'https://example.com/a?utm_source=x&id=5#frag'); await qaClick(ctx, 'qa-paste', 250);
     const s = await qs(ctx); if (s.fields.url !== 'https://example.com/a?id=5') f.push('link field: ' + s.fields.url); if (!/example\.com/.test(s.dest) || /\n/.test(s.dest)) f.push('destination preview: "' + s.dest + '"');

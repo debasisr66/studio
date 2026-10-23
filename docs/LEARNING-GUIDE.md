@@ -168,7 +168,7 @@ Before you leave the page, check the summary lists **1 repository: debasisr66/st
 ### B. Use the admin token (Studio publishing)
 
 1. Open https://debasisr66.github.io/studio/ and click **⚙**: the **Add to Studio** sheet opens (no token yet). For the quick way to add a link, see Step 18.
-2. To edit or delete existing items, press **Only unlock for editing**; or post from the sheet and the token is asked for then. The prompt is a login form: username `studio-admin` (fixed), password = the token. The site asks GitHub who you are and unlocks only for `debasisr66`.
+2. To edit or delete existing items, press **Edit or delete items**; or post from the sheet and the token is asked for then. The prompt is a login form: username `studio-admin` (fixed), password = the token. The site asks GitHub who you are and unlocks only for `debasisr66`.
 3. Add or edit a read, post or your photo, then click **Publish changes**. Each file becomes one commit on `main`.
 4. Wait about a minute for Pages, then refresh to see it.
 5. **The admin now locks itself after every successful publish.** If you stopped without publishing, click **Lock & sign out**.
@@ -243,7 +243,7 @@ A bare tag or a pre-release will **not** show: only a published GitHub Release c
 ## Step 11 — Using the admin CMS
 
 1. Create the admin token (Step 9 A, name `studio-admin`; full walk-through in Step 9 B).
-2. Open the site → click ⚙ → press **Only unlock for editing** (or post something) → paste the token (it is validated against `GET /user`). **Since v1.3 the token lives in that tab only**: it is forgotten when you close the tab, in a new tab you unlock again, and the old stored token from earlier versions was deleted, so you unlock once after upgrading.
+2. Open the site → click ⚙ → press **Edit or delete items** (or post something) → paste the token (it is validated against `GET /user`). **Since v1.3 the token lives in that tab only**: it is forgotten when you close the tab, in a new tab you unlock again, and the old stored token from earlier versions was deleted, so you unlock once after upgrading.
 3. Add/edit/delete posts, articles, books. Changes stay local until **Publish changes**.
 4. Publish commits one file at a time and then locks the admin by itself. Wait for Pages, then refresh. **Lock & sign out** removes the token from the browser if you leave without publishing.
 
