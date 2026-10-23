@@ -96,3 +96,9 @@ test('UX privacy: no new storage key, cookie or network host (the invariant of d
   assert.ok(html.includes("connect-src 'self' https://api.github.com;"), 'CSP connect-src unchanged');
   assert.ok(!/IntersectionObserver[\s\S]{0,400}(fetch|localStorage|sessionStorage)/.test(app), 'the section-in-view observer records nothing');
 });
+
+test('TC-UX-F02 the footer says what each date is: the release date of the version, and when the product data last changed', () => {
+  assert.ok(!/Synced from GitHub/.test(html), 'the old, misleading label is gone');
+  assert.ok(/Product data updated · <span id="synced">/.test(html));
+  assert.ok(/versionBtn'\)\.textContent = 'Studio v' \+ r\.version \+ \(r\.date \? ' · ' \+ fmtDate\(r\.date\)/.test(app), 'the version button carries the release date');
+});

@@ -186,6 +186,10 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | Independent review | [reviews/UX-04.md](reviews/UX-04.md) (Opus 5.5, gate G2): first verdict APPROVE (no high or medium findings), re-check after the fixes APPROVE WITH CONDITIONS (the record file had to exist for the docs-link test; done). Five low and info findings fixed tests-first |
 | Not done or not verified | UX-05 checks A01 to A04 (full keyboard pass, contrast, 200% zoom, reduced motion) and F01 (owner walk-through) belong to Phase B. Only Chrome (headless and the pane) was used; no Safari, no real iPhone or screen reader by the author. Reads keeps two owner controls (Share a read and + Add book), a known deviation from "one add action" while the book editor stays. Section-in-view highlight uses an `IntersectionObserver` as before; with a very short last section the highlight can stay on the previous one (not changed) |
 
+## O. Results: footer dates (2026-10-23)
+
+Owner report: the footer said "Synced from GitHub · 19 Oct 2026" although the sync runs daily. Cause: `synced_at` only changes when product data changes (workflow runs of 21, 22 and 23 Oct all succeeded). Change: the version button shows the release date ("Studio v1.6 · 22 Oct 2026", from the changelog, so the owner can read the build date) and the data date is labelled "Product data updated". Test `TC-UX-F02` (unit and smoke) failed first. Unit 276 of 276, smoke 148 of 148, validator OK. No new data, request or storage.
+
 ---
 
 ## F. Not claimed in this plan
