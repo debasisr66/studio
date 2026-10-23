@@ -82,10 +82,15 @@ function fakeChrome(dir, body) {
   fs.writeFileSync(bin, `#!/bin/sh\necho $$ > "${pidFile}"\nsleep 301 &\necho $! > "${helperFile}"\n${body}\nexec sleep 300\n`); fs.chmodSync(bin, 0o755);
   return { bin, pidFile, helperFile };
 }
-const alive = pid => { try { process.kill(pid, 0); return true; } catch { return false; } };
+/* a killed process stays visible to kill(pid, 0) as a zombie until its parent (or init) reaps it, which can take a while on a loaded machine: a zombie is dead */
+const alive = pid => {
+  try { process.kill(pid, 0); } catch { return false; }
+  const ps = spawnSync('ps', ['-o', 'stat=', '-p', String(pid)], { encoding: 'utf8' });
+  return !/^\s*Z/.test(ps.stdout || '') && ps.status === 0;
+};
 /* the fake browser's shell writes its pid files a moment after it starts; under load that can be after the harness gave up on it */
 const readPid = async file => { for (let i = 0; i < 60; i++) { try { const n = Number(fs.readFileSync(file, 'utf8')); if (n) return n; } catch { /* not written yet */ } await new Promise(r => setTimeout(r, 50)); } throw new Error('pid file never appeared: ' + file); };
-const waitDead = async (pid, ms = 4000) => { const t = Date.now(); while (alive(pid) && Date.now() - t < ms) await new Promise(r => setTimeout(r, 100)); return !alive(pid); };
+const waitDead = async (pid, ms = 10000) => { const t = Date.now(); while (alive(pid) && Date.now() - t < ms) await new Promise(r => setTimeout(r, 100)); return !alive(pid); };
 
 test('TC-SH-S08 a Chrome that never reports a DevTools address is killed when the run fails (finding 1)', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'smoke-fake-'));

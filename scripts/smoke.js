@@ -157,7 +157,7 @@ async function sectionsRendered(ctx, except = []) {
   const f = [];
   const need = {
     products: [count('#grid .card:not(.skel)'), 1], updates: [count('#updatesFeed .item'), 1],
-    blog: [count('#blogFeed .item'), 1], reads: [count('#articlesFeed .item'), 1],
+    podcasts: [count('#podcastFeed .item'), 1], reads: [count('#articlesFeed .item'), 1],
   };
   for (const [k, [expr, min]] of Object.entries(need)) {
     if (except.includes(k)) continue;
@@ -188,9 +188,22 @@ const countOf = (i, name) => { const t = i.tabs.find(x => x.text.startsWith(name
 const fillComposer = (ctx, o) => ctx.ev(`(() => { const set = (id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); };
   document.getElementById('composerOpen').click(); set('cf-url', ${JSON.stringify(o.url)}); set('cf-title', ${JSON.stringify(o.title)}); ${o.comment ? `set('cf-comment', ${JSON.stringify(o.comment)});` : ''} ${o.tags ? `set('cf-tags', ${JSON.stringify(o.tags)});` : ''}
   ${o.section ? `document.querySelector('#cf-category input[value=${o.section}]').click();` : ''} return true; })()`);
-const stubApi = ctx => ctx.ev(`(() => { window.__puts = []; const real = window.fetch.bind(window);
-  window.fetch = (u, o) => String(u).startsWith('https://api.github.com') ? Promise.resolve(o && o.method === 'PUT' ? (window.__puts.push({ u: String(u), b: JSON.parse(o.body) }), new Response('{}', { status: 200 })) : new Response('{}', { status: 404 })) : real(u, o); return true; })()`);
+const stubApi = (ctx, echo) => ctx.ev(`(() => { window.__puts = []; const real = window.fetch.bind(window); const echo = ${!!echo};
+  window.fetch = (u, o) => String(u).startsWith('https://api.github.com') ? Promise.resolve(o && o.method === 'PUT' ? (window.__puts.push({ u: String(u), b: JSON.parse(o.body) }), new Response('{}', { status: 200 })) : (echo && window.__puts.length ? new Response(JSON.stringify({ sha: 'abc', content: window.__puts[window.__puts.length - 1].b.content }), { status: 200 }) : new Response('{}', { status: 404 }))) : real(u, o); return true; })()`);
+/* GitHub answers every read of a content file with this text (a copy that is newer or different from the page's), and records every write */
+const stubRemote = (ctx, text) => ctx.ev(`(() => { window.__puts = []; const real = window.fetch.bind(window); const body = ${JSON.stringify(text)};
+  window.fetch = (u, o) => String(u).startsWith('https://api.github.com') ? Promise.resolve(o && o.method === 'PUT' ? (window.__puts.push({ u: String(u), b: JSON.parse(o.body) }), new Response('{}', { status: 200 })) : new Response(JSON.stringify({ sha: 'r1', content: btoa(unescape(encodeURIComponent(body))) }), { status: 200 })) : real(u, o); return true; })()`);
+const publishResult = async ctx => { await ctx.ev("document.getElementById('publishBtn').click(); new Promise(r => setTimeout(r, 700))"); return ctx.ev("(document.querySelector('#modal .pre-result') || {}).textContent || ''"); };
 const publishedReads = async ctx => { await ctx.ev("document.getElementById('publishBtn').click(); new Promise(r => setTimeout(r, 600))"); const puts = JSON.parse(await ctx.ev('JSON.stringify(window.__puts)')); const p = puts.find(x => /content\/reads\.json/.test(x.u)); return p ? JSON.parse(Buffer.from(p.b.content, 'base64').toString('utf8')) : null; };
+
+/* ---------- PC Phase B helpers: Podcasts ---------- */
+const PODS = ['podcasts-many', 'healthy'];
+const podCards = ctx => ctx.ev(`[...document.querySelectorAll('#podcastFeed .item')].map(a => { const t = a.querySelector('.podcast-title'), l = a.querySelector('a.listen');
+  return { title: t ? t.textContent.replace(/\\s*\\(opens in a new tab\\)/, '').trim() : null, href: t && t.getAttribute('href'), meta: (a.querySelector('.podcast-meta') || {}).textContent, comment: (a.querySelector('.read-comment') || {}).textContent, tags: [...a.querySelectorAll('.read-tags .chip')].map(c => c.textContent),
+    listen: l && { href: l.getAttribute('href'), target: l.target, rel: l.rel }, linkedin: !!a.querySelector('.share-row a[href^="https://www.linkedin.com/sharing/share-offsite/?url="]'), copy: !!a.querySelector('.share-row [data-pcopy]'), text: a.textContent }; })`);
+const fillPodcast = (ctx, o) => ctx.ev(`(() => { const set = (id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); };
+  document.getElementById('podcastComposerOpen').click(); set('pf-url', ${JSON.stringify(o.url || '')}); set('pf-title', ${JSON.stringify(o.title || '')}); set('pf-show', ${JSON.stringify(o.show || '')}); set('pf-comment', ${JSON.stringify(o.comment || '')}); set('pf-tags', ${JSON.stringify(o.tags || '')}); return true; })()`);
+const submitPodcast = async ctx => { await ctx.ev("document.getElementById('podcastForm').requestSubmit()"); await sleep(250); };
 
 const CASES = [
   { id: 'TC-SH-B01 real content, 1280 px', width: 1280, fixtures: [], noErrors: true, check: async ctx => {
@@ -211,16 +224,16 @@ const CASES = [
   { id: 'TC-SH-I01 Updates alone fails (null asset): Products still render', width: 1280, fixtures: ['poison-updates-assets', 'healthy'], check: async ctx => {
     const f = []; await isFallback(ctx, '#updatesFeed', 'Updates', f);
     f.push(...await sectionsRendered(ctx, ['updates'])); await noExceptionText(ctx, f); return f; } },
-  { id: 'TC-SH-I01 Blog fails (null post): everything else renders', width: 1280, fixtures: ['poison-blog-null', 'healthy'], check: async ctx => {
-    const f = []; await isFallback(ctx, '#blogFeed', 'Blog', f);
-    f.push(...await sectionsRendered(ctx, ['blog'])); await noExceptionText(ctx, f); return f; } },
+  { id: 'TC-SH-I01 Podcasts fails (newer schema_version): the fallback line there, everything else renders', width: 1280, fixtures: ['future-podcasts-version', 'healthy'], check: async ctx => {
+    const f = []; await isFallback(ctx, '#podcastFeed', 'Podcasts', f);
+    f.push(...await sectionsRendered(ctx, ['podcasts'])); await noExceptionText(ctx, f); return f; } },
   { id: 'TC-SH-I01 Reads fails (null book): everything else renders', width: 1280, fixtures: ['poison-reads-book-null', 'healthy'], check: async ctx => {
     const f = []; await isFallback(ctx, '#articlesFeed', 'Reads', f);
     f.push(...await sectionsRendered(ctx, ['reads'])); await noExceptionText(ctx, f); return f; } },
-  { id: 'TC-SH-I02 a section fails with a token present: admin mode still switches on', width: 1280, token: true, fixtures: ['poison-blog-null', 'healthy'], check: async ctx => {
+  { id: 'TC-SH-I02 a section fails with a token present: admin mode still switches on', width: 1280, token: true, fixtures: ['future-podcasts-version', 'healthy'], check: async ctx => {
     const on = await ctx.ev("document.body.classList.contains('admin')"); return on ? [] : ['admin mode did not switch on after a section failed']; } },
-  { id: 'TC-SH-I04 blog.json missing (404): only Blog degrades to its empty state', width: 1280, fixtures: ['missing-blog', 'healthy'], check: async ctx => {
-    const f = [...await sectionsRendered(ctx, ['blog'])]; const t = await ctx.ev(text('#blogFeed')); if (!t || !/No posts yet/.test(t)) f.push('Blog did not show its empty state'); return f; } },
+  { id: 'TC-SH-I04 podcasts.json missing (404): only Podcasts degrades to its empty state', width: 1280, fixtures: ['missing-podcasts', 'healthy'], check: async ctx => {
+    const f = [...await sectionsRendered(ctx, ['podcasts'])]; const t = await ctx.ev(text('#podcastFeed')); if (!t || !/No podcasts yet\. Check back soon\./.test(t)) f.push('Podcasts did not show its empty state'); return f; } },
   { id: 'TC-SH-I04 reads.json is invalid JSON: only Reads degrades to its empty state', width: 1280, fixtures: ['bad-reads-json', 'healthy'], check: async ctx => {
     const f = [...await sectionsRendered(ctx, ['reads'])]; const t = await ctx.ev(text('#articlesFeed')); if (!t || !/Nothing here yet/.test(t)) f.push('Reads did not show its empty state'); return f; } },
   { id: 'TC-SH-I04 content files that are valid JSON but `null`: boot is not aborted, the page and admin still work', width: 1280, token: true, fixtures: ['null-files', 'healthy'], check: async ctx => {
@@ -370,6 +383,125 @@ const CASES = [
   { id: 'TC-RC-X01 a category added to CATEGORIES at run time gets a third tab with no other change', width: 1280, fixtures: TWO, check: async ctx => {
     await ctx.ev("ReadsLib.CATEGORIES.push('news'); document.querySelector('#readTabs [role=tab]').click();");
     const i = await tabsInfo(ctx); return i.tabs.length === 3 && /^News/.test(i.tabs[2].text) ? [] : ['expected a third tab "News", got ' + i.tabs.map(t => t.text).join(' | ')]; } },
+  { id: 'TC-PC-U01 Blog is gone and Podcasts is in the header and the bottom nav', width: 1280, fixtures: PODS, noErrors: true, check: async ctx => {
+    const f = [], r = await ctx.ev(`({ blog: !!document.getElementById('blog') || !!document.getElementById('blogFeed') || !!document.getElementById('addPost'), sec: !!document.getElementById('podcasts'), head: [...document.querySelectorAll('#navlinks a')].map(a => a.getAttribute('href') + ':' + a.textContent), bottom: [...document.querySelectorAll('#navbottom a')].map(a => a.getAttribute('href') + ':' + a.textContent.trim()) })`);
+    if (r.blog) f.push('a Blog element is still on the page'); if (!r.sec) f.push('no #podcasts section');
+    if (!r.head.some(x => /^#podcasts:Podcasts$/.test(x))) f.push('header nav has no Podcasts: ' + r.head.join(' ')); if (r.head.some(x => /blog/i.test(x))) f.push('header nav still has Blog');
+    if (!r.bottom.some(x => /^#podcasts:.*Podcasts$/.test(x))) f.push('bottom nav has no Podcasts: ' + r.bottom.join(' ')); if (r.bottom.some(x => /blog/i.test(x))) f.push('bottom nav still has Blog');
+    return f; } },
+  { id: 'TC-PC-U02 a card shows the title link, show, platform label, date, comment and tags; platform labels come from the host', width: 1280, fixtures: PODS, check: async ctx => {
+    const f = [], c = await podCards(ctx); if (c.length !== 5) return ['expected 5 cards, got ' + c.length];
+    const a = c[0]; if (a.title !== 'Show on Spotify' || a.href !== 'https://open.spotify.com/show/abc123') f.push('title link wrong: ' + JSON.stringify([a.title, a.href]));
+    if (!/Lex Fridman Podcast/.test(a.meta) || !/Spotify/.test(a.meta) || !/22 Oct 2026/.test(a.meta)) f.push('meta line wrong: ' + a.meta); if (!/long conversation/.test(a.comment)) f.push('comment missing'); if (a.tags.join() !== '#ai') f.push('tags: ' + a.tags);
+    const labels = ['Spotify', 'Apple Podcasts', 'YouTube', 'example.org', 'example.com']; c.forEach((x, i) => { if (!(x.meta || '').includes(labels[i])) f.push(`card ${i + 1}: expected platform ${labels[i]} in "${x.meta}"`); });
+    return f; } },
+  { id: 'TC-PC-U03 Listen opens a new tab with noopener noreferrer', width: 1280, fixtures: PODS, check: async ctx => {
+    const f = [], c = await podCards(ctx); if (c.length !== 5) return ['expected 5 cards, got ' + c.length]; c.forEach((x, i) => { if (!x.listen || x.listen.target !== '_blank' || !/noopener/.test(x.listen.rel) || !/noreferrer/.test(x.listen.rel) || !/^https?:\/\//.test(x.listen.href)) f.push(`card ${i + 1} Listen link: ${JSON.stringify(x.listen)}`); }); return f; } },
+  { id: 'TC-PC-U04 Share on LinkedIn, Copy link and Share… are on every card; Copy link answers', width: 1280, fixtures: PODS, check: async ctx => {
+    const f = [], c = await podCards(ctx); if (c.length !== 5) return ['expected 5 cards, got ' + c.length]; c.forEach((x, i) => { if (!x.linkedin || !x.copy) f.push(`card ${i + 1} is missing a share control`); });
+    await ctx.ev("document.querySelector('#podcastFeed [data-pcopy]').click()"); await sleep(300); const t = await ctx.ev(text('#status')); if (!/Link copied|Could not copy/.test(t || '')) f.push('Copy link gave no answer: "' + t + '"'); return f; } },
+  { id: 'TC-PC-U05 newest first; search and tag chips only from 4 entries', width: 1280, fixtures: PODS, check: async ctx => {
+    const f = [], c = await podCards(ctx); if (c.map(x => x.title).join('|') !== 'Show on Spotify|Apple episode|A YouTube video|Elsewhere|Oldest') f.push('order: ' + c.map(x => x.title).join('|'));
+    if (!(await ctx.ev("document.getElementById('podcastToolbar').getBoundingClientRect().height")) > 0) f.push('toolbar hidden with 5 entries');
+    await ctx.ev("document.querySelector('#podcastChips [data-pfilter=history]').click()"); const h = await podCards(ctx); if (h.map(x => x.title).join('|') !== 'A YouTube video|Oldest') f.push('tag filter: ' + h.map(x => x.title));
+    await ctx.ev("document.querySelector('#podcastChips [data-pfilter=\"\"]').click(); const s = document.getElementById('podcastSearch'); s.value = 'primeagen'; s.dispatchEvent(new Event('input', { bubbles: true }))"); const q = await podCards(ctx); if (q.map(x => x.title).join('|') !== 'Apple episode') f.push('search: ' + q.map(x => x.title));
+    return f; } },
+  { id: 'TC-PC-U05 with fewer than 4 entries there is no search or chip toolbar', width: 1280, fixtures: ['healthy'], check: async ctx => (await ctx.ev("document.getElementById('podcastToolbar').getBoundingClientRect().height")) === 0 ? [] : ['the toolbar shows with 1 entry'] },
+  { id: 'TC-PC-U06 empty state text', width: 1280, fixtures: ['missing-podcasts', 'healthy'], check: async ctx => { const t = await ctx.ev(text('#podcastFeed')); return /No podcasts yet\. Check back soon\./.test(t || '') ? [] : ['empty state: "' + t + '"']; } },
+  { id: 'TC-PC-U07 no iframe, audio, video, embed or image in Podcasts, and no request leaves the origin', width: 1280, fixtures: PODS, noErrors: true, check: async ctx => {
+    const f = [], r = await ctx.ev(`({ el: document.querySelectorAll('#podcasts iframe, #podcasts audio, #podcasts video, #podcasts embed, #podcasts object, #podcasts img, #podcasts source').length, foreign: performance.getEntriesByType('resource').filter(e => !e.name.startsWith(location.origin)).map(e => e.name) })`);
+    if (!(await podCards(ctx)).length) return ['no podcast cards rendered, so nothing was checked'];
+    if (r.el) f.push(r.el + ' media elements in the section'); if (r.foreign.length) f.push('requests to another origin: ' + r.foreign.join(', ')); return f; } },
+  { id: 'TC-PC-U08 375 px: Podcasts fits with no horizontal overflow', width: 375, fixtures: PODS, noErrors: true, check: async ctx => { if ((await podCards(ctx)).length !== 5) return ['the 5 cards are not there']; const o = await ctx.ev('document.documentElement.scrollWidth - innerWidth'); return o > 1 ? ['horizontal overflow of ' + o + ' px'] : []; } },
+  { id: 'TC-PC-U08 1280 px: Podcasts fits with no horizontal overflow', width: 1280, fixtures: PODS, noErrors: true, check: async ctx => { if ((await podCards(ctx)).length !== 5) return ['the 5 cards are not there']; const o = await ctx.ev('document.documentElement.scrollWidth - innerWidth'); return o > 1 ? ['horizontal overflow of ' + o + ' px'] : []; } },
+  { id: 'TC-PC-A01 the composer is hidden from visitors and shown to the unlocked owner', width: 1280, fixtures: PODS, check: async ctx => { if (!(await ctx.ev("!!document.getElementById('podcastComposer')"))) return ['no #podcastComposer element']; return (await ctx.ev("document.getElementById('podcastComposer').getBoundingClientRect().height")) === 0 ? [] : ['the composer is visible without admin']; } },
+  { id: 'TC-PC-A01 unlocked: the composer is there', width: 1280, token: true, fixtures: PODS, check: async ctx => (await ctx.ev("document.getElementById('podcastComposer').getBoundingClientRect().height")) > 0 ? [] : ['the composer is not visible when unlocked'] },
+  { id: 'TC-PC-A02 link and title are required; errors are inline and announced; nothing is added', width: 1280, token: true, fixtures: PODS, check: async ctx => {
+    const f = []; await fillPodcast(ctx, {}); await submitPodcast(ctx);
+    const e = await ctx.ev("[document.getElementById('pf-url-err').textContent, document.getElementById('pf-title-err').textContent, document.getElementById('pf-url-err').getAttribute('role'), document.getElementById('pf-url').getAttribute('aria-invalid'), document.querySelectorAll('#podcastFeed .item').length]");
+    if (!e[0] || !e[1]) f.push('errors missing: ' + JSON.stringify(e)); if (e[2] !== 'alert') f.push('error not announced'); if (e[3] !== 'true') f.push('field not marked invalid'); if (e[4] !== 5) f.push('an entry was added despite the errors'); return f; } },
+  { id: 'TC-PC-A03 the live preview matches the card that will be published', width: 1280, token: true, fixtures: PODS, check: async ctx => {
+    const f = []; await fillPodcast(ctx, { url: 'https://open.spotify.com/show/zzz', title: 'Preview me', show: 'The Show', comment: 'My take', tags: 'ai, mind' }); await sleep(150);
+    const p = await ctx.ev("document.getElementById('pf-preview').textContent"); for (const w of ['Preview me', 'The Show', 'Spotify', 'My take', '#ai', '#mind']) if (!p.includes(w)) f.push('preview lacks ' + w);
+    await submitPodcast(ctx); const c = await podCards(ctx), mine = c.find(x => x.title === 'Preview me'); if (!mine) return [...f, 'the card was not added'];
+    for (const w of ['The Show', 'Spotify', 'My take', '#ai']) if (!(mine.text + mine.meta).includes(w)) f.push('card lacks ' + w); return f; } },
+  { id: 'TC-PC-A04 edit and delete work and stay a draft until Publish (no write to GitHub before)', width: 1280, token: true, fixtures: PODS, check: async ctx => {
+    const f = []; await stubApi(ctx); await fillPodcast(ctx, { url: 'https://example.com/a04', title: 'A04 added' }); await submitPodcast(ctx);
+    let d = await ctx.ev(text('#dirtyinfo')); if (!/podcasts\.json/.test(d || '')) f.push('dirty info does not name podcasts.json: ' + d);
+    await ctx.ev("[...document.querySelectorAll('#podcastFeed [data-edit]')].find(b => /A04 added/.test(b.getAttribute('aria-label'))).click()"); await sleep(100);
+    await ctx.ev("(() => { const e = document.getElementById('pf-title'); e.value = 'A04 edited'; e.dispatchEvent(new Event('input', { bubbles: true })); document.getElementById('podcastForm').requestSubmit(); })()"); await sleep(250);
+    let c = await podCards(ctx); if (!c.some(x => x.title === 'A04 edited') || c.some(x => x.title === 'A04 added')) f.push('edit did not replace the entry: ' + c.map(x => x.title));
+    await ctx.ev("window.confirm = () => true; [...document.querySelectorAll('#podcastFeed [data-del]')].find(b => /A04 edited/.test(b.getAttribute('aria-label'))).click()"); await sleep(250);
+    c = await podCards(ctx); if (c.length !== 5) f.push('delete did not remove it: ' + c.length);
+    const puts = await ctx.ev('window.__puts.length'); if (puts !== 0) f.push(puts + ' write(s) to GitHub before Publish'); return f; } },
+  { id: 'TC-PC-A05 Publish writes only content/podcasts.json, once, valid; an identical file is skipped', width: 1280, token: true, fixtures: PODS, check: async ctx => {
+    const f = []; await stubApi(ctx, true); await fillPodcast(ctx, { url: 'https://example.com/a05?utm_source=x', title: 'A05 published', show: 'S', tags: 'ai' }); await submitPodcast(ctx);
+    await ctx.ev("document.getElementById('publishBtn').click(); new Promise(r => setTimeout(r, 600))");
+    const puts = JSON.parse(await ctx.ev('JSON.stringify(window.__puts)')); if (puts.length !== 1 || !/contents\/content\/podcasts\.json$/.test(puts[0].u)) return ['expected exactly one PUT of content/podcasts.json, got ' + puts.map(p => p.u).join(', ')];
+    const file = JSON.parse(Buffer.from(puts[0].b.content, 'base64').toString('utf8')); if (file.schema_version !== 1) f.push('schema_version ' + file.schema_version);
+    if (Object.keys(file).join() !== 'schema_version,podcasts') f.push('keys: ' + Object.keys(file)); const mine = file.podcasts.find(p => p.title === 'A05 published');
+    if (!mine) f.push('the entry is not in the file'); else if (mine.url !== 'https://example.com/a05') f.push('link not normalised: ' + mine.url); if (file.podcasts.length !== 6) f.push('expected 5 + 1 entries, got ' + file.podcasts.length);
+    // same content again: make it dirty, restore it, publish: the GET now returns what was just written, so nothing is PUT
+    await ctx.ev("[...document.querySelectorAll('#podcastFeed [data-edit]')].find(b => /A05 published/.test(b.getAttribute('aria-label'))).click()"); await sleep(100);
+    await ctx.ev("(() => { const e = document.getElementById('pf-comment'); e.value = 'temp'; e.dispatchEvent(new Event('input', { bubbles: true })); document.getElementById('podcastForm').requestSubmit(); })()"); await sleep(200);
+    await ctx.ev("[...document.querySelectorAll('#podcastFeed [data-edit]')].find(b => /A05 published/.test(b.getAttribute('aria-label'))).click()"); await sleep(100);
+    await ctx.ev("(() => { const e = document.getElementById('pf-comment'); e.value = ''; e.dispatchEvent(new Event('input', { bubbles: true })); document.getElementById('podcastForm').requestSubmit(); })()"); await sleep(200);
+    await ctx.ev("document.getElementById('publishBtn').click(); new Promise(r => setTimeout(r, 600))");
+    const again = await ctx.ev('window.__puts.length'); if (again !== 1) f.push('an identical file was written again (' + again + ' PUTs)'); return f; } },
+  { id: 'TC-PC-A07 XSS payloads in title, show, comment and tags stay inert in the preview and the card', width: 1280, token: true, fixtures: PODS, check: async ctx => {
+    const f = [], P = '<img src=x onerror="window.__x=1"><script>window.__x=1<\/script>';
+    await fillPodcast(ctx, { url: 'https://example.com/a07', title: P, show: P, comment: P, tags: '"><svg onload=window.__x=1>' }); await sleep(200);
+    let bad = await ctx.ev("[window.__x, document.querySelectorAll('#pf-preview img[src=x], #pf-preview svg, #pf-preview script').length]"); if (bad[0] || bad[1]) f.push('active in preview: ' + JSON.stringify(bad));
+    await submitPodcast(ctx); bad = await ctx.ev("[window.__x, document.querySelectorAll('#podcasts img[src=x], #podcasts svg[onload], #podcasts script').length]"); if (bad[0] || bad[1]) f.push('active in the list: ' + JSON.stringify(bad));
+    const t = await ctx.ev(text('#podcastFeed')); if (!t || !t.includes('<img')) f.push('the payload should show as plain text'); return f; } },
+  { id: 'TC-PC-A08 a podcasts.json that fails to load is not shown as empty: fallback line, and the owner cannot add to it or publish over it', width: 1280, token: true, fixtures: ['bad-podcasts-json', 'healthy'], check: async ctx => {
+    const f = []; await isFallback(ctx, '#podcastFeed', 'Podcasts', f); await stubApi(ctx);
+    await fillPodcast(ctx, { url: 'https://example.com/a08', title: 'A08' }); await submitPodcast(ctx);
+    const r = await ctx.ev("[document.getElementById('pf-url-err').textContent, document.getElementById('podcastFeed').textContent.includes('A08'), document.getElementById('dirtyinfo').textContent]");
+    if (!/could not be loaded|reload/i.test(r[0])) f.push('no refusal in the composer: "' + r[0] + '"'); if (r[1]) f.push('the entry was added'); if (/podcasts\.json/.test(r[2])) f.push('podcasts.json was marked as changed');
+    if ((await ctx.ev('window.__puts.length')) !== 0) f.push('something was written to GitHub'); return f; } },
+  { id: 'TC-PC-A09 publish refuses when the file on GitHub is different from the copy this page loaded (another device published) and when it has a newer schema_version', width: 1280, token: true, fixtures: PODS, check: async ctx => {
+    const f = [], loaded = fs.readFileSync(path.join(FIX, 'podcasts-many', 'content', 'podcasts.json'), 'utf8'), d = JSON.parse(loaded);
+    const addOne = async t => { await fillPodcast(ctx, { url: 'https://example.com/' + t, title: t }); await submitPodcast(ctx); };
+    await addOne('a09-first');
+    await stubRemote(ctx, JSON.stringify({ ...d, podcasts: [...d.podcasts, { id: 777, title: 'Added elsewhere', url: 'https://example.com/elsewhere' }] }));
+    let r = await publishResult(ctx); if (!/changed on GitHub/i.test(r)) f.push('different remote content was not refused: "' + r.slice(0, 120) + '"'); if ((await ctx.ev('window.__puts.length')) !== 0) f.push('it wrote anyway (changed remote)');
+    await ctx.ev("document.querySelector('#mc').click()");
+    await stubRemote(ctx, JSON.stringify({ ...d, schema_version: 2 }));
+    r = await publishResult(ctx); if (!/changed on GitHub|newer/i.test(r)) f.push('a newer schema_version was not refused: "' + r.slice(0, 120) + '"'); if ((await ctx.ev('window.__puts.length')) !== 0) f.push('it wrote anyway (newer version)');
+    await ctx.ev("document.querySelector('#mc').click()");
+    await stubRemote(ctx, loaded);
+    r = await publishResult(ctx); if ((await ctx.ev('window.__puts.length')) !== 1) f.push('with the remote equal to what was loaded, publish should write once; result: "' + r.slice(0, 120) + '"'); return f; } },
+  { id: 'TC-PC-A10 edit, then delete an earlier entry: Save changes the entry being edited, not its neighbour', width: 1280, token: true, fixtures: PODS, check: async ctx => {
+    const f = []; await ctx.ev("window.confirm = () => true; [...document.querySelectorAll('#podcastFeed [data-edit]')].find(b => /Apple episode/.test(b.getAttribute('aria-label'))).click()"); await sleep(100);
+    await ctx.ev("[...document.querySelectorAll('#podcastFeed [data-del]')].find(b => /Show on Spotify/.test(b.getAttribute('aria-label'))).click()"); await sleep(200);
+    await ctx.ev("(() => { const e = document.getElementById('pf-title'); e.value = 'Apple edited'; e.dispatchEvent(new Event('input', { bubbles: true })); document.getElementById('podcastForm').requestSubmit(); })()"); await sleep(250);
+    const t = (await podCards(ctx)).map(x => x.title).join('|'); if (t !== 'Apple edited|A YouTube video|Elsewhere|Oldest') f.push('titles after: ' + t); return f; } },
+  { id: 'TC-PC-A10 delete the entry being edited, then Save: refused, nothing is overwritten or added', width: 1280, token: true, fixtures: PODS, check: async ctx => {
+    const f = []; await ctx.ev("window.confirm = () => true; [...document.querySelectorAll('#podcastFeed [data-edit]')].find(b => /Oldest/.test(b.getAttribute('aria-label'))).click()"); await sleep(100);
+    await ctx.ev("[...document.querySelectorAll('#podcastFeed [data-del]')].find(b => /Oldest/.test(b.getAttribute('aria-label'))).click()"); await sleep(200);
+    await ctx.ev("document.getElementById('podcastForm').requestSubmit()"); await sleep(250);
+    const c = (await podCards(ctx)).map(x => x.title).join('|'), e = await ctx.ev("document.getElementById('pf-url-err').textContent");
+    if (c !== 'Show on Spotify|Apple episode|A YouTube video|Elsewhere') f.push('entries after: ' + c); if (!/deleted/i.test(e)) f.push('no message that the entry was deleted: "' + e + '"'); return f; } },
+  { id: 'TC-PC-A10 the same holds for the reads composer', width: 1280, token: true, fixtures: TWO, check: async ctx => {
+    const f = []; await ctx.ev("window.confirm = () => true; [...document.querySelectorAll('#articlesFeed [data-edit]')].find(b => /Tech charlie/.test(b.getAttribute('aria-label'))).click()"); await sleep(100);
+    await ctx.ev("[...document.querySelectorAll('#articlesFeed [data-del]')].find(b => /Tech alpha/.test(b.getAttribute('aria-label'))).click()"); await sleep(200);
+    await ctx.ev("(() => { const e = document.getElementById('cf-title'); e.value = 'Charlie edited'; e.dispatchEvent(new Event('input', { bubbles: true })); document.getElementById('composerForm').requestSubmit(); })()"); await sleep(250);
+    const i = await tabsInfo(ctx); if (i.articles.join('|') !== 'Tech bravo|Charlie edited|Tech delta') f.push('reads after: ' + i.articles.join('|')); return f; } },
+  { id: 'TC-PC-A11 publish validates the whole file with the CI rules: a bad entry already in it blocks the publish', width: 1280, token: true, fixtures: ['podcasts-bad-entry', 'healthy'], check: async ctx => {
+    const f = []; await stubApi(ctx); await fillPodcast(ctx, { url: 'https://example.com/a11', title: 'A11 valid' }); await submitPodcast(ctx);
+    const r = await publishResult(ctx); if (!/podcast tags must be/.test(r)) f.push('result did not name the rule that failed: "' + r.slice(0, 160) + '"'); if ((await ctx.ev('window.__puts.length')) !== 0) f.push('an invalid file was written'); return f; } },
+  { id: 'TC-PC-A06 the Blog editor is gone: no + New post, no post editor', width: 1280, token: true, fixtures: PODS, check: async ctx => {
+    const r = await ctx.ev("({ add: !!document.getElementById('addPost'), text: /New post/.test(document.body.textContent), edit: [...document.querySelectorAll('[data-edit^=post]')].length })"); return r.add || r.text || r.edit ? ['blog editor remnants: ' + JSON.stringify(r)] : []; } },
+  { id: 'TC-PC-R01 #blog lands on Podcasts', width: 1280, hash: '#blog', fixtures: PODS, noErrors: true, check: async ctx => {
+    await sleep(900); const r = await ctx.ev("[location.hash, Math.round(document.getElementById('podcasts').getBoundingClientRect().top)]"); const f = [];
+    if (r[0] !== '#podcasts') f.push('hash is ' + r[0]); if (r[1] > 200 || r[1] < -50) f.push('Podcasts not in view (top ' + r[1] + ')'); return f; } },
+  { id: 'TC-PC-R01 #blog/some-old-post lands on Podcasts too', width: 1280, hash: '#blog/some-old-post', fixtures: PODS, check: async ctx => { await sleep(600); const h = await ctx.ev('location.hash'); return h === '#podcasts' ? [] : ['hash is ' + h]; } },
+  { id: 'TC-PC-R01 a #blog link followed while the page is open also lands on Podcasts', width: 1280, fixtures: PODS, check: async ctx => { await ctx.ev("location.hash = '#blog'"); await sleep(500); const h = await ctx.ev('location.hash'); return h === '#podcasts' ? [] : ['hash is ' + h]; } },
+  { id: 'TC-PC-R02 the page does not fetch blog.json but does fetch podcasts.json', width: 1280, fixtures: ['healthy'], check: async ctx => {
+    const r = await ctx.ev("performance.getEntriesByType('resource').map(e => e.name)"), f = [];
+    if (r.some(n => /blog\.json/.test(n))) f.push('blog.json was fetched'); if (!r.some(n => /podcasts\.json/.test(n))) f.push('podcasts.json was not fetched');
+    const t = await ctx.ev('document.body.textContent'); if (/Fixture post/.test(t)) f.push('an archived blog post is on the page'); return f; } },
   { id: 'TC-SH-T01 reads.json never answers: the page still loads (8 s timeout) and the rest renders', width: 1280, fixtures: ['hang-reads', 'healthy'], timeout: 20000, check: async ctx => {
     const f = [...await sectionsRendered(ctx, ['reads'])]; if (ctx.ms > 14000) f.push(`took ${ctx.ms} ms; the timeout should end the wait at about 8 s`); return f; } },
   { id: 'TC-SH-T02 reads.json answers after 2 s: it still renders', width: 1280, fixtures: ['slow-reads', 'healthy'], check: ctx => sectionsRendered(ctx) },

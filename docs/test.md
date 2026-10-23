@@ -4,9 +4,9 @@ Releases: **v2.0 (planned, nothing run)** · **v1.6 (intermediate, 2026-10-22: S
 
 ---
 
-# v2.0 — Studio 2.0 (in progress: SH A and B, RC A and PC A merged, RC Phase B built, rest planned)
+# v2.0 — Studio 2.0 (in progress: SH A and B, RC A and B, PC A merged and live in v1.6, PC Phase B built, rest planned)
 
-Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22): **116 new cases**, on top of the existing **142 passing unit tests**. Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12), SH Phase B (PR #13), RC Phase A (PR #14), PC Phase A (PR #15) and RC Phase B are run:** see §G, §H, §I, §J and §K.
+Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabilize-core-hub/test.md) (28 cases), [SPEC-RC](specs/reads-categories/test.md) (32), [SPEC-PC](specs/podcast-links/test.md) (34), [SPEC-UX](specs/simple-layout/test.md) (22): **116 new cases**, on top of the existing **142 passing unit tests**. Every row below is ⬜ until its phase is built; results are filled in as each phase merges, never in advance. **SH Phase A (PR #12), SH Phase B (PR #13), RC Phase A (PR #14), PC Phase A (PR #15) and RC Phase B and PC Phase B are run:** see §G, §H, §I, §J, §K and §L.
 
 ## A. Requirements (release level)
 
@@ -33,7 +33,7 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | REQ-53 | TC-RC-D01–D04, M01–M03, V01–V04, X01 | ✅ (RC Phase A; X01 library half only, the third-tab half arrives with RC Phase B) |
 | REQ-54 | TC-RC-U01–U08, L01–L04, E01–E04, S01–S02, B01–B02 | ✅ U, L, E (RC Phase B) · ⬜ S01–S02, B01–B02 (Phase C) |
 | REQ-55 | TC-PC-D01–D03, V01–V07, N01–N02, S01 | ✅ D01–D03, V01–V07 (PC Phase A) · ⬜ N01–N02 (Phase C) · S01 owner step 🔒 |
-| REQ-56 | TC-PC-U01–U08, A01–A06, R01–R05, K01–K02 | ⬜ |
+| REQ-56 | TC-PC-U01–U08, A01–A06, R01–R05, K01–K02 | ✅ U, A, R01–R04 (PC Phase B) · ⬜ R05 (release PR), K01–K02 (Phase C) |
 | REQ-57 | TC-UX-S01–S02, P01–P04, N01–N05, L01–L05, A01–A05, F01 | ⬜ (F01 owner step 🔒) |
 | REQ-58 | Regression suite (§D) | ⬜ |
 | REQ-59 | Artefact checklist ([plan.md](plan.md) "Artefact update matrix") | ⬜ |
@@ -140,6 +140,21 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | Harness fix | Each smoke case now loads a fresh URL (`?case=N`); a hash-only navigation does not reload, so deep-link cases silently inherited the previous page's state (found when `#reads` and `#reads/xyz` cases failed) |
 | Validator | OK; `app.js`, CSS and `index.html` inside budget; no inline style or script; no new host |
 | Not done | RC-07 (share and copy re-checked, counts while filtering) and RC-08 (books in one column) are Phase C; a real-phone and screen-reader pass is an owner step; the mobile bottom nav highlights Blog while Reads is on screen (existing behaviour, SPEC-UX) |
+
+---
+
+## L. Results: PC Phase B (2026-10-23)
+
+| Check | Result |
+|-------|--------|
+| Unit tests | **235 of 235 pass** (218 + 15 in `tests/spec-pc-phase-b.test.js` + 1 in `tests/safe-lib.test.js` + 1 guard-test); 12 of the first 13 failed first, and the review-fix tests failed first as well. One earlier Phase A assertion ("the page does not load podcasts.json yet") was replaced because Phase B changes exactly that |
+| Browser smoke | **66 of 66 pass** in 55 s (38 + 22 new, then 6 more for the review's fixes: A08 to A11, six cases, all failed first). Before the first build 35 of 60 failed: the 22 new cases plus the Podcasts-dependent isolation and timing cases. Three new cases first passed with nothing on the page (a vacuous pass), so they now require the 5 cards to exist |
+| What the cases prove | Blog gone and Podcasts in both navs (U01); card fields and platform labels from the host (U02); Listen opens a new tab with `noopener noreferrer` (U03); share controls on every card (U04); newest first, search and chips only from 4 entries (U05); empty state (U06); no iframe, audio, video, embed or image, and no request leaves the origin (U07); no overflow at 375 and 1280 px (U08); composer hidden from visitors, shown when unlocked (A01); required fields, inline announced errors (A02); preview matches the card (A03); edit and delete stay a draft, no write before Publish (A04); Publish writes one file, once, valid, link normalised; an identical file is skipped (A05); XSS payloads inert (A07); no blog editor left (A06); `#blog`, `#blog/some-old-post` and a `#blog` link followed while the page is open all land on Podcasts (R01); `blog.json` not fetched, `podcasts.json` fetched, no archived post on the page (R02); the section fails alone on a newer `schema_version` and shows its empty state when the file is missing or `null` |
+| Validator | OK; `app.js` 51 KB, `reads-lib.js` 17 KB, inside budget; no inline code or style; CSP unchanged |
+| Health check | Now also confirms `/content/podcasts.json` is served and still confirms `/content/blog.json` |
+| Test fix found on the way | `TC-SH-S08` (hardening test) failed once in a full run: its "is it dead" check could see a killed process as a zombie for several seconds on a loaded machine. It now treats a zombie as dead and waits up to 10 s; 6 further full runs and a run under CPU load were green. The failure could not be reproduced, so this is the likely cause, not a proven one |
+| Independent review | [reviews/PC-B.md](reviews/PC-B.md): Opus 5.5, first verdict APPROVE WITH CONDITIONS (three medium findings: a failed load could be published over, a stale or concurrent publish could lose content, an edit index could go stale after a delete), after the fixes **APPROVE**; three small follow-ups fixed after the verdict and not re-checked by the reviewer |
+| Not done | PC-06 (Reads composer still offers Podcast), PC-07 duplicate warning in the composer, PC-08 seed podcasts (owner supplies the links), R05 (the 2.0 changelog), a real publish of a podcast by the owner, real-phone and screen-reader passes |
 
 ---
 

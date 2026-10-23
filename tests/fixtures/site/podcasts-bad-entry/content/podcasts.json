@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "podcasts": [
+    {
+      "id": 99,
+      "added": "2026-10-22",
+      "title": "Bad tags entry",
+      "url": "https://open.spotify.com/show/abc123",
+      "show": "Lex Fridman Podcast",
+      "comment": "A long conversation worth the time.",
+      "tags": [
+        "ok",
+        5
+      ]
+    }
+  ]
+}

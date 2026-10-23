@@ -668,6 +668,13 @@ sequenceDiagram
 
 The card: title link, show, platform label from a closed host list (Spotify, Apple Podcasts, YouTube, else the domain), date, take, tags, **Listen →** (new tab, `noopener noreferrer`), share row. No iframe, audio or third-party image.
 
+**Corrections found while building (PC Phase B):**
+1. Podcasts is placed after Reads (the final fixed order of SPEC-UX), not where the Blog was; the mobile bottom nav, which never listed Updates, now reads Products, Reads, Podcasts until SPEC-UX unifies the navs.
+2. Tag filter chips, copy and share buttons on podcast cards use their own data attributes (`data-pfilter`, `data-ptag`, `data-pcopy`, `data-pshare`), so they cannot collide with the Reads handlers.
+3. `#blog` is followed with `location.replace('#podcasts')` (no extra history entry) after the first render and again on every hash change; `redirectHash` is a pure function with a test for every shape of hash.
+4. Section isolation for Podcasts is proved with a newer `schema_version`: a `null` entry renders as "Untitled" and does not throw, as with Reads.
+5. A legacy fixture for the old Blog (`poison-blog-null`, `missing-blog`) no longer applies; `null-files` also carries a `null` podcasts.json.
+
 ### 12.7 Browser smoke test in CI (SH-02)
 
 ```mermaid

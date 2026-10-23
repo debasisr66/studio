@@ -76,3 +76,13 @@ test('TC-SH-T02 a slow answer inside the limit still succeeds, and the timer is 
 test('TC-SH-T01 the default limit is 8 seconds', () => {
   assert.equal(S.FETCH_TIMEOUT_MS, 8000);
 });
+
+/* review PC-B (new finding 1): a missing file is told apart by the HTTP status, never by the wording of an error message */
+test('fetchJson errors carry the HTTP status of a non-OK answer, and none for a parse error or a timeout', async () => {
+  const S = require('../js/safe-lib.js');
+  const answer = (status, body) => async () => ({ ok: status >= 200 && status < 300, status, json: async () => { if (body === undefined) throw new SyntaxError('Unexpected token x in JSON at position 404'); return body; } });
+  await assert.rejects(S.fetchJson(answer(404), '/x'), e => e.status === 404);
+  await assert.rejects(S.fetchJson(answer(503), '/x'), e => e.status === 503);
+  await assert.rejects(S.fetchJson(answer(200), '/x'), e => e.status === undefined && /position 404/.test(e.message), 'a broken body that mentions 404 is not a 404');
+  assert.deepEqual(await S.fetchJson(answer(200, { a: 1 }), '/x'), { a: 1 });
+});

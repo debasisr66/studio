@@ -26,7 +26,7 @@ PRD updated (done) → four specs (done, this PR) → impact (done) → **plan (
 | 3 | RC | A | `category` in data, validator, migration (no UI) | Migration proves no loss; owner confirms classification. **Merged (PR #14)** ✅ (classification confirmed 2026-10-21) |
 | 4 | PC | A | `podcasts.json`, validator, fixtures (section not visible) | Fixtures and contract green. **Merged (PR #15)** ✅ |
 | 5 | RC | B | Reads tabs, deep links, composer section | Smoke test covers both sub-items. **Built on `v2/rc-b`: awaiting approval** ✅ |
-| 6 | PC | B | Podcasts section and admin; Blog removed; `#blog` redirect | Smoke test; owner publishes a podcast link |
+| 6 | PC | B | Podcasts section and admin; Blog removed; `#blog` redirect | Smoke test; owner publishes a podcast link. **Built on `v2/pc-b`: awaiting approval** ✅ (owner's real publish of a podcast link still to do) |
 | 7 | UX | A | Fixed order, section pattern, matching navs, stable links | Navs identical; anchors verified |
 | 8 | UX | B | Accessibility and responsiveness pass, first-screen clarity | Keyboard, contrast, zoom, 375 px; owner walk-through |
 | 9 | SH, RC, PC, UX | C | Fallback proofs, asset rules, books in sub-items, seed podcasts | P1 rows ✅ or deferred in writing |

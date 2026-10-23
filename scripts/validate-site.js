@@ -121,27 +121,8 @@ function validateReads(reads) {
   return { errors, warnings };
 }
 
-/* SPEC-PC PC-04. Same strict URL rule and limits as Reads; the file is not shown by the page yet (Phase A). */
-function validatePodcasts(file) {
-  const errors = [], warnings = [];
-  if (!isObj(file) || !Array.isArray(file.podcasts)) return { errors: ['podcasts.json: needs a podcasts array'], warnings };
-  if (!Number.isInteger(file.schema_version) || file.schema_version !== RL.PODCASTS_SCHEMA_VERSION)
-    errors.push(`podcasts.json: schema_version must be ${RL.PODCASTS_SCHEMA_VERSION} (this is the version of the file's shape; got ${JSON.stringify(file.schema_version)})`);
-  const ids = new Set(), links = new Set();
-  file.podcasts.forEach((p, i) => {
-    const at = `podcasts.json podcasts[${i}]`;
-    if (!isObj(p)) return errors.push(`${at}: must be an object`);
-    if (!isStr(p.title) || !p.title.trim() || p.title.length > RL.LIMITS.title) errors.push(`${at}: podcast title is required, 1 to ${RL.LIMITS.title} characters`);
-    if (!isStr(p.url) || !httpUrl(p.url) || !RL.normalizeUrl(p.url)) errors.push(`${at}: podcast url must be ${URL_HINT}`);
-    else { const k = RL.keyOf(p.url); if (links.has(k)) warnings.push(`${at}: same link as an earlier podcast`); links.add(k); }
-    if (p.show !== undefined && (!isStr(p.show) || p.show.length > RL.PODCAST_LIMITS.show)) errors.push(`${at}: podcast show must be text up to ${RL.PODCAST_LIMITS.show} characters`);
-    if (p.comment !== undefined && (!isStr(p.comment) || p.comment.length > RL.LIMITS.comment)) errors.push(`${at}: podcast comment must be text up to ${RL.LIMITS.comment} characters`);
-    if (p.tags !== undefined && (!Array.isArray(p.tags) || p.tags.length > RL.LIMITS.tags || p.tags.some(t => !isStr(t) || t.length > RL.LIMITS.tag))) errors.push(`${at}: podcast tags must be an array of at most ${RL.LIMITS.tags} strings, each up to ${RL.LIMITS.tag} characters`);
-    if (p.added !== undefined && !DATE_RE.test(String(p.added))) errors.push(`${at}: added must be YYYY-MM-DD`);
-    if (p.id !== undefined) { if (ids.has(p.id)) errors.push(`${at}: podcast duplicate id ${p.id}`); ids.add(p.id); }
-  });
-  return { errors, warnings };
-}
+/* SPEC-PC PC-04. The rules live in js/reads-lib.js (validatePodcastsFile) so the admin screen runs the very same check before every publish. */
+const validatePodcasts = file => RL.validatePodcastsFile(file);
 
 function validateIndex(html, exists) {
   const errors = [];
