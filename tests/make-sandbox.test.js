@@ -35,6 +35,16 @@ test('make-sandbox points the admin at the sandbox repository, not at Studio', (
     assert.ok(!/HUB = 'studio'[,;]/.test(app), 'the real repository name is still in the code');
   } finally { fs.rmSync(out, { recursive: true, force: true }); }
 });
+test('make-sandbox gives the token form a sandbox username so a password manager cannot mix the two tokens (SPEC-QA QA-04)', () => {
+  const out = tmp();
+  try {
+    const r = run(ROOT, out); assert.equal(r.status, 0, r.stderr);
+    const h = read(out, 'index.html');
+    assert.match(h, /id="tok-user"[^>]*value="studio-admin-sandbox"/);
+    assert.ok(!/value="studio-admin"/.test(h), 'the real username is still in the sandbox page');
+    assert.match(read(ROOT, 'index.html'), /id="tok-user"[^>]*value="studio-admin"/);   // the source is untouched
+  } finally { fs.rmSync(out, { recursive: true, force: true }); }
+});
 test('make-sandbox marks the page so it cannot be mistaken for the real site (title)', () => {
   const out = tmp();
   try {

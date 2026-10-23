@@ -121,7 +121,8 @@ async function runCase(cdp, base, c, errors) {
   for (const f of c.fixtures || []) { const mf = path.join(FIX, f, 'fixture.json'); if (fs.existsSync(mf)) Object.assign(overlay.manifest, JSON.parse(fs.readFileSync(mf, 'utf8'))); }
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: c.width, height: c.width < 500 ? 812 : 800, deviceScaleFactor: 1, mobile: c.width < 500 });
   await cdp.send('Storage.clearDataForOrigin', { origin: base, storageTypes: 'all' }).catch(() => {});
-  const init = c.token ? await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: "try{sessionStorage.setItem('studio-admin-pat','not-a-real-token-smoke-test')}catch(e){}" }) : null;
+  const initSrc = [c.token ? "try{sessionStorage.setItem('studio-admin-pat','not-a-real-token-smoke-test')}catch(e){}" : '', c.init || ''].filter(Boolean).join(';\n');
+  const init = initSrc ? await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: initSrc }) : null;
   errors.length = 0;
   const t0 = Date.now();
   // a different query on every case forces a full load: a hash-only change would not reload the page, so a deep-link case would inherit the previous case's state
@@ -137,7 +138,7 @@ async function runCase(cdp, base, c, errors) {
     if (ready) break;
     await sleep(100);
   }
-  await sleep(250);
+  await sleep(c.fast ? 60 : 250);   // fast: the case reads its own state after the page is ready (the Quick add cases poll for what they wait on)
   const fails = [];
   if (!ready) fails.push(`the page never finished loading within ${(c.timeout || 15000) / 1000} s`);
   const ctx = { ev, ms: Date.now() - t0, errors: [...errors] };
@@ -204,6 +205,66 @@ const podCards = ctx => ctx.ev(`[...document.querySelectorAll('#podcastFeed .ite
 const fillPodcast = (ctx, o) => ctx.ev(`(() => { const set = (id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); };
   document.getElementById('podcastComposerOpen').click(); set('pf-url', ${JSON.stringify(o.url || '')}); set('pf-title', ${JSON.stringify(o.title || '')}); set('pf-show', ${JSON.stringify(o.show || '')}); set('pf-comment', ${JSON.stringify(o.comment || '')}); set('pf-tags', ${JSON.stringify(o.tags || '')}); return true; })()`);
 const submitPodcast = async ctx => { await ctx.ev("document.getElementById('podcastForm').requestSubmit()"); await sleep(250); };
+
+/* ---------- QA Phase A helpers: the Add to Studio sheet. The GitHub API and the clipboard are stubbed in the page, so nothing leaves the machine and no real token exists ---------- */
+const QA_TOKEN = 'qa-test-token-not-real-0123456789';
+const QA_INIT = `
+window.__clip = { text: '', reads: 0 };
+Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { readText: () => { window.__clip.reads++; return Promise.resolve(window.__clip.text); }, writeText: () => Promise.resolve() } });
+window.__console = [];
+for (const k of ['log', 'info', 'warn', 'error', 'debug']) { const o = console[k].bind(console); console[k] = (...a) => { try { window.__console.push(a.map(String).join(' ')); } catch (e) {} o(...a); }; }
+window.__q = {
+  set(id, v) { const e = document.getElementById('qa-' + id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); },
+  fill(o) {
+    for (const k of ['url', 'title', 'show', 'comment', 'tags']) if (o[k] !== undefined) this.set(k, o[k]);
+    if (o.kind) document.querySelector('#qa-kind input[value=' + o.kind + ']').click();
+    if (o.type) document.getElementById('qa-type').value = o.type;
+    if (o.section) document.querySelector('#qa-section-opts input[value=' + o.section + ']').click();
+  },
+  state() {
+    const v = id => (document.getElementById(id) || {}).value, t = id => (document.getElementById(id) || {}).textContent;
+    const open = id => document.getElementById(id).classList.contains('open');
+    return { sheet: open('addBg'), tok: open('tokBg'), admin: document.body.classList.contains('admin'), active: document.activeElement && document.activeElement.id,
+      session: Object.keys(sessionStorage).sort(), local: Object.keys(localStorage).sort(),
+      fields: { url: v('qa-url'), title: v('qa-title'), comment: v('qa-comment'), tags: v('qa-tags'), show: v('qa-show') },
+      kind: (document.querySelector('#qa-kind input:checked') || {}).value, section: (document.querySelector('#qa-section-opts input:checked') || {}).value,
+      errs: { url: t('qa-url-err'), title: t('qa-title-err'), show: t('qa-show-err'), comment: t('qa-comment-err'), category: t('qa-category-err') }, msg: t('qa-msg'), tokErr: t('tok-err'), dest: t('qa-dest'), status: t('status') };
+  },
+};`;
+const qaWith = (extra = {}) => ({ init: QA_INIT, fast: true, ...extra });
+const qs = ctx => ctx.ev('window.__q.state()');
+const qaOpenGear = ctx => ctx.ev("document.getElementById('gear').click()");
+const qaFill = (ctx, o) => ctx.ev(`window.__q.fill(${JSON.stringify(o)})`);
+const qaClip = (ctx, text) => ctx.ev(`window.__clip.text = ${JSON.stringify(text)}`);
+/* waits until nothing is in flight (stubbed API calls, a publish, a token check) instead of sleeping a fixed time: faster, and not flaky */
+const settle = async (ctx, max = 4000) => { const t0 = Date.now(); let calm = 0; while (Date.now() - t0 < max) { const busy = await ctx.ev("(window.__inflight || 0) > 0 || document.getElementById('addSheet').getAttribute('aria-busy') === 'true' || document.getElementById('tok-go').disabled"); calm = busy ? 0 : calm + 1; if (calm >= 2) return; await sleep(30); } };
+const qaClick = async (ctx, id, wait = 0) => { await ctx.ev(`document.getElementById(${JSON.stringify(id)}).click()`); if (wait) { await sleep(20); await settle(ctx); } };
+const qaToken = async (ctx, tok = QA_TOKEN, wait = 500) => { await ctx.ev(`(() => { document.getElementById('pat').value = ${JSON.stringify(tok)}; document.getElementById('tokForm').requestSubmit(); })()`); await sleep(20); await settle(ctx); };
+const putsOf = async ctx => JSON.parse(await ctx.ev('JSON.stringify(window.__puts)'));
+const putFile = (puts, name) => { const p = puts.find(x => x.u.endsWith('/contents/content/' + name + '.json')); return p ? JSON.parse(Buffer.from(p.b.content, 'base64').toString('utf8')) : null; };
+const apiCalls = ctx => ctx.ev('window.__calls.length');
+/* the GitHub API as the page sees it: /user answers o.user (200 or 401); a content file answers with what this page loaded unless o.remote overrides it; a PUT answers 200 or o.put */
+const stubGh = (ctx, o = {}) => ctx.ev(`(() => { window.__calls = []; window.__puts = []; const real = window.fetch.bind(window), o = ${JSON.stringify(o)};
+  window.fetch = async (u, init) => { u = String(u); if (!u.startsWith('https://api.github.com')) return real(u, init);
+    window.__inflight = (window.__inflight || 0) + 1; try { return await (async () => {
+    const method = (init && init.method) || 'GET'; window.__calls.push({ method, u, auth: init && init.headers && init.headers.Authorization });
+    if (u.endsWith('/user')) return o.user === 401 ? new Response('{}', { status: 401 }) : new Response(JSON.stringify({ login: o.login || 'debasisr66' }), { status: 200 });
+    const m = u.match(/contents\\/(content\\/[a-z]+\\.json)/); if (!m) return new Response('{}', { status: 404 });
+    if (method === 'PUT') { if (o.put) return new Response('boom', { status: o.put }); window.__puts.push({ u, b: JSON.parse(init.body) }); return new Response('{}', { status: 200 }); }
+    const b64 = t => btoa(unescape(encodeURIComponent(t)));
+    if (o.remote && o.remote[m[1]] !== undefined) return new Response(JSON.stringify({ sha: 'r1', content: b64(o.remote[m[1]]) }), { status: 200 });
+    const t = await real(m[1] + '?x=' + Date.now()).then(r => r.ok ? r.text() : null);
+    return t === null ? new Response('{}', { status: 404 }) : new Response(JSON.stringify({ sha: 'r1', content: b64(t) }), { status: 200 }); })(); } finally { window.__inflight--; } };
+  return true; })()`);
+const reloadPage = async ctx => {
+  await ctx.ev('setTimeout(() => location.reload(), 0); true').catch(() => {});
+  for (let i = 0; i < 60; i++) { await sleep(150); const ok = await ctx.ev("document.readyState==='complete' && !!window.__q && !!document.querySelector('#grid') && !document.querySelector('#grid').hasAttribute('aria-busy')").catch(() => false); if (ok) break; }
+  await sleep(250);
+};
+const focusables = ctx => ctx.ev(`[...document.querySelectorAll('#addSheet button:not([disabled]), #addSheet input, #addSheet textarea, #addSheet select, #addSheet a[href]')].filter(e => e.offsetParent !== null).map(e => e.id || e.name || e.tagName)`);
+const qaClose = ctx => ctx.ev("document.getElementById('qa-cancel').click()");
+const QA_MSG = 'Enter a valid web address starting with http:// or https://';
+const QA_P = '<img src=x onerror="window.__x=1"><script>window.__x=1<\/script>';
 
 const CASES = [
   { id: 'TC-SH-B01 real content, 1280 px', width: 1280, fixtures: [], noErrors: true, check: async ctx => {
@@ -442,6 +503,7 @@ const CASES = [
     if (Object.keys(file).join() !== 'schema_version,podcasts') f.push('keys: ' + Object.keys(file)); const mine = file.podcasts.find(p => p.title === 'A05 published');
     if (!mine) f.push('the entry is not in the file'); else if (mine.url !== 'https://example.com/a05') f.push('link not normalised: ' + mine.url); if (file.podcasts.length !== 6) f.push('expected 5 + 1 entries, got ' + file.podcasts.length);
     // same content again: make it dirty, restore it, publish: the GET now returns what was just written, so nothing is PUT
+    await ctx.ev("sessionStorage.setItem('studio-admin-pat', 'not-a-real-token-smoke-test'); enableAdmin()");   // the first publish locked the admin (SPEC-QA QA-06): unlock again so the rest of this case still exercises the edit and the second publish
     await ctx.ev("[...document.querySelectorAll('#podcastFeed [data-edit]')].find(b => /A05 published/.test(b.getAttribute('aria-label'))).click()"); await sleep(100);
     await ctx.ev("(() => { const e = document.getElementById('pf-comment'); e.value = 'temp'; e.dispatchEvent(new Event('input', { bubbles: true })); document.getElementById('podcastForm').requestSubmit(); })()"); await sleep(200);
     await ctx.ev("[...document.querySelectorAll('#podcastFeed [data-edit]')].find(b => /A05 published/.test(b.getAttribute('aria-label'))).click()"); await sleep(100);
@@ -505,6 +567,242 @@ const CASES = [
   { id: 'TC-SH-T01 reads.json never answers: the page still loads (8 s timeout) and the rest renders', width: 1280, fixtures: ['hang-reads', 'healthy'], timeout: 20000, check: async ctx => {
     const f = [...await sectionsRendered(ctx, ['reads'])]; if (ctx.ms > 14000) f.push(`took ${ctx.ms} ms; the timeout should end the wait at about 8 s`); return f; } },
   { id: 'TC-SH-T02 reads.json answers after 2 s: it still renders', width: 1280, fixtures: ['slow-reads', 'healthy'], check: ctx => sectionsRendered(ctx) },
+  /* ---------- SPEC-QA Phase A: Quick add (docs/specs/quick-add/test.md) ---------- */
+  { id: 'TC-QA-E01 locked: the gear opens the Add to Studio sheet (not only a token prompt)', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await qaOpenGear(ctx); const s = await qs(ctx);
+    if (!s.sheet) f.push('the sheet did not open'); if (s.tok) f.push('the token prompt opened first'); if (s.admin) f.push('opening the sheet unlocked the admin'); return f; } },
+  { id: 'TC-QA-E02 cold load of #add, locked: the sheet is open and the link field has the focus', width: 1280, hash: '#add', fixtures: TWO, ...qaWith(), check: async ctx => {
+    const s = await qs(ctx); return [...(s.sheet ? [] : ['the sheet is not open']), ...(s.active === 'qa-url' ? [] : ['focus is on ' + s.active])]; } },
+  { id: 'TC-QA-E03 a visitor sees nothing of it: no sheet, no prompt, no link to #add anywhere', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = [], r = await ctx.ev(`({ bg: getComputedStyle(document.getElementById('addBg')).display, tok: getComputedStyle(document.getElementById('tokBg')).display, links: document.querySelectorAll('a[href="#add"], nav a[href*="add"]').length, bar: getComputedStyle(document.getElementById('adminbar')).display })`);
+    if (r.bg !== 'none' || r.tok !== 'none') f.push('a dialog is displayed: ' + JSON.stringify(r)); if (r.links) f.push('a link to #add exists'); if (r.bar !== 'none') f.push('the owner bar shows to a visitor'); return f; } },
+  { id: 'TC-QA-E04 Escape and Cancel close the sheet and return the focus to where it was', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = [];
+    for (const how of ['escape', 'cancel']) {
+      await ctx.ev("document.getElementById('gear').focus()"); await qaOpenGear(ctx);
+      if (!(await qs(ctx)).sheet) { f.push('sheet did not open for ' + how); continue; }
+      if (how === 'escape') await ctx.ev("document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))"); else await qaClick(ctx, 'qa-cancel');
+      const s = await qs(ctx); if (s.sheet) f.push(how + ' did not close the sheet'); if (s.active !== 'gear') f.push(how + ': focus went to ' + s.active);
+    }
+    return f; } },
+  { id: 'TC-QA-E05 dialog semantics and a focus trap: Tab and Shift+Tab cycle inside the sheet', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await qaOpenGear(ctx);
+    const a = await ctx.ev("(() => { const d = document.getElementById('addSheet'), l = document.getElementById(d.getAttribute('aria-labelledby')); return [d.getAttribute('role'), d.getAttribute('aria-modal'), l && l.textContent.trim()]; })()");
+    if (a[0] !== 'dialog' || a[1] !== 'true' || a[2] !== 'Add to Studio') f.push('dialog attributes: ' + JSON.stringify(a));
+    const list = await focusables(ctx); if (list.length < 6) return [...f, 'too few focusable controls: ' + list.join()];
+    await ctx.ev(`(() => { const l = [...document.querySelectorAll('#addSheet button:not([disabled]), #addSheet input, #addSheet textarea, #addSheet select, #addSheet a[href]')].filter(e => e.offsetParent !== null); l[l.length - 1].focus(); window.__prevented = !document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })); })()`);
+    let s = await qs(ctx); if (s.active !== list[0]) f.push('Tab from the last control went to ' + s.active + ', expected ' + list[0]);
+    await ctx.ev(`(() => { document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true })); })()`);
+    s = await qs(ctx); if (s.active !== list[list.length - 1]) f.push('Shift+Tab from the first control went to ' + s.active + ', expected ' + list[list.length - 1]);
+    return f; } },
+  { id: 'TC-QA-P01 Paste from clipboard fills the normalised link and previews the destination in one line', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await qaOpenGear(ctx); await qaClip(ctx, 'https://example.com/a?utm_source=x&id=5#frag'); await qaClick(ctx, 'qa-paste', 250);
+    const s = await qs(ctx); if (s.fields.url !== 'https://example.com/a?id=5') f.push('link field: ' + s.fields.url); if (!/example\.com/.test(s.dest) || /\n/.test(s.dest)) f.push('destination preview: "' + s.dest + '"');
+    if ((await ctx.ev('window.__clip.reads')) !== 1) f.push('clipboard reads: ' + await ctx.ev('window.__clip.reads')); return f; } },
+  { id: 'TC-QA-P02 a clipboard with no link gives an announced inline message and changes nothing', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://keep.example.com/x', title: 'Keep me' }); await qaClip(ctx, 'just some words, no link'); await qaClick(ctx, 'qa-paste', 250);
+    const s = await qs(ctx), role = await ctx.ev("document.getElementById('qa-url-err').getAttribute('role')");
+    if (!s.errs.url) f.push('no inline message'); if (role !== 'alert') f.push('message is not announced (role ' + role + ')'); if (s.fields.url !== 'https://keep.example.com/x' || s.fields.title !== 'Keep me') f.push('fields changed: ' + JSON.stringify(s.fields)); return f; } },
+  { id: 'TC-QA-P03 share text "Title, newline, link" gives the link and prefills the title (an existing title is kept)', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await qaOpenGear(ctx); await qaClip(ctx, 'My Great Read\nhttps://example.com/great'); await qaClick(ctx, 'qa-paste', 250);
+    let s = await qs(ctx); if (s.fields.url !== 'https://example.com/great' || s.fields.title !== 'My Great Read') f.push('got ' + JSON.stringify(s.fields));
+    await qaClip(ctx, 'Another Title\nhttps://example.com/other'); await qaClick(ctx, 'qa-paste', 250); s = await qs(ctx);
+    if (s.fields.url !== 'https://example.com/other') f.push('second link not taken: ' + s.fields.url); if (s.fields.title !== 'My Great Read') f.push('the title already there was overwritten: ' + s.fields.title); return f; } },
+  { id: 'TC-QA-P04 javascript:, data:, credentials and //host in the clipboard are refused with the composers\' message; tracking parameters and fragment are dropped', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://keep.example.com/x' });
+    for (const bad of ['javascript:alert(1)', 'data:text/html,<b>x</b>', 'https://user:pw@evil.example.com/x', '//evil.example.com/x', 'file:///etc/passwd']) {
+      await qaClip(ctx, bad); await qaClick(ctx, 'qa-paste', 150); const s = await qs(ctx);
+      if (s.errs.url !== QA_MSG) f.push(JSON.stringify(bad) + ': message "' + s.errs.url + '"'); if (s.fields.url !== 'https://keep.example.com/x') f.push(JSON.stringify(bad) + ' changed the field to ' + s.fields.url);
+    }
+    await qaClip(ctx, 'https://example.com/p?fbclid=1&gclid=2&a=b#section'); await qaClick(ctx, 'qa-paste', 150); const s = await qs(ctx); if (s.fields.url !== 'https://example.com/p?a=b') f.push('tracking: ' + s.fields.url); if (s.errs.url) f.push('an error is still shown after a good paste'); return f; } },
+  { id: 'TC-QA-P06 typing the link, or pasting share text into the field by hand, works the same as the button', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/typed' }); let s = await qs(ctx); if (!/example\.com/.test(s.dest)) f.push('typing gave no preview: "' + s.dest + '"');
+    await ctx.ev("(() => { const e = document.getElementById('qa-url'); e.focus(); const dt = new DataTransfer(); dt.setData('text/plain', 'Pasted By Hand\\nhttps://example.org/p?utm_source=z'); e.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true })); })()"); await sleep(150);
+    s = await qs(ctx); if (s.fields.url !== 'https://example.org/p') f.push('pasted share text: link ' + s.fields.url); if (s.fields.title !== 'Pasted By Hand') f.push('pasted share text: title "' + s.fields.title + '"');
+    if ((await ctx.ev('window.__clip.reads')) !== 0) f.push('the clipboard API was read for a hand paste'); return f; } },
+  { id: 'TC-QA-P07 the clipboard is not read on load, on #add or when the sheet opens; only on the tap', width: 1280, hash: '#add', fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = [], n0 = await ctx.ev('window.__clip.reads'); if (n0 !== 0) f.push('read ' + n0 + ' time(s) before any tap'); await qaClose(ctx); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/x' });
+    if ((await ctx.ev('window.__clip.reads')) !== 0) f.push('read when the sheet opened or the owner typed'); await qaClip(ctx, 'https://example.com/y'); await qaClick(ctx, 'qa-paste', 150);
+    if ((await ctx.ev('window.__clip.reads')) !== 1) f.push('expected exactly one read after the tap'); return f; } },
+  { id: 'TC-QA-K02 Spotify and Apple Podcasts links preselect Podcast, others Read; the owner can change it and the choice then holds', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await qaOpenGear(ctx); let s = await qs(ctx); if (s.kind !== 'read') f.push('default kind ' + s.kind);
+    await qaClip(ctx, 'https://open.spotify.com/episode/abc'); await qaClick(ctx, 'qa-paste', 150); s = await qs(ctx); if (s.kind !== 'podcast') f.push('Spotify gave ' + s.kind);
+    await qaClip(ctx, 'https://podcasts.apple.com/us/podcast/x/id1'); await qaClick(ctx, 'qa-paste', 150); s = await qs(ctx); if (s.kind !== 'podcast') f.push('Apple Podcasts gave ' + s.kind);
+    await qaClip(ctx, 'https://example.com/blog'); await qaClick(ctx, 'qa-paste', 150); s = await qs(ctx); if (s.kind !== 'read') f.push('a blog gave ' + s.kind);
+    await ctx.ev("document.querySelector('#qa-kind input[value=podcast]').click()"); await qaFill(ctx, { url: 'https://example.com/typed-after-choice' }); s = await qs(ctx); if (s.kind !== 'podcast') f.push('typing a link overrode the owner\'s choice: ' + s.kind); return f; } },
+  { id: 'TC-QA-K03 Read shows Section (the tab being viewed, then the last used), Type, Tags and Take, and no Show', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await ctx.ev("document.querySelectorAll('#readTabs [role=tab]')[1].click()"); await qaOpenGear(ctx);
+    const r = await ctx.ev(`({ section: (document.querySelector('#qa-section-opts input:checked') || {}).value, n: document.querySelectorAll('#qa-section-opts input').length, type: !!document.getElementById('qa-type').offsetParent, tags: !!document.getElementById('qa-tags').offsetParent, take: !!document.getElementById('qa-comment').offsetParent, show: !!document.getElementById('qa-show').offsetParent })`);
+    if (r.section !== 'other') f.push('Section should default to the tab being viewed (Others), got ' + r.section); if (r.n !== 2) f.push(r.n + ' section options'); if (!r.type || !r.tags || !r.take) f.push('Type, Tags or Take is not shown: ' + JSON.stringify(r)); if (r.show) f.push('Show is shown for a Read');
+    return f; } },
+  { id: 'TC-QA-K03 the last used section is the next default', width: 1280, token: true, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await ctx.ev("document.getElementById('addOpen').click()"); await qaFill(ctx, { url: 'https://example.com/k03b', title: 'K03b', section: 'other' }); await qaClick(ctx, 'qa-draft', 300);
+    await ctx.ev("document.getElementById('addOpen').click()"); const s = await qs(ctx); if (s.section !== 'other') f.push('the next default is ' + s.section + ', expected other (the last used)'); return f; } },
+  { id: 'TC-QA-K04 Podcast shows Show, Tags and Take, and no Section or Type', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await qaOpenGear(ctx); await qaFill(ctx, { kind: 'podcast' });
+    const r = await ctx.ev(`({ section: !!document.getElementById('qa-section-opts').offsetParent, type: !!document.getElementById('qa-type').offsetParent, show: !!document.getElementById('qa-show').offsetParent, tags: !!document.getElementById('qa-tags').offsetParent, take: !!document.getElementById('qa-comment').offsetParent })`);
+    if (r.section || r.type) f.push('Section or Type is shown for a Podcast'); if (!r.show || !r.tags || !r.take) f.push('Show, Tags or Take missing: ' + JSON.stringify(r)); return f; } },
+  { id: 'TC-QA-K05 parity: the same inputs give the same errors and the same stored entry as the two existing composers', width: 1280, token: true, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = [], reads = [{ url: '', title: '' }, { url: 'javascript:x', title: 't' }, { url: 'https://example.com/p1', title: 'x'.repeat(141) }, { url: 'https://example.com/p2', title: 'ok', comment: 'c'.repeat(281) },
+      { url: 'https://example.com/p3?utm_source=a#f', title: '  Fine  ', comment: ' take ', tags: 'a, B, c d, a, e, f, g', type: 'video', section: 'other' }, { url: 'https://user:pw@example.com/x', title: 'creds' }],
+      pods = [{ url: '', title: '' }, { url: 'https://example.com/q1', title: 'x'.repeat(141) }, { url: 'https://example.com/q2', title: 'ok', show: 's'.repeat(81) }, { url: 'https://example.com/q3', title: 'ok', comment: 'c'.repeat(281) },
+      { url: 'https://example.com/q4?fbclid=1', title: ' Ep ', show: ' The Show ', comment: ' take ', tags: 'ai, History, ai' }];
+    const strip = e => { if (!e) return null; const o = { ...e }; delete o.id; delete o.added; return o; };
+    for (const r of reads) {
+      const c = await ctx.ev(`(() => { const set = (id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); }; const o = ${JSON.stringify(r)};
+        document.getElementById('composerOpen').click(); set('cf-url', o.url); set('cf-title', o.title); set('cf-comment', o.comment || ''); set('cf-tags', o.tags || ''); if (o.type) document.getElementById('cf-kind').value = o.type;
+        document.querySelector('#cf-category input[value=' + (o.section || 'technical') + ']').click(); const n = state.reads.articles.length; document.getElementById('composerForm').requestSubmit();
+        const errs = ['url', 'title', 'comment', 'category'].map(k => document.getElementById('cf-' + k + '-err').textContent).join('|'), added = state.reads.articles.length > n ? JSON.parse(JSON.stringify(state.reads.articles.shift())) : null;
+        document.getElementById('cf-cancel').click(); return { errs, added }; })()`);
+      await ctx.ev("document.getElementById('addOpen').click()"); await qaFill(ctx, { ...r, kind: 'read', section: r.section || 'technical', comment: r.comment || '', tags: r.tags || '' }); await qaClick(ctx, 'qa-draft', 150);
+      const s = await qs(ctx), added = await ctx.ev("state.reads.articles.length ? JSON.parse(JSON.stringify(state.reads.articles[0])) : null"), isNew = c.added && added && added.url === c.added.url && added.title === c.added.title;
+      const errs = ['url', 'title', 'comment', 'category'].map(k => s.errs[k]).join('|');
+      if (c.added) { if (!isNew) f.push('read ' + JSON.stringify(r.url) + ': the composer stored an entry but the sheet did not'); else { if (JSON.stringify(strip(added)) !== JSON.stringify(strip(c.added))) f.push('read ' + r.url + ': stored entries differ ' + JSON.stringify([strip(added), strip(c.added)])); await ctx.ev('state.reads.articles.shift()'); } }
+      else { if (errs !== c.errs) f.push('read ' + JSON.stringify(r.url) + ': errors differ: sheet "' + errs + '" composer "' + c.errs + '"'); if (s.sheet === false) f.push('read ' + JSON.stringify(r.url) + ': the sheet closed on an invalid entry'); await qaClick(ctx, 'qa-cancel'); }
+    }
+    for (const r of pods) {
+      const c = await ctx.ev(`(() => { const set = (id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); }; const o = ${JSON.stringify(r)};
+        document.getElementById('podcastComposerOpen').click(); set('pf-url', o.url); set('pf-title', o.title); set('pf-show', o.show || ''); set('pf-comment', o.comment || ''); set('pf-tags', o.tags || ''); const n = state.podcasts.podcasts.length; document.getElementById('podcastForm').requestSubmit();
+        const errs = ['url', 'title', 'show', 'comment'].map(k => document.getElementById('pf-' + k + '-err').textContent).join('|'), added = state.podcasts.podcasts.length > n ? JSON.parse(JSON.stringify(state.podcasts.podcasts.shift())) : null;
+        document.getElementById('pf-cancel').click(); return { errs, added }; })()`);
+      await ctx.ev("document.getElementById('addOpen').click()"); await qaFill(ctx, { ...r, kind: 'podcast', show: r.show || '', comment: r.comment || '', tags: r.tags || '' }); await qaClick(ctx, 'qa-draft', 150);
+      const s = await qs(ctx), added = await ctx.ev("state.podcasts.podcasts.length ? JSON.parse(JSON.stringify(state.podcasts.podcasts[0])) : null"), isNew = c.added && added && added.url === c.added.url && added.title === c.added.title;
+      const errs = ['url', 'title', 'show', 'comment'].map(k => s.errs[k]).join('|');
+      if (c.added) { if (!isNew) f.push('podcast ' + JSON.stringify(r.url) + ': the composer stored an entry but the sheet did not'); else { if (JSON.stringify(strip(added)) !== JSON.stringify(strip(c.added))) f.push('podcast ' + r.url + ': stored entries differ ' + JSON.stringify([strip(added), strip(c.added)])); await ctx.ev('state.podcasts.podcasts.shift()'); } }
+      else { if (errs !== c.errs) f.push('podcast ' + JSON.stringify(r.url) + ': errors differ: sheet "' + errs + '" composer "' + c.errs + '"'); await qaClick(ctx, 'qa-cancel'); }
+    }
+    return f; } },
+  { id: 'TC-QA-U01 locked: Post and publish opens the token prompt over the sheet; the draft is intact; nothing was sent', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/u01', title: 'U01 title', comment: 'my take', tags: 'ai' }); await qaClick(ctx, 'qa-publish', 200);
+    const s = await qs(ctx); if (!s.tok) f.push('no token prompt'); if (!s.sheet) f.push('the sheet went away'); if (s.fields.title !== 'U01 title' || s.fields.comment !== 'my take' || s.fields.url !== 'https://example.com/u01') f.push('draft changed: ' + JSON.stringify(s.fields));
+    if (s.active !== 'pat') f.push('focus is on ' + s.active + ', expected the token field'); if (await apiCalls(ctx)) f.push('an API call was made before a token was given'); return f; } },
+  { id: 'TC-QA-U02 a correct token continues the same action: one PUT of content/reads.json with the item, using the token', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/u02', title: 'U02 title', section: 'other' }); await qaClick(ctx, 'qa-publish', 200); await qaToken(ctx, QA_TOKEN, 700);
+    const puts = await putsOf(ctx); if (puts.length !== 1) return ['expected one PUT, got ' + puts.map(p => p.u).join(', ')];
+    const file = putFile(puts, 'reads'); if (!file) return ['the PUT was not of content/reads.json: ' + puts[0].u]; const mine = file.articles.find(a => a.title === 'U02 title');
+    if (!mine || mine.category !== 'other' || mine.url !== 'https://example.com/u02') f.push('the item is wrong or missing: ' + JSON.stringify(mine)); if (file.schema_version !== 2) f.push('schema_version ' + file.schema_version);
+    const auth = await ctx.ev("[...new Set(window.__calls.map(c => c.auth))]"); if (auth.length !== 1 || auth[0] !== 'Bearer ' + QA_TOKEN) f.push('requests were not made with the token typed: ' + JSON.stringify(auth)); return f; } },
+  { id: 'TC-QA-U03 a wrong token (401): a clear message, still on the prompt, draft intact, nothing written, still locked', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx, { user: 401 }); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/u03', title: 'U03 title' }); await qaClick(ctx, 'qa-publish', 200); await qaToken(ctx, 'wrong-token');
+    const s = await qs(ctx); if (!s.tok) f.push('the prompt went away'); if (!/rejected|401|token/i.test(s.tokErr)) f.push('no clear message: "' + s.tokErr + '"'); if (s.tokErr.includes('wrong-token')) f.push('the message contains the token');
+    if (s.fields.title !== 'U03 title') f.push('draft changed'); if (s.admin) f.push('became unlocked'); if (s.session.includes('studio-admin-pat')) f.push('a token was stored'); if ((await putsOf(ctx)).length) f.push('something was written'); return f; } },
+  { id: 'TC-QA-U03 a token that belongs to someone else is refused', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    await stubGh(ctx, { login: 'someone-else' }); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/u03b', title: 'U03b' }); await qaClick(ctx, 'qa-publish', 200); await qaToken(ctx);
+    const s = await qs(ctx); return [...(s.tok && /someone-else/.test(s.tokErr) ? [] : ['not refused with a message naming the login: "' + s.tokErr + '"']), ...(s.admin || s.session.includes('studio-admin-pat') ? ['it unlocked'] : [])]; } },
+  { id: 'TC-QA-U04 Cancel on the prompt (button or Escape) returns to the sheet with the draft intact and nothing written', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx);
+    for (const how of ['button', 'escape']) {
+      await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/u04', title: 'U04 ' + how }); await qaClick(ctx, 'qa-publish', 150);
+      if (how === 'button') await qaClick(ctx, 'tok-cancel', 100); else await ctx.ev("document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))");
+      const s = await qs(ctx); if (s.tok) f.push(how + ': the prompt is still open'); if (!s.sheet) f.push(how + ': the sheet closed'); if (s.fields.title !== 'U04 ' + how) f.push(how + ': draft changed'); if (s.active !== 'qa-publish') f.push(how + ': focus went to ' + s.active);
+      await qaClick(ctx, 'qa-cancel');
+    }
+    if ((await apiCalls(ctx)) || (await putsOf(ctx)).length) f.push('something was sent'); return f; } },
+  { id: 'TC-QA-U05 the token prompt in the browser: a form with a labelled username (studio-admin), current-password, no autocomplete="off"', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = [], r = await ctx.ev(`(() => { const form = document.getElementById('tokForm'), u = document.getElementById('tok-user'), p = document.getElementById('pat');
+      return { inForm: form.contains(u) && form.contains(p), uAuto: u.autocomplete, pAuto: p.autocomplete, pType: p.type, uVal: u.value, uLabel: !!document.querySelector('label[for=tok-user]'), pLabel: !!document.querySelector('label[for=pat]'), off: document.querySelectorAll('#tokBg [autocomplete=off]').length, submit: !!form.querySelector('button[type=submit]'), readonly: u.readOnly }; })()`);
+    if (!r.inForm) f.push('fields are not inside the form'); if (r.uAuto !== 'username' || r.pAuto !== 'current-password' || r.pType !== 'password') f.push('attributes: ' + JSON.stringify(r)); if (r.uVal !== 'studio-admin') f.push('username value ' + r.uVal);
+    if (!r.uLabel || !r.pLabel) f.push('a field has no label'); if (r.off) f.push('autocomplete="off" present'); if (!r.submit) f.push('no submit button'); return f; } },
+  { id: 'TC-QA-U06 the token appears nowhere except the one tab sessionStorage key: not in the page, console, draft or localStorage (checked while unlocked after a failed publish)', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx, { put: 500 }); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/u06', title: 'U06' }); await qaClick(ctx, 'qa-publish', 200); await qaToken(ctx, QA_TOKEN, 800);
+    const r = await ctx.ev(`(() => { const T = ${JSON.stringify(QA_TOKEN)}, s = {}; for (const k of Object.keys(sessionStorage)) s[k] = sessionStorage.getItem(k).includes(T); const l = Object.keys(localStorage).filter(k => localStorage.getItem(k).includes(T));
+      return { admin: document.body.classList.contains('admin'), html: document.documentElement.outerHTML.includes(T), text: document.body.innerText.includes(T), session: s, local: l, consoleHit: window.__console.some(x => x.includes(T)), inputs: [...document.querySelectorAll('input, textarea')].filter(e => e.id !== 'pat' && e.value.includes(T)).length }; })()`);
+    if (!r.admin) f.push('not unlocked, so the check proves nothing'); if (r.html || r.text) f.push('the token is in the page'); if (r.consoleHit) f.push('the token is in the console'); if (r.local.length) f.push('in localStorage: ' + r.local);
+    const keys = Object.keys(r.session).filter(k => r.session[k]); if (keys.join() !== 'studio-admin-pat') f.push('sessionStorage keys holding the token: ' + keys.join()); if (r.inputs) f.push('the token is in another field'); return f; } },
+  { id: 'TC-QA-U07 opening the sheet, pasting, typing and choosing a kind make no API call', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    await stubGh(ctx); await qaOpenGear(ctx); await qaClip(ctx, 'Title\nhttps://open.spotify.com/episode/x'); await qaClick(ctx, 'qa-paste', 150); await qaFill(ctx, { title: 'T', comment: 'c', tags: 'a', kind: 'read' }); await qaClick(ctx, 'qa-cancel');
+    const n = await apiCalls(ctx); return n ? ['made ' + n + ' API call(s)'] : []; } },
+  { id: 'TC-QA-L01 Post and publish a Read: one PUT of content/reads.json, valid, under the chosen Section', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/l01?utm_source=x', title: 'L01 read', comment: 'because', tags: 'ai, Tools', type: 'tool', section: 'technical' }); await qaClick(ctx, 'qa-publish', 200); await qaToken(ctx, QA_TOKEN, 800);
+    const puts = await putsOf(ctx); if (puts.length !== 1 || !putFile(puts, 'reads')) return ['expected one PUT of reads.json, got ' + puts.map(p => p.u).join(', ')];
+    const file = putFile(puts, 'reads'), mine = file.articles[0]; if (!mine || mine.title !== 'L01 read') return ['the item is not first in the file']; if (mine.url !== 'https://example.com/l01' || mine.category !== 'technical' || mine.kind !== 'tool' || mine.comment !== 'because' || mine.tags.join() !== 'ai,tools') f.push('entry: ' + JSON.stringify(mine));
+    if (file.articles.length !== 7) f.push('expected 6 existing reads plus the new one, got ' + file.articles.length); if (Object.keys(file).join() !== 'schema_version,books,articles') f.push('keys ' + Object.keys(file));
+    const card = await ctx.ev("[...document.querySelectorAll('#articlesFeed .read-title')].map(e => e.textContent).join('|')"); if (!/L01 read/.test(card)) f.push('the new read is not on the page'); return f; } },
+  { id: 'TC-QA-L01 Post and publish a Podcast: one PUT of content/podcasts.json with the entry first', width: 1280, fixtures: PODS, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx); await qaOpenGear(ctx); await qaClip(ctx, 'Ep Title\nhttps://open.spotify.com/episode/l01'); await qaClick(ctx, 'qa-paste', 150); await qaFill(ctx, { show: 'The Show', tags: 'ai' }); await qaClick(ctx, 'qa-publish', 200); await qaToken(ctx, QA_TOKEN, 800);
+    const puts = await putsOf(ctx); if (puts.length !== 1 || !putFile(puts, 'podcasts')) return ['expected one PUT of podcasts.json, got ' + puts.map(p => p.u).join(', ')];
+    const file = putFile(puts, 'podcasts'), mine = file.podcasts[0]; if (!mine || mine.title !== 'Ep Title' || mine.show !== 'The Show' || mine.url !== 'https://open.spotify.com/episode/l01') f.push('entry: ' + JSON.stringify(mine)); if (file.podcasts.length !== 6) f.push('expected 5 + 1, got ' + file.podcasts.length); if (file.schema_version !== 1) f.push('schema_version ' + file.schema_version); return f; } },
+  { id: 'TC-QA-L02 Post as draft: marked unpublished, no API write; Publish changes later writes it and locks', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/l02', title: 'L02 draft' }); await qaClick(ctx, 'qa-draft', 200); await qaToken(ctx, QA_TOKEN, 500);
+    let s = await qs(ctx); const dirty = await ctx.ev("document.getElementById('dirtyinfo').textContent");
+    if (!/reads\.json/.test(dirty)) f.push('dirty info does not name reads.json: ' + dirty); if ((await putsOf(ctx)).length) f.push('written before Publish changes'); if (s.sheet) f.push('the sheet stayed open after the draft was posted'); if (!s.admin) f.push('admin should stay on after a draft');
+    if (!(await ctx.ev("[...document.querySelectorAll('#articlesFeed .read-title')].some(e => /L02 draft/.test(e.textContent))"))) f.push('the draft is not listed');
+    await ctx.ev("document.getElementById('publishBtn').click()"); await sleep(800); const puts = await putsOf(ctx); if (puts.length !== 1 || !(putFile(puts, 'reads') || { articles: [] }).articles.some(a => a.title === 'L02 draft')) f.push('Publish changes did not write the draft: ' + puts.map(p => p.u).join());
+    s = await qs(ctx); if (s.admin) f.push('Publish changes did not lock'); return f; } },
+  { id: 'TC-QA-L03 a successful publish locks at once: admin ends, the token is gone from storage, "Published and locked", the draft key is gone, the sheet is closed', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/l03', title: 'L03' }); await qaClick(ctx, 'qa-publish', 200); await qaToken(ctx, QA_TOKEN, 900);
+    const s = await qs(ctx); if (s.admin) f.push('still in admin mode'); if (s.session.length) f.push('sessionStorage still holds: ' + s.session); if (!/Published and locked/.test(s.status)) f.push('status says "' + s.status + '"'); if (s.sheet || s.tok) f.push('a dialog is still open');
+    const bar = await ctx.ev("getComputedStyle(document.getElementById('adminbar')).display"); if (bar !== 'none') f.push('the owner bar is still shown'); return f; } },
+  { id: 'TC-QA-L04 the existing Publish changes button also locks after success, and not after a failure', width: 1280, token: true, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx, { put: 500 }); await ctx.ev("document.getElementById('addBook').click(); document.querySelector('#modal [data-k=title]').value = 'L04 book'; document.querySelector('#modal [data-k=author]').value = 'A'; document.getElementById('ms').click()");
+    await ctx.ev("document.getElementById('publishBtn').click()"); await sleep(800); let s = await qs(ctx); if (!s.admin) f.push('a FAILED publish locked the admin');
+    await ctx.ev("document.querySelector('#modal #mc').click()"); await stubGh(ctx); await ctx.ev("document.getElementById('publishBtn').click()"); await sleep(900); s = await qs(ctx);
+    if (s.admin) f.push('a successful Publish changes did not lock'); if (s.session.includes('studio-admin-pat')) f.push('the token is still stored'); if (!/Published and locked/.test(s.status) && !/Published and locked/.test(await ctx.ev('document.body.innerText'))) f.push('no "Published and locked"');
+    const res = await ctx.ev("(document.querySelector('#modal .pre-result') || {}).textContent || ''"); if (!/committed/.test(res)) f.push('result: "' + res.slice(0, 100) + '"'); return f; } },
+  { id: 'TC-QA-L05 a failed publish (500) stays unlocked with the error, keeps the sheet and draft; a retry works and then locks (TC-QA-L07: draft key gone)', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx, { put: 500 }); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/l05', title: 'L05', comment: 'keep' }); await qaClick(ctx, 'qa-publish', 200); await qaToken(ctx, QA_TOKEN, 900);
+    let s = await qs(ctx); if (!s.admin) f.push('locked after a failure'); if (!s.sheet) f.push('the sheet closed'); if (!/500|failed/i.test(s.msg)) f.push('no error shown: "' + s.msg + '"'); if (s.fields.title !== 'L05' || s.fields.comment !== 'keep') f.push('draft lost'); if (!s.session.includes('studio-quick-draft')) f.push('draft key removed');
+    if (await ctx.ev("document.getElementById('qa-publish').disabled")) f.push('Post and publish stayed disabled, so no retry is possible');
+    await stubGh(ctx); await qaClick(ctx, 'qa-publish', 900); s = await qs(ctx); const puts = await putsOf(ctx); if (puts.length !== 1) f.push('retry wrote ' + puts.length + ' time(s)'); if (s.admin) f.push('did not lock after the retry'); if (s.session.includes('studio-quick-draft')) f.push('draft key survived a success'); if (s.msg) f.push('an old error is still shown'); return f; } },
+  { id: 'TC-QA-L05 GitHub rejects an expired token during the publish (401): stays unlocked, says so', width: 1280, token: true, fixtures: TWO, ...qaWith(), check: async ctx => {
+    await ctx.ev("(() => { const real = window.fetch.bind(window); window.fetch = (u, o) => String(u).startsWith('https://api.github.com') ? Promise.resolve(new Response('{}', { status: 401 })) : real(u, o); })()");
+    await ctx.ev("document.getElementById('addOpen').click()"); await qaFill(ctx, { url: 'https://example.com/l05b', title: 'L05b' }); await qaClick(ctx, 'qa-publish', 700); const s = await qs(ctx);
+    return [...(s.admin && s.sheet ? [] : ['not left open and unlocked']), ...(/401/.test(s.msg) ? [] : ['message: "' + s.msg + '"'])]; } },
+  { id: 'TC-QA-L06 the PC-B guards hold through Quick add: GitHub\'s copy differs from the loaded one; nothing is written, stays unlocked, draft kept', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = [], loaded = JSON.parse(fs.readFileSync(path.join(FIX, 'reads-two-sections', 'content', 'reads.json'), 'utf8'));
+    await stubGh(ctx, { remote: { 'content/reads.json': JSON.stringify({ ...loaded, articles: [...loaded.articles, { id: 9, url: 'https://example.com/elsewhere', title: 'Added elsewhere' }] }) } });
+    await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/l06', title: 'L06' }); await qaClick(ctx, 'qa-publish', 200); await qaToken(ctx, QA_TOKEN, 900);
+    const s = await qs(ctx); if (!/changed on GitHub/i.test(s.msg)) f.push('not refused: "' + s.msg.slice(0, 100) + '"'); if ((await putsOf(ctx)).length) f.push('it wrote anyway'); if (!s.admin || !s.sheet || s.fields.title !== 'L06') f.push('state after the refusal: ' + JSON.stringify({ admin: s.admin, sheet: s.sheet, title: s.fields.title })); return f; } },
+  { id: 'TC-QA-L06 a reads.json newer than the page understands: refused, nothing written', width: 1280, fixtures: ['future-reads-version', 'healthy'], ...qaWith(), check: async ctx => {
+    await stubGh(ctx); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/l06b', title: 'L06b' }); await qaClick(ctx, 'qa-publish', 200); await qaToken(ctx, QA_TOKEN, 900);
+    const s = await qs(ctx); return [...(/newer|not published/i.test(s.msg) ? [] : ['not refused: "' + s.msg + '"']), ...((await putsOf(ctx)).length ? ['it wrote anyway'] : [])]; } },
+  { id: 'TC-QA-L06 a reads.json that failed to load (unknown content): refused, nothing written', width: 1280, fixtures: ['bad-reads-json', 'healthy'], ...qaWith(), check: async ctx => {
+    await stubGh(ctx); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/l06c', title: 'L06c' }); await qaClick(ctx, 'qa-publish', 200); await qaToken(ctx, QA_TOKEN, 900);
+    const s = await qs(ctx); return [...(/not published|could not be loaded/i.test(s.msg) ? [] : ['not refused: "' + s.msg + '"']), ...((await putsOf(ctx)).length ? ['it wrote anyway'] : [])]; } },
+  { id: 'TC-QA-L06 an invalid entry already in podcasts.json blocks a Quick add podcast publish (whole-file validation)', width: 1280, fixtures: ['podcasts-bad-entry', 'healthy'], ...qaWith(), check: async ctx => {
+    await stubGh(ctx); await qaOpenGear(ctx); await qaFill(ctx, { kind: 'podcast', url: 'https://example.com/l06d', title: 'L06d' }); await qaClick(ctx, 'qa-publish', 200); await qaToken(ctx, QA_TOKEN, 900);
+    const s = await qs(ctx); return [...(/podcast tags must be/.test(s.msg) ? [] : ['the rule that failed is not named: "' + s.msg + '"']), ...((await putsOf(ctx)).length ? ['an invalid file was written'] : [])]; } },
+  { id: 'TC-QA-D01 fill the sheet, reload the page in the same tab, open the sheet: the values are restored', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://open.spotify.com/episode/d01', title: 'D01 title', comment: 'D01 take', tags: 'ai, x', kind: 'podcast' }); await reloadPage(ctx);
+    let s = await qs(ctx); if (s.sheet) f.push('the sheet reopened by itself without #add'); await qaOpenGear(ctx); s = await qs(ctx);
+    if (s.fields.url !== 'https://open.spotify.com/episode/d01' || s.fields.title !== 'D01 title' || s.fields.comment !== 'D01 take' || s.fields.tags !== 'ai, x') f.push('values: ' + JSON.stringify(s.fields)); if (s.kind !== 'podcast') f.push('kind ' + s.kind); return f; } },
+  { id: 'TC-QA-D01 a draft is restored on a cold load of #add too', width: 1280, hash: '#add', fixtures: TWO, ...qaWith(), check: async ctx => {
+    await qaFill(ctx, { url: 'https://example.com/d01b', title: 'D01b' }); await reloadPage(ctx); const s = await qs(ctx);
+    return [...(s.sheet ? [] : ['the sheet did not reopen on #add']), ...(s.fields.title === 'D01b' ? [] : ['title: ' + s.fields.title])]; } },
+  { id: 'TC-QA-D02 the draft holds link, title, take, tags and kind only, and never the token (checked after a token was typed)', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx, { put: 500 }); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/d02', title: 'D02', comment: 'c', tags: 't' }); await qaClick(ctx, 'qa-publish', 200); await qaToken(ctx, QA_TOKEN, 800);
+    const raw = await ctx.ev("sessionStorage.getItem('studio-quick-draft')"); if (!raw) return ['no draft key']; if (raw.includes(QA_TOKEN) || /token|pat/i.test(Object.keys(JSON.parse(raw)).join())) f.push('the draft mentions the token');
+    const keys = Object.keys(JSON.parse(raw)).sort().join(); if (keys !== 'comment,kind,tags,title,url') f.push('draft keys: ' + keys); return f; } },
+  { id: 'TC-QA-D03 storage keys: a visitor who never opens the sheet has none; using the sheet adds only the draft key; unlocked adds only the token key', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; let s = await qs(ctx); if (s.session.length) f.push('a fresh visitor has session keys: ' + s.session); if (s.local.some(k => k !== 'studio-theme')) f.push('unexpected local keys: ' + s.local);
+    await qaOpenGear(ctx); s = await qs(ctx); if (s.session.length) f.push('merely opening the sheet wrote: ' + s.session); await qaFill(ctx, { url: 'https://example.com/d03' }); s = await qs(ctx); if (s.session.join() !== 'studio-quick-draft') f.push('after typing: ' + s.session);
+    await stubGh(ctx, { put: 500 }); await qaFill(ctx, { title: 'D03' }); await qaClick(ctx, 'qa-publish', 200); await qaToken(ctx, QA_TOKEN, 700); s = await qs(ctx); if (s.session.join() !== 'studio-admin-pat,studio-quick-draft') f.push('unlocked: ' + s.session);
+    if (s.local.some(k => k !== 'studio-theme')) f.push('local keys after: ' + s.local); return f; } },
+  { id: 'TC-QA-D04 the draft is cleared by Cancel and by Escape; an idle lock keeps it', width: 1280, token: true, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await ctx.ev("document.getElementById('addOpen').click()"); await qaFill(ctx, { url: 'https://example.com/d04', title: 'D04' }); await ctx.ev("lock()"); let s = await qs(ctx);
+    if (s.admin) f.push('lock() did not lock'); if (!s.session.includes('studio-quick-draft')) f.push('an idle or manual lock cleared the draft'); if (!s.sheet) f.push('the lock closed the sheet'); await qaClick(ctx, 'qa-cancel'); s = await qs(ctx); if (s.session.includes('studio-quick-draft')) f.push('Cancel kept the draft');
+    await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/d04b' }); await ctx.ev("document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))"); s = await qs(ctx); if (s.session.includes('studio-quick-draft')) f.push('Escape kept the draft');
+    await qaOpenGear(ctx); s = await qs(ctx); if (s.fields.url) f.push('a cleared draft came back: ' + s.fields.url); return f; } },
+  { id: 'TC-QA-H01 cold load of #add at 375 px: sheet open, link field focused, Paste visible, no horizontal overflow, targets of at least 44 px', width: 375, hash: '#add', fixtures: TWO, ...qaWith(), noErrors: true, check: async ctx => {
+    const f = [], s = await qs(ctx); if (!s.sheet || s.active !== 'qa-url') f.push('sheet ' + s.sheet + ', focus ' + s.active);
+    const r = await ctx.ev(`(() => { const b = document.getElementById('qa-paste').getBoundingClientRect(), small = [...document.querySelectorAll('#addSheet button, #addSheet input[type=text], #addSheet select, #addSheet textarea, #addSheet .radio')].filter(e => e.offsetParent !== null).map(e => [e.id || e.className, Math.round(e.getBoundingClientRect().height)]).filter(x => x[1] < 44);
+      return { over: document.documentElement.scrollWidth - innerWidth, sheetOver: document.getElementById('addSheet').scrollWidth - document.getElementById('addSheet').clientWidth, pasteIn: b.left >= 0 && b.right <= innerWidth && b.top >= 0 && b.bottom <= innerHeight, pasteH: b.height, small }; })()`);
+    if (r.over > 1 || r.sheetOver > 1) f.push('horizontal overflow ' + r.over + '/' + r.sheetOver + ' px'); if (!r.pasteIn) f.push('the Paste button is not fully in view at load'); if (r.small.length) f.push('targets under 44 px: ' + JSON.stringify(r.small)); return f; } },
+  { id: 'TC-QA-H02 #adds and #add/anything do not open the sheet; #add while the page is open does', width: 1280, hash: '#adds', fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; if ((await qs(ctx)).sheet) f.push('#adds opened the sheet'); await ctx.ev("location.hash = '#add/anything'"); await sleep(250); if ((await qs(ctx)).sheet) f.push('#add/anything opened the sheet');
+    await ctx.ev("location.hash = '#add'"); await sleep(300); const s = await qs(ctx); if (!s.sheet || s.active !== 'qa-url') f.push('#add did not open the sheet with the focus on the link'); return f; } },
+  { id: 'TC-QA-H02 #add while already unlocked opens the sheet with no prompt; the owner bar button opens it too; closing it clears #add from the address', width: 1280, hash: '#add', token: true, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; let s = await qs(ctx); if (!s.sheet || s.tok || !s.admin) f.push('state: ' + JSON.stringify({ sheet: s.sheet, tok: s.tok, admin: s.admin }));
+    await qaClick(ctx, 'qa-cancel'); if ((await ctx.ev('location.hash')) !== '') f.push('#add is still in the address after closing'); await ctx.ev("document.getElementById('addOpen').click()"); s = await qs(ctx); if (!s.sheet || s.tok) f.push('the owner bar button did not open the sheet'); return f; } },
+  { id: 'TC-QA-S01 XSS payloads in the pasted share text, take and tags stay inert in the sheet, the preview and the published card', width: 1280, token: true, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await ctx.ev("document.getElementById('addOpen').click()"); await qaClip(ctx, QA_P + '\nhttps://example.com/s01?x=%3Cimg%20src%3Dx%3E'); await qaClick(ctx, 'qa-paste', 150); await qaFill(ctx, { comment: QA_P, tags: '"><svg onload=window.__x=1>' }); await sleep(150);
+    let bad = await ctx.ev("[window.__x, document.querySelectorAll('#addSheet img, #addSheet svg, #addSheet script').length, document.getElementById('qa-dest').innerHTML]"); if (bad[0] || bad[1]) f.push('active in the sheet: ' + JSON.stringify(bad)); if (/</.test(bad[2])) f.push('markup in the destination preview: ' + bad[2]);
+    await qaClick(ctx, 'qa-draft', 300); bad = await ctx.ev("[window.__x, document.querySelectorAll('#reads img[src=x], #reads svg[onload], #reads script').length]"); if (bad[0] || bad[1]) f.push('active in the list: ' + JSON.stringify(bad));
+    const t = await ctx.ev("document.getElementById('articlesFeed').textContent"); if (!t.includes('<img')) f.push('the payload should show as plain text'); return f; } },
+  { id: 'TC-QA-S02 a visitor who presses Post gets the token prompt and no API call is made until a token is given', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/s02', title: 'S02' });
+    for (const id of ['qa-draft', 'qa-publish']) { await qaClick(ctx, id, 150); const s = await qs(ctx); if (!s.tok) f.push(id + ': no token prompt'); await qaClick(ctx, 'tok-cancel', 100); }
+    const n = await apiCalls(ctx); if (n) f.push(n + ' API call(s) before a token'); return f; } },
 ];
 
 async function main() {
@@ -513,8 +811,8 @@ async function main() {
   const only = process.env.SMOKE_ONLY;
   if (only && process.env.CI) { console.error('smoke: SMOKE_ONLY must not be set in CI (it would skip cases)'); process.exit(1); }
   if (!CASES.some(c => !only || c.id.includes(only))) { console.error(`smoke: no case matches SMOKE_ONLY=${only}`); process.exit(1); }
-  // the whole run is bounded, below the CI step's 2-minute limit, so cleanup and a clear message happen before the runner cuts it off
-  const wd = Number(process.env.SMOKE_WATCHDOG_MS) || 100000;
+  // the whole run is bounded (110 s since SPEC-QA added cases; CI needs about half that), below the CI step's 2-minute limit, so cleanup and a clear message happen before the runner cuts it off
+  const wd = Number(process.env.SMOKE_WATCHDOG_MS) || 110000;
   setTimeout(() => { console.error(`smoke: watchdog: the run did not finish within ${Math.round(wd / 1000)} s and was stopped`); process.exit(1); }, wd).unref();
   const bin = findChrome();
   if (!bin) { console.error('smoke: Chrome not found. Install Google Chrome or set CHROME_BIN.'); process.exit(1); }
@@ -535,9 +833,9 @@ async function main() {
     for (const d of ['Page', 'Runtime', 'Log']) await cdp.send(d + '.enable');
     for (const c of CASES) {
       if (only && !c.id.includes(only)) continue;
-      const fails = await runCase(cdp, base, c, errors);
+      const t0 = Date.now(), fails = await runCase(cdp, base, c, errors), secs = (Date.now() - t0) / 1000;
       ran++;
-      console.log(`${fails.length ? 'FAIL' : 'ok  '} ${c.id}`);
+      console.log(`${fails.length ? 'FAIL' : 'ok  '} ${c.id}${secs >= 2 ? `  [${secs.toFixed(1)} s]` : ''}`);   // only slow cases are timed, so the output stays readable
       fails.forEach(x => console.log('       - ' + x));
       if (fails.length) failed++;
     }

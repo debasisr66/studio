@@ -13,6 +13,8 @@ const SITE = ['index.html', 'css', 'js', 'fonts', 'assets', 'content'];
 const PATCHES = [
   ['js/app.js', "const OWNER = 'debasisr66', HUB = 'studio', BRANCH = 'main';", "const OWNER = 'debasisr66', HUB = 'studio-sandbox', BRANCH = 'main';"],
   ['index.html', /<title>(?!SANDBOX)/, '<title>SANDBOX · '],
+  // the token form's username: the real and the sandbox token share the host debasisr66.github.io, so a password manager must see two different logins (SPEC-QA QA-04)
+  ['index.html', 'value="studio-admin"', 'value="studio-admin-sandbox"'],
 ];
 
 function copyDir(from, to) {

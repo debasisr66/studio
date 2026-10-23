@@ -20,8 +20,8 @@ const KNOWN_CATEGORIES = ['Productivity', 'Information', 'Tools', 'Education', '
 const ISO_UTC_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
 
-// size budgets in bytes: generous versus today's sizes, tight enough to catch accidental bloat
-const BUDGETS = { 'index.html': 60 * 1024, 'css/site.css': 30 * 1024, 'js/app.js': 80 * 1024, 'js/reads-lib.js': 20 * 1024, 'js/safe-lib.js': 10 * 1024, 'js/token-store.js': 10 * 1024, 'js/image-lib.js': 10 * 1024, total: 150 * 1024 };
+// size budgets in bytes: generous versus today's sizes, tight enough to catch accidental bloat (reads-lib.js 20 -> 26 KB for the Quick add helpers, SPEC-QA Phase A, 2026-10-23; the total is unchanged)
+const BUDGETS = { 'index.html': 60 * 1024, 'css/site.css': 30 * 1024, 'js/app.js': 80 * 1024, 'js/reads-lib.js': 26 * 1024, 'js/safe-lib.js': 10 * 1024, 'js/token-store.js': 10 * 1024, 'js/image-lib.js': 10 * 1024, total: 150 * 1024 };
 
 function validateProducts(list) {
   if (!Array.isArray(list)) return ['products.json: must be an array'];

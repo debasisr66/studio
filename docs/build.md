@@ -246,7 +246,7 @@ node scripts/validate-site.js              # OK, 0 errors
 node --test tests/<new>.test.js            # show the new tests failing first
 # build until green, then:
 node --test tests/*.test.js && node scripts/validate-site.js
-node scripts/smoke.js                      # real since SH Phase A: local server + headless Chrome over DevTools, 66 cases, ~55 s (set SMOKE_ONLY="text" to run matching cases, never in CI; CHROME_BIN to choose a browser; SMOKE_WATCHDOG_MS bounds the run, default 100 s)
+node scripts/smoke.js                      # real since SH Phase A: local server + headless Chrome over DevTools, 111 cases, ~70 s locally and about half that in CI (set SMOKE_ONLY="text" to run matching cases, never in CI; CHROME_BIN to choose a browser; SMOKE_WATCHDOG_MS bounds the run, default 110 s; cases slower than 2 s print their time)
 python3 -m http.server 8080                # manual look at http://localhost:8080 at 375 and 1280 px, both themes
 ```
 
