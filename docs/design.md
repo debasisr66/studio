@@ -61,7 +61,7 @@ Measured contrast (WCAG ratios):
 
 | Width | Behavior |
 |-------|----------|
-| ≥ 861 px | 3-column product grid; Reads is two columns (list wider than Books); top nav |
+| ≥ 861 px | 3-column product grid; Reads is one column (the reads, then Books; SPEC-UX UX-02); top nav |
 | 621–860 px | 2-column product grid; Reads stacks |
 | ≤ 620 px | 1 column; top links replaced by a bottom nav (Products, Blog, Reads); admin bar sits above it; the gear is hidden while admin is on |
 

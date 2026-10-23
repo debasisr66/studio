@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-UX` (requirements `UX-01` … `UX-07`) |
-| Status | **Approved by the owner (2026-10-21); not started** |
+| Status | **Phase A built (2026-10-23), in review; Phase B not started** |
 | Owner | Debasis Ray |
 | Created | 2026-10-21 · revised 2026-10-21 (usage-based ordering dropped by the owner) |
 | Parent | [PRD](../../PRD.md) §7, §8; [§22](../../PRD.md) |
@@ -107,3 +107,4 @@ Rollback: tag `v1.5`.
 
 - 2026-10-21: Draft created, including usage-based ordering.
 - 2026-10-21: Owner dropped usage-based ordering ("not adding any value"). Requirements UX-04 to UX-07 (scoring, storage, privacy, ordering rule, no-jump, reset) removed; spec renamed from "adaptive layout" to "simple layout"; deep links became UX-04; accessibility and first-screen clarity added. Approved.
+- 2026-10-23: **Phase A built** on `v2/ux-a-build` (tests first: 12 unit and 25 smoke cases written and shown failing; 5 unit and 14 smoke cases were red before the build, the rest guard behaviour that already held). What changed: every section head is now one pattern (`h2` plus one `p.sec-desc` line; the right-hand `.sub` and Products' "Live from GitHub" note moved into the line); the bottom nav gained **Updates** and both navs are filled from one list (`SECTIONS` in `js/app.js`; the same four links also stay in `index.html` for a page where scripts fail, and a unit test keeps them equal); the two-column Reading list / Books layout is gone (one column, a "Books" block under the reads of the open sub-item, hidden when that sub-item has no books, shown to the owner so a book can still be added; the book editor is unchanged); bottom-nav items are 44 px high. Finding on the way: a cold load of `#updates`, `#reads` or `#podcasts` landed far from the section (the browser places the anchor before the lists render and the page then grows), so boot now scrolls to a section named in the fragment once it has rendered, matching only the four exact ids of the closed list. Decisions: (1) **UX-02 "one add action"**: Reads keeps two owner controls (Share a read, and + Add book inside the Books block) because the book editor stays for now (RC-08); every other section has one; a known deviation. (2) Updates icon `↻`. (3) Books stay a sub-block of the open sub-item, not a sub-item of their own (that is SPEC-RC Phase C). Independent review of UX-04 (G2): [reviews/UX-04.md](../../reviews/UX-04.md).

@@ -849,7 +849,7 @@ const CASES = [
     for (const id of ['qa-draft', 'qa-publish']) { await qaClick(ctx, id, 150); const s = await qs(ctx); if (!s.tok) f.push(id + ': no token prompt'); await qaClick(ctx, 'tok-cancel', 100); }
     const n = await apiCalls(ctx); if (n) f.push(n + ' API call(s) before a token'); return f; } },
   /* ---------- SPEC-UX Phase A (TC-UX-*): the simple layout ---------- */
-  { id: 'TC-UX-S01 DOM order at 1280 px: hero, Products, Updates, Reads, Podcasts; TC-UX-S02 identical with storage blocked', width: 1280, fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => {
+  { id: 'TC-UX-S01 DOM order at 1280 px: hero, Products, Updates, Reads, Podcasts', width: 1280, fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => {
     const f = [], a = await uxOrder(ctx); if (a !== UX_ORDER) f.push('order: ' + a);
     return f; } },
   { id: 'TC-UX-S02 the order is the same with storage blocked, and with the admin token present', width: 1280, fixtures: TWO, ...uxWith(UX_BLOCK), noErrors: true, check: async ctx => { const a = await uxOrder(ctx); return a === UX_ORDER ? [] : ['order (storage blocked): ' + a]; } },
@@ -905,6 +905,10 @@ const CASES = [
     if (r.x) f.push('a fragment ran code'); if (r.scripts !== before) f.push('a script element appeared'); if (r.imgs || r.inj) f.push('a fragment was inserted into the page');
     return [...f, ...await expectSection(ctx, 'Technical')]; } },
   { id: 'TC-UX-L04 an unknown fragment on a cold load leaves the page at the top, the page fully rendered', width: 1280, hash: '#xyz', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => { const y = await ctx.ev('Math.round(scrollY)'); return [...(y > 5 ? ['page scrolled to ' + y] : []), ...await sectionsRendered(ctx)]; } },
+  { id: 'TC-UX-L04 cold load of #__proto__: no error, no scroll, everything rendered', width: 1280, hash: '#__proto__', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => { const y = await ctx.ev('Math.round(scrollY)'); return [...(y > 5 ? ['scrolled to ' + y] : []), ...await sectionsRendered(ctx)]; } },
+  { id: 'TC-UX-L04 cold load of #constructor', width: 1280, hash: '#constructor', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => { const y = await ctx.ev('Math.round(scrollY)'); return [...(y > 5 ? ['scrolled to ' + y] : []), ...await sectionsRendered(ctx)]; } },
+  { id: 'TC-UX-L04 cold load of #Products (wrong case) and of a broken percent sequence', width: 1280, hash: '#%E0%A4%A', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => { const y = await ctx.ev('Math.round(scrollY)'); return [...(y > 5 ? ['scrolled to ' + y] : []), ...await sectionsRendered(ctx)]; } },
+  { id: 'TC-UX-P04 when Reads fails to render, visitors see its fallback line and no empty Books heading', width: 1280, fixtures: ['poison-reads-book-null', 'healthy'], ...uxWith(), check: async ctx => { const v = await ctx.ev("(() => { const b = document.getElementById('booksBlock'); return getComputedStyle(b).display; })()"); return v === 'none' ? [] : ['the Books block is shown (' + v + ')']; } },
   { id: 'TC-UX-L05 with storage blocked: #updates and #reads/others land, #blog reaches Podcasts', width: 1280, hash: '#reads/others', fixtures: TWO, ...uxWith(UX_BLOCK), noErrors: true, check: async ctx => {
     const f = [...await uxLands(ctx, 'reads'), ...await expectSection(ctx, 'Others')]; for (const id of ['updates', 'podcasts']) f.push(...await uxFollow(ctx, id));
     await ctx.ev("location.hash = '#blog'"); await sleep(400); const h = await ctx.ev('location.hash'); if (h !== '#podcasts') f.push('#blog went to ' + h); return f; } },

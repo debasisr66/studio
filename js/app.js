@@ -308,6 +308,7 @@ function renderAll() {
   ], (name, err) => {
     console.error('Studio: the ' + name + ' section failed to render', err);
     (SECTION_BOX[name] || []).forEach((sel, i) => { const el = $(sel); if (el) el.innerHTML = i === 0 ? window.SafeLib.fallbackHtml() : ''; });
+    if (name === 'reads') $('#booksBlock').classList.add('is-empty');   // no empty Books heading under the fallback line
   });
 }
 

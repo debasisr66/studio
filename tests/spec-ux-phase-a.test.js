@@ -58,7 +58,7 @@ test('TC-UX-P02 the owner add actions are hidden until unlocked, and Products an
   assert.ok(/body\.admin \.composer/.test(css) && /body\.admin \.addbtn/.test(css), 'shown only in admin mode');
 });
 
-test('TC-UX-P03 phone targets: the bottom nav items and the header links are at least 44 px high', () => {
+test('TC-UX-P03 phone targets: the bottom nav items and the theme and What\'s new buttons are at least 44 px (the header links are hidden on a phone)', () => {
   assert.ok(/nav\.bottom a\{[^}]*min-height:44px/.test(css), 'bottom nav item');
   assert.ok(/\.icon-btn\{width:44px;height:44px\}/.test(css));
 });
@@ -78,6 +78,10 @@ test('TC-UX-L04 a fragment is never written into the page: no line of app.js mix
 
 test('TC-UX-L04 section links are matched against the closed list, not built from the fragment', () => {
   assert.ok(!/querySelector\([^)]*location\.hash/.test(app) && !/getElementById\([^)]*location\.hash/.test(app), 'the fragment is never used as a selector');
+});
+
+test('TC-UX-N02 the static nav links in index.html are kept as the no-script fallback and say so', () => {
+  assert.ok(/no-script fallback|fallback for a page where scripts fail/.test(html), 'index.html comments that app.js replaces the navs from SECTIONS');
 });
 
 test('TC-UX-N05 the skip link, logo, theme toggle and What\'s new button are unchanged', () => {
