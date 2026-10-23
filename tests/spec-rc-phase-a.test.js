@@ -114,9 +114,10 @@ test('TC-RC-V04 the rule reads-category is enumerated, has a fixture, a contract
   assert.ok(fs.readFileSync(path.join(ROOT, 'docs/RUNBOOK.md'), 'utf8').includes(rule.doc));
 });
 
-/* RC-05: the migration, proven against a snapshot of the file as it was before (tests/fixtures/reads-before-rc-a.json, schema_version 1) */
+/* RC-05: the one-time migration, proven on two frozen snapshots: the file before (schema_version 1) and right after (schema_version 2, the merge of PR #14).
+   They are fixtures, not the live file: the owner publishes reads at any time, and a test tied to live content would turn CI red on a legitimate publish. */
 const before = () => json('tests/fixtures/reads-before-rc-a.json');
-const after = () => json('content/reads.json');
+const after = () => json('tests/fixtures/reads-after-rc-a.json');
 const strip = o => { const c = { ...o }; delete c.category; return c; };
 test('TC-RC-M01 nothing is lost: every field of every read and book is identical apart from the added category', () => {
   const b = before(), a = after();
@@ -140,7 +141,9 @@ test('TC-RC-M03 the migration is additive: v1.5 code reads only the old keys, so
   assert.deepEqual([...added], ['category']);
   assert.equal(V.validateReads(a).errors.length, 0);
 });
-test('TC-RC-M03 the real content/reads.json passes the validator and carries the current version', () => {
-  assert.deepEqual(V.validateReads(after()).errors, []);
-  assert.equal(after().schema_version, RL.READS_SCHEMA_VERSION);
+test('TC-RC-M03 the real content/reads.json (whatever the owner has published since) passes the validator and carries the current version', () => {
+  const live = json('content/reads.json');
+  assert.deepEqual(V.validateReads(live).errors, []);
+  assert.equal(live.schema_version, RL.READS_SCHEMA_VERSION);
+  for (const e of [...live.articles, ...live.books]) assert.ok(RL.CATEGORIES.includes(e.category), 'every published entry has a category');
 });

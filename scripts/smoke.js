@@ -197,7 +197,7 @@ const CASES = [
     const f = [];
     for (const [sel, name] of [['#products', 'Products'], ['#updates', 'Updates'], ['#reads', 'Reads']]) if (!(await ctx.ev(count(sel)))) f.push(name + ' section missing');
     if (!(await ctx.ev(count('#grid .card:not(.skel)')))) f.push('no product cards from the real content');
-    if ((await ctx.ev(count('#articlesFeed .item'))) < 5) f.push('Reads did not render the 5 reads of the real (schema 2, categorised) content');
+    if ((await ctx.ev(count('#articlesFeed .item'))) < 1) f.push('Reads did not render any read from the real (schema 2, categorised) content');
     return f; } },
   { id: 'TC-SH-B01 healthy fixture, 1280 px, no console errors (TC-SH-I05)', width: 1280, fixtures: ['healthy'], noErrors: true, check: ctx => sectionsRendered(ctx) },
   { id: 'TC-SH-B02 healthy fixture, 375 px: no horizontal overflow, bottom nav shown', width: 375, fixtures: ['healthy'], noErrors: true, check: async ctx => {
