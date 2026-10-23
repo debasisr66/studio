@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-QA` (requirements `QA-01` … `QA-10`) |
-| Status | **Draft (2026-10-23); order, home-screen entry and Chrome-on-iPhone confirmed by the owner; spec approval and the draft-key decision (QA-07) pending; not started** |
+| Status | **Approved by the owner (2026-10-23), including the one owner-only draft key (QA-07); not started** |
 | Owner | Debasis Ray |
 | Created | 2026-10-23 |
 | Parent | [PRD](../../PRD.md) §9.4, §11.3, §14; [§22](../../PRD.md) |
@@ -152,3 +152,5 @@ Rollback: revert the merge commit; no content file or schema changes, the existi
 ## 11. Status log
 
 - 2026-10-23: Draft created from the owner's scenario and the options discussion (paths A to H); PIN-protected token and passkey unlock evaluated and rejected (D1, D2); Safari autofill finding F3 recorded as unconfirmed on the device. Awaiting approval.
+- 2026-10-23: Re-checked for Chrome on the iPhone (section 6b): token prompt as a real login form, Chrome as the default browser for the Home Screen icon, `googlechromes://` fallback, draft storage decided after owner check O03. Order (Quick add before UX Phase A) and plain bookmark confirmed.
+- 2026-10-23: **Approved by the owner**, including the amendment of the PRD storage target to allow the one owner-only draft key. Next: tests first, Phase A. The owner asked how to test on the phone before merge: see the preview options discussed in the session (a separate sandbox copy is recommended; the method is recorded here once chosen).
