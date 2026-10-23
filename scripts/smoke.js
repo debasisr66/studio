@@ -252,7 +252,7 @@ const stubGh = (ctx, o = {}) => ctx.ev(`(() => { window.__calls = []; window.__p
     if (u.endsWith('/user')) { if (o.userDelay) await new Promise(r => setTimeout(r, o.userDelay)); }
     if (u.endsWith('/user')) return o.user === 401 ? new Response('{}', { status: 401 }) : new Response(JSON.stringify({ login: o.login || 'debasisr66' }), { status: 200 });
     const m = u.match(/contents\\/(content\\/[a-z]+\\.json)/); if (!m) return new Response('{}', { status: 404 });
-    if (method === 'PUT') { if (o.put) return new Response('boom', { status: o.put }); window.__puts.push({ u, b: JSON.parse(init.body) }); return new Response('{}', { status: 200 }); }
+    if (method === 'PUT') { if (o.putDelay) await new Promise(r => setTimeout(r, o.putDelay)); if (o.put) return new Response('boom', { status: o.put }); window.__puts.push({ u, b: JSON.parse(init.body) }); return new Response('{}', { status: 200 }); }
     const b64 = t => btoa(unescape(encodeURIComponent(t)));
     if (o.remote && o.remote[m[1]] !== undefined) return new Response(JSON.stringify({ sha: 'r1', content: b64(o.remote[m[1]]) }), { status: 200 });
     const t = await real(m[1] + '?x=' + Date.now()).then(r => r.ok ? r.text() : null);
@@ -830,6 +830,27 @@ const CASES = [
     if (bad[0] || bad[1]) f.push('active in the list: ' + JSON.stringify(bad)); if (!bad[2]) f.push('the payload should show as plain text'); return f; } },
   { id: 'TC-QA-F01 a prefill never posts: even with an unlocked admin it stays in the sheet and nothing is written', width: 1280, token: true, hash: '#add=' + encodeURIComponent('https://example.com/f01c') + '&t=Unlocked', fixtures: TWO, ...qaWith(), check: async ctx => {
     const f = [], s = await qs(ctx); if (!s.sheet || !s.admin) f.push('sheet ' + s.sheet + ' admin ' + s.admin); const r = await ctx.ev("[window.__apiEarly.length, state.reads.articles.length, !!state.dirty.reads]"); if (r[0] || r[1] !== 6 || r[2]) f.push('something was sent or added: ' + JSON.stringify(r)); return f; } },
+  { id: 'TC-QA-F06b review G5 F1: a prefill arriving while the token prompt is open is ignored; what the owner sees is what is posted', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx); await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/good-a', title: 'Good A' }); await qaClick(ctx, 'qa-publish', 30);
+    await ctx.ev("location.hash = '#add=' + encodeURIComponent('https://evil.example.com/x') + '&t=Evil'"); await sleep(250); let s = await qs(ctx);
+    if (s.fields.url !== 'https://example.com/good-a' || s.fields.title !== 'Good A') f.push('the fields were replaced behind the prompt: ' + JSON.stringify(s.fields)); if (!s.tok) f.push('the prompt went away'); if (s.bannerShown) f.push('a prefill banner appeared'); if (await ctx.ev("location.hash") !== '') f.push('the fragment was left in the address');
+    await qaToken(ctx); const file = putFile(await putsOf(ctx), 'reads'); if (!file) return [...f, 'nothing was published']; if (!file.articles.some(a => a.title === 'Good A')) f.push('Good A was not published'); if (file.articles.some(a => /evil/.test(a.url + a.title))) f.push('the crafted link was published'); return f; } },
+  { id: 'TC-QA-F06b review G5 F1: a prefill arriving during a publish does not change the fields or the entry; a retry after a failure still sends the owner\'s entry', width: 1280, token: true, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx, { putDelay: 500, put: 500 }); await ctx.ev("document.getElementById('addOpen').click()"); await qaFill(ctx, { url: 'https://example.com/good-b', title: 'Good B' }); await qaClick(ctx, 'qa-publish');
+    await sleep(150); await ctx.ev("location.hash = '#add=' + encodeURIComponent('https://evil.example.com/y') + '&t=Evil'"); await sleep(150); let s = await qs(ctx);
+    if (s.fields.url !== 'https://example.com/good-b' || s.fields.title !== 'Good B') f.push('fields replaced during the publish: ' + JSON.stringify(s.fields)); if (s.bannerShown) f.push('banner shown during a publish');
+    await settle(ctx); s = await qs(ctx); if (s.fields.url !== 'https://example.com/good-b') f.push('after the failure the sheet shows ' + s.fields.url); if (!s.sheet || !s.admin) f.push('state after the failure: ' + JSON.stringify({ sheet: s.sheet, admin: s.admin })); return f; } },
+  { id: 'TC-QA-F06b review G5 F2: the banner goes with the sheet and with a Paste; an empty sheet never says "Prefilled"', width: 1280, hash: '#add=' + encodeURIComponent('https://example.com/f2'), fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; let s = await qs(ctx); if (!s.bannerShown) return ['no banner to start with'];
+    await qaClose(ctx); await qaOpenGear(ctx); s = await qs(ctx); if (s.bannerShown) f.push('the banner shows on a reopened sheet'); await qaClose(ctx);
+    await ctx.ev("location.hash = '#add=' + encodeURIComponent('https://example.com/f2b')"); await sleep(200); await qaClip(ctx, 'https://example.com/pasted'); await qaClick(ctx, 'qa-paste', 100); s = await qs(ctx); if (s.bannerShown) f.push('the banner stayed after the owner pasted their own link'); return f; } },
+  { id: 'TC-QA-F06b review G5 F3: an unusable #add= value leaves the owner\'s typed text and draft alone and says so', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://example.com/mine', title: 'Mine', comment: 'my take', tags: 'a' });
+    await ctx.ev("location.hash = '#add=garbage'"); await sleep(250); const s = await qs(ctx);
+    if (s.fields.url !== 'https://example.com/mine' || s.fields.title !== 'Mine' || s.fields.comment !== 'my take' || s.fields.tags !== 'a') f.push('the typed text was erased: ' + JSON.stringify(s.fields)); if (!s.session.includes('studio-quick-draft')) f.push('the draft key was deleted'); if (!/could not be used/i.test(s.msg)) f.push('no message: "' + s.msg + '"'); return f; } },
+  { id: 'TC-QA-F06b review G5 F5: values from a prefill that the owner never edited are not kept when the owner unlocks for editing', width: 1280, hash: '#add=' + encodeURIComponent('https://example.com/f5') + '&t=Unedited', fixtures: TWO, ...qaWith(), check: async ctx => {
+    const f = []; await stubGh(ctx); await qaClick(ctx, 'qa-unlock', 30); await qaToken(ctx); let s = await qs(ctx); if (!s.admin) return ['did not unlock'];
+    if (s.session.includes('studio-quick-draft')) f.push('the unedited prefill stayed in the draft key'); await ctx.ev("document.getElementById('addOpen').click()"); s = await qs(ctx); if (s.fields.url || s.fields.title || s.bannerShown) f.push('it came back: ' + JSON.stringify(s.fields)); return f; } },
   { id: 'TC-QA-D01 fill the sheet, reload the page in the same tab, open the sheet: the values are restored', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
     const f = []; await qaOpenGear(ctx); await qaFill(ctx, { url: 'https://open.spotify.com/episode/d01', title: 'D01 title', comment: 'D01 take', tags: 'ai, x', kind: 'podcast' }); await reloadPage(ctx);
     let s = await qs(ctx); if (s.sheet) f.push('the sheet reopened by itself without #add'); await qaOpenGear(ctx); s = await qs(ctx);

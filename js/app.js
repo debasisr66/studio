@@ -792,7 +792,7 @@ function openAdd() {
   qa.kindTouched = !!(d && d.kind);
   qaRenderSections(defaultSection());
   qaSetKind(d && d.kind ? d.kind : RL.suggestKind(RL.normalizeUrl(qf('url').value)));
-  qaClearErrors(); qaCount(); qaDest(); qaBusy(false);
+  qaClearErrors(); qaCount(); qaDest(); qaBusy(false); $('#qa-prefill').hidden = true;
   $('#qa-unlock').parentElement.hidden = document.body.classList.contains('admin');
   $('#addBg').classList.add('open'); qf('url').focus();
   qaApplyHash();
@@ -808,18 +808,27 @@ function closeAdd(clear) {
 function qaTake(text) {
   const link = RL.extractLink(text);
   if (!link) { qaShowErrors({url: 'Enter a valid web address starting with http:// or https://'}); return false; }
-  qaClearErrors(); qf('url').value = link; qa.kindTouched = false; qaDest(); qaSetKind(RL.suggestKind(link));
+  qaClearErrors(); $('#qa-prefill').hidden = true; qf('url').value = link; qa.kindTouched = false; qaDest(); qaSetKind(RL.suggestKind(link));
   if (!qf('title').value.trim()) qf('title').value = RL.extractTitle(text);
   qaSave(); return true;
 }
 /* #add=<link>[&t=<title>] (QA-09): fills the sheet and says so. It only prefills: it never posts, publishes or asks for a token, and the address is cleaned afterwards. */
-function qaApplyHash() { const p = RL.parseAddHash(location.hash); if (p) qaPrefill(p); }
+function qaApplyHash() {
+  const p = RL.parseAddHash(location.hash); if (!p) return;
+  // not while the owner is posting (token prompt open or a publish running: the entry is already captured, so replacing the fields would show one thing and send another), and an unusable value leaves what the owner typed alone (review G5 F1, F3)
+  if (qa.busy || qa.tokDone || !p.url) {
+    try { history.replaceState(null, '', location.pathname + location.search); } catch {}
+    $('#qa-msg').textContent = p.url ? 'A link arrived in the address while you were posting, so it was ignored.' : p.error;
+    return;
+  }
+  qaPrefill(p);
+}
 function qaPrefill(p) {
-  qaClearErrors(); qf('url').value = ''; qf('title').value = ''; qf('comment').value = ''; qf('tags').value = ''; qf('show').value = ''; qa.kindTouched = false; $('#qa-prefill').hidden = true;
+  qaClearErrors(); qf('url').value = ''; qf('title').value = ''; qf('comment').value = ''; qf('tags').value = ''; qf('show').value = ''; qa.kindTouched = false; qa.warned = ''; $('#qa-prefill').hidden = true;
   if (p.url) {
-    qf('url').value = p.url; qf('title').value = p.title; qaSetKind(RL.suggestKind(p.url)); $('#qa-prefill').textContent = 'Prefilled from a link: check it'; $('#qa-prefill').hidden = false;
+    qf('url').value = p.url; qf('title').value = p.title; qaSetKind(RL.suggestKind(p.url)); $('#qa-prefill').hidden = false; setTimeout(() => { $('#qa-prefill').textContent = 'Prefilled from a link: check it'; }, 0);   // text set after the node is shown, so a screen reader announces it (G5 F6)
     if (p.titleError) $('#qa-msg').textContent = p.titleError;
-  } else $('#qa-msg').textContent = p.error;
+  }
   qaCount(); qaDest(); qaSave();
   try { history.replaceState(null, '', location.pathname + location.search); } catch {}   // the fragment is read once; the draft key carries the values on
   (p.url ? qf('title') : qf('url')).focus();
@@ -875,7 +884,7 @@ $('#tokForm').addEventListener('submit', async ev => {
 });
 $('#qa-unlock').onclick = async () => {   // unlock without posting (to edit or delete); the draft stays
   if (qa.busy) return;
-  if (await askToken($('#qa-unlock'))) { closeAdd(false); say('Admin unlocked.'); }
+  if (await askToken($('#qa-unlock'))) { closeAdd(!$('#qa-prefill').hidden); say('Admin unlocked.'); }   // an unedited prefill is not kept (G5 F5); everything else is
 };
 
 /* Post and publish / Post as draft. The entry is validated by the very same functions as the two composers; a publish writes the one affected file through
