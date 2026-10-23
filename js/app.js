@@ -102,6 +102,7 @@ async function boot() {
   state.cat = RL.categoryFromHash(location.hash) || RL.defaultCategory(RL.categoryCounts(state.reads.articles.concat(state.reads.books)));
   renderAll();
   if (followBlogLink()) showId('podcasts');
+  else { const s = SECTIONS.find(x => location.hash === '#' + x[0]); if (s) showId(s[0]); }   // UX-04: the page above grew after the browser placed the anchor, so go there again (closed list; any other fragment is left alone)
   if (RL.isReadsHash(location.hash) && location.hash !== '#reads') showReads();   // '#reads/others' matches no element id, so the browser cannot scroll to it
   if (tokenStore.get()) enableAdmin();   // always reached: renderAll never throws
   if (RL.isAddHash(location.hash)) openAdd();   // the Home Screen entry (QA-08)
@@ -242,6 +243,7 @@ function renderReads() {
   paint($('#articlesFeed'));
 
   const b = state.reads.books.map((x, i) => ({x, i})).filter(r => RL.categoryOf(r.x) === cat);
+  $('#booksBlock').classList.toggle('is-empty', !b.length);
   $('#booksFeed').innerHTML = b.length ? b.map(({x, i}) => `
     <article class="item">${tools('book', i, 'book ' + (x.title || ''))}<h3>${esc(x.title)}</h3><div class="when">${esc(x.author)}${x.year ? ' · ' + esc(x.year) : ''}</div>${x.note ? `<div class="body">${esc(x.note)}</div>` : ''}</article>`).join('') : '<div class="empty">Nothing here yet.</div>';
 }
@@ -306,6 +308,7 @@ function renderAll() {
   ], (name, err) => {
     console.error('Studio: the ' + name + ' section failed to render', err);
     (SECTION_BOX[name] || []).forEach((sel, i) => { const el = $(sel); if (el) el.innerHTML = i === 0 ? window.SafeLib.fallbackHtml() : ''; });
+    if (name === 'reads') $('#booksBlock').classList.add('is-empty');   // no empty Books heading under the fallback line
   });
 }
 
@@ -347,6 +350,10 @@ function setTheme(t) {
 }
 setTheme(lsGet('studio-theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
 $('#theme').onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+/* the one ordered list (UX-01, UX-03, UX-07): both navs are built from it, in page order; the sections in index.html follow the same order */
+const SECTIONS = [['products', 'Products', '◧'], ['updates', 'Updates', '↻'], ['reads', 'Reads', '☰'], ['podcasts', 'Podcasts', '♪']];
+$('#navlinks').innerHTML = SECTIONS.map(s => `<a href="#${s[0]}">${s[1]}</a>`).join('');
+$('#navbottom').innerHTML = SECTIONS.map(s => `<a href="#${s[0]}"><b aria-hidden="true">${s[2]}</b>${s[1]}</a>`).join('');
 const io = new IntersectionObserver(es => es.forEach(e => {
   if (e.isIntersecting) document.querySelectorAll('nav a').forEach(a => {
     if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current');

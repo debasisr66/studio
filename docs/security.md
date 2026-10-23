@@ -331,3 +331,17 @@ These are the author's notes only. The independent review is [reviews/QA-A.md](r
 | T33 guards | one function, `publishContent`, used by Publish changes and Quick add; `publishFile` also refuses when the page has not finished loading the file (review finding F1, fixed) | smoke L06, L09 |
 
 Other changes to review: publish requests now time out after 20 s where `AbortSignal.timeout` exists (F6); the whole file is written, so pending inline changes to the same file go public with a Quick add and the sheet warns first (F3); `reads-lib.js` budget 20 to 26 KB. Known and accepted: the sandbox and the real site share the origin `debasisr66.github.io`, so in one tab the token key and the draft key are shared between `/studio` and `/studio-sandbox` (F11); a model review is not a human audit; Face ID autofill may not work (convenience only).
+
+### 11.13 SPEC-UX Phase A: author's notes (2026-10-23; the verdict is the reviewer's, not the author's)
+
+These are the author's notes only. The independent review is [reviews/UX-04.md](reviews/UX-04.md); this section says nothing about pass or fail. Independent review: [reviews/UX-04.md](reviews/UX-04.md), verdict APPROVE WITH CONDITIONS.
+
+| Item | What was built | Evidence |
+|------|----------------|----------|
+| New input path | the URL fragment already reached the router (`#reads/…`, `#blog`, `#add`). Phase A adds one use: after boot, `SECTIONS.find(x => location.hash === '#' + x[0])` then `scrollIntoView` on that element. The match is exact equality against four literals, so the fragment is never a selector, an id lookup or markup | unit L04 (no line mixes `location.hash` with `innerHTML`, no fragment used as a selector), smoke L04 (eight hostile fragments), L01 to L03 |
+| Navs | built by `innerHTML` from the constant `SECTIONS` only (no content file, no fragment) | unit N02, smoke N01 |
+| Visitor invariant | no new storage key, cookie, request or host; the in-view observer still only sets `aria-current` | unit (key set), smoke privacy case |
+| CSP and workflows | `index.html` CSP meta unchanged; no inline script or style; `.github` untouched | validator, unit |
+| Layout | one column in Reads; Books block hidden by a class when the open sub-item has none (owner still sees it, so `+ Add book` is reachable) | smoke P04, P02 |
+
+Not covered by the author: Safari and real-device behaviour of `scrollIntoView` and smooth scrolling; a human audit. A model review is not a penetration test.
