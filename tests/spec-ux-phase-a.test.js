@@ -100,5 +100,5 @@ test('UX privacy: no new storage key, cookie or network host (the invariant of d
 test('TC-UX-F02 the footer says what each date is: the release date of the version, and when the product data last changed', () => {
   assert.ok(!/Synced from GitHub/.test(html), 'the old, misleading label is gone');
   assert.ok(/Product data updated · <span id="synced">/.test(html));
-  assert.ok(/'Studio v' \+ r\.version \+ ' · ' \+ fmtDate\(r\.date\)/.test(app) || /versionBtn'\)\.textContent = 'Studio v' \+ r\.version \+ ' · '/.test(app), 'the version button carries the release date');
+  assert.ok(/versionBtn'\)\.textContent = 'Studio v' \+ r\.version \+ \(r\.date \? ' · ' \+ fmtDate\(r\.date\)/.test(app), 'the version button carries the release date');
 });
