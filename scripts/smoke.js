@@ -1003,6 +1003,21 @@ const CASES = [
     const f = []; if (!/No products to show yet/.test(r.g)) f.push('Products: ' + r.g); if (!/No releases published yet/.test(r.u)) f.push('Updates: ' + r.u); if (!/Nothing here yet/.test(r.r)) f.push('Reads: ' + r.r); if (!/No podcasts yet/.test(r.p)) f.push('Podcasts: ' + r.p); return f; } },
   { id: 'TC-SH-B09 a very long title, comment and tag wrap: no sideways scroll at 375 px', width: 375, fixtures: ['sh-long-text', 'healthy'], ...uxWith(), noErrors: true, check: async ctx => {
     const o = await ctx.ev('document.documentElement.scrollWidth - innerWidth'); const there = await ctx.ev("document.getElementById('articlesFeed').textContent.includes('Very long title')"); return [...(o > 1 ? ['overflow ' + o + ' px'] : []), ...(there ? [] : ['the long read was not rendered'])]; } },
+  /* ---------- SPEC-PC Phase C: PC-06 and PC-07 ---------- */
+  { id: 'TC-PC-K01 the Reads composer and the Quick add type list no longer offer Podcast; a hint points to the Podcasts section', width: 1280, token: true, fixtures: TWO, ...qaWith(), check: async ctx => {
+    const r = await ctx.ev(`({ cf: [...document.querySelectorAll('#cf-kind option')].map(o => o.value), qa: [...document.querySelectorAll('#qa-type option')].map(o => o.value), hint: !!document.querySelector('#composerForm a[href="#podcasts"]') })`);
+    const f = []; if (r.cf.includes('podcast')) f.push('Reads composer still offers Podcast'); if (r.qa.includes('podcast')) f.push('Quick add type list still offers Podcast'); if (!r.hint) f.push('no hint to Podcasts in the Reads composer'); if (r.cf.length < 4) f.push('the other types went missing: ' + r.cf); return f; } },
+  { id: 'TC-PC-K02 an existing read with kind podcast still renders, and its edit form keeps that type', width: 1280, token: true, fixtures: ['reads-kind-podcast', 'healthy'], ...uxWith(), noErrors: true, check: async ctx => {
+    const f = [], t = await ctx.ev("document.getElementById('articlesFeed').textContent"); if (!t.includes('An older read filed as a podcast')) f.push('the read did not render');
+    const k = await ctx.ev(`(() => { const b = [...document.querySelectorAll('#articlesFeed [data-edit]')].find(x => /older read/.test(x.closest('.item').textContent)); if (!b) return 'no edit button'; b.click(); return document.getElementById('cf-kind').value; })()`); if (k !== 'podcast') f.push('edit form type: ' + k);
+    await ctx.ev("document.getElementById('cf-cancel').click(); document.getElementById('composerOpen').click()"); const o = await ctx.ev("[...document.querySelectorAll('#cf-kind option')].map(x => x.value)"); if (o.includes('podcast')) f.push('the extra Podcast option stayed for a new read'); return f; } },
+  { id: 'TC-PC-N02 the podcast composer refuses a link that is already in Podcasts (also with tracking parameters)', width: 1280, token: true, fixtures: PODS, check: async ctx => {
+    const f = [], before = await ctx.ev("document.querySelectorAll('#podcastFeed .item').length"); await fillPodcast(ctx, { url: 'https://open.spotify.com/show/abc123?utm_source=x', title: 'Duplicate' }); await submitPodcast(ctx);
+    const e = await ctx.ev("document.getElementById('pf-url-err').textContent"), n = await ctx.ev("document.querySelectorAll('#podcastFeed .item').length");
+    if (!/already in your podcasts/.test(e)) f.push('no duplicate message: "' + e + '"'); if (n !== before) f.push('the duplicate was added (' + before + ' to ' + n + ' items)'); return f; } },
+  { id: 'TC-PC-N02 Quick add refuses a podcast link that is already in Podcasts, without any API call', width: 1280, token: true, fixtures: PODS, ...qaWith(), check: async ctx => {
+    await stubGh(ctx); await ctx.ev("document.getElementById('addOpen').click()"); await qaFill(ctx, { kind: 'podcast', url: 'https://open.spotify.com/show/abc123', title: 'Duplicate' }); await qaClick(ctx, 'qa-draft', 100);
+    const s = await qs(ctx), f = []; if (!/already in your podcasts/.test(s.errs.url)) f.push('no duplicate message: "' + s.errs.url + '"'); const n = await ctx.ev('window.__puts.length'); if (n) f.push(n + ' write(s) made'); return f; } },
 ];
 
 async function main() {
