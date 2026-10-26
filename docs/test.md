@@ -233,6 +233,7 @@ Owner report: the footer said "Synced from GitHub · 19 Oct 2026" although the s
 | Risk | Change | Evidence |
 |------|--------|----------|
 | #7 reads whole-file validation | `RL.validateReadsFile` (same rules and messages as CI; `validate-site.js` delegates to it) and `publishContent` runs it before any write | `tests/risk-fixes.test.js` R01 to R04 (identical to CI on every reads fixture and on the live file; budget); smoke `TC-RISK-R05` failed first (the publish went through with an entry CI would refuse), now refused with nothing written. `reads-lib.js` is 26,582 of 26,624 bytes: no room left |
+| Owner-reported: no search in Others | the toolbar threshold went from 4 to 2 reads (Reads) and 2 entries (Podcasts); `TC-RC-F01` (search in Others with 5 reads) passed at once, `TC-RC-F02` (3 reads) failed first | smoke |
 | #8 dark focus ring | the real-Tab case also runs in the dark theme | passed at once (the ring is about 8:1); shown failing when the dark ring colour is made nearly invisible |
 | #2 CI not required | health check item 5: `CI is red on main` when the newest finished run of `ci.yml` on `main` failed | unit C01 to C04 failed first; runbook row; the live check against GitHub returned HEALTHY |
 | #3 not a human audit | human checkpoint and "ask for a human review" list in the review gate | documentation only; the owner's acknowledgement is the control |

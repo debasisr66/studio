@@ -11,7 +11,7 @@ Spec: [spec.md](spec.md) (`SPEC-PC`). IDs `TC-PC-<group><nn>`. ⬜ not run.
 | TC-PC-U02 | PC-02 | Card shows title link, show, platform, date, comment, tags | pass | ✅ |
 | TC-PC-U03 | PC-02 | Listen link opens a new tab with `noopener noreferrer` | pass | ✅ |
 | TC-PC-U04 | PC-02 | Share on LinkedIn, copy link, native share work | pass | ✅ |
-| TC-PC-U05 | PC-02 | Newest first; chips and search only with ≥ 4 entries | pass | ✅ |
+| TC-PC-U05 | PC-02 | Newest first; chips and search only with ≥ 2 entries (was 4 until 2026-10-26) | pass | ✅ |
 | TC-PC-U06 | PC-02 | Empty state text | pass | ✅ |
 | TC-PC-U07 | PC-02 | No iframe, audio or third-party image in the DOM; no new network host | pass | ✅ |
 | TC-PC-U08 | PC-02 | 375 px and 1280 px: no overflow | pass | ✅ |

@@ -237,7 +237,7 @@ function renderReads() {
   const rows = mine.filter(x => shown.has(x.e));
 
   const tags = RL.allTags(mine.map(x => x.e));
-  $('#toolbar').hidden = mine.length < 4;
+  $('#toolbar').hidden = mine.length < 2;
   $('#tagChips').innerHTML = tags.length ? [['', 'All'], ...tags.map(t => [t, '#' + t])].map(([t, lab]) =>
     `<button type="button" class="chip" data-filter="${esc(t)}" aria-pressed="${state.filter.tag === t}">${esc(lab)}</button>`).join('') : '';
   $('#readCount').textContent = mine.length && (state.filter.tag || state.filter.q) ? `Showing ${rows.length} of ${mine.length}` : '';
@@ -283,7 +283,7 @@ function renderPodcasts() {
   all.sort((a, b) => { const da = (a.e && a.e.added) || '', db = (b.e && b.e.added) || ''; return da === db ? a.i - b.i : (da < db ? 1 : -1); });   // newest first
   const shown = new Set(RL.filterPodcasts(all.map(x => x.e), state.pfilter)), rows = all.filter(x => shown.has(x.e));
   const tags = RL.podcastTags(all.map(x => x.e)), n = all.length;
-  $('#podcastToolbar').hidden = n < 4;
+  $('#podcastToolbar').hidden = n < 2;
   $('#podcastChips').innerHTML = tags.length ? [['', 'All'], ...tags.map(t => [t, '#' + t])].map(([t, lab]) =>
     `<button type="button" class="chip" data-pfilter="${esc(t)}" aria-pressed="${state.pfilter.tag === t}">${esc(lab)}</button>`).join('') : '';
   $('#podcastCount').textContent = n && (state.pfilter.tag || state.pfilter.q) ? `Showing ${rows.length} of ${n}` : '';
