@@ -36,7 +36,7 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | REQ-54 | TC-RC-U01–U08, L01–L04, E01–E04, S01–S02, B01–B02 | ✅ U, L, E (RC Phase B) · ⬜ S01–S02, B01–B02 (Phase C) |
 | REQ-55 | TC-PC-D01–D03, V01–V07, N01–N02, S01 | ✅ D01–D03, V01–V07 (PC Phase A) · ⬜ N01–N02 (Phase C) · S01 owner step 🔒 |
 | REQ-56 | TC-PC-U01–U08, A01–A06, R01–R05, K01–K02 | ✅ U, A, R01–R04 (PC Phase B) · ⬜ R05 (release PR), K01–K02 (Phase C) |
-| REQ-57 | TC-UX-S01–S02, P01–P04, N01–N05, L01–L05, A01–A05, F01 | ⬜ (F01 owner step 🔒) |
+| REQ-57 | TC-UX-S01–S02, P01–P04, N01–N05, L01–L05, A01–A05, F01 | ✅ (F01 run by the owner on a real iPhone via the sandbox, 2026-10-26; owner-reported) |
 | REQ-58 | Regression suite (§D) | ⬜ |
 | REQ-59 | Artefact checklist ([plan.md](plan.md) "Artefact update matrix") | ⬜ |
 | REQ-60 | TC-QA-E01–E05, P01–P07, K01–K05, U01–U07, L01–L07, D01–D04, H01–H03, S01–S03, X01–X02 ✅ (§M); O01–O04, O06, O07 | ✅ except O: owner steps 🔒 |
@@ -202,7 +202,7 @@ Owner report: the footer said "Synced from GitHub · 19 Oct 2026" although the s
 | Validator | OK; total 139,973 bytes, `site.css` and `index.html` within budget, CSP unchanged |
 | Visual check | browser pane at about 375 px and desktop width: hero and first product |
 | Independent review | [reviews/UX-05.md](reviews/UX-05.md) (Opus 5.5, gate G3): first verdict APPROVE WITH CONDITIONS (two high findings the author's tests could not see: dark-theme contrast about 4.1:1 on version tags and the active bottom-nav item, and 36 px chips on real touch screens), after the fixes **APPROVE** |
-| Not done or not verified | **F01, the owner's walk-through**; a real iPhone, Safari, a screen reader; true browser zoom (proxy used); focus order of the owner tools and dialogs was not part of this pass; contrast of non-text UI (borders) was not measured; the focus-ring contrast check runs in the light theme only (the dark ring is about 8:1 by arithmetic) |
+| Not done or not verified | **F01, the owner's walk-through: done by the owner on a real iPhone (sandbox), 2026-10-26, owner-reported**; a screen reader, Safari, a screen reader; true browser zoom (proxy used); focus order of the owner tools and dialogs was not part of this pass; contrast of non-text UI (borders) was not measured; the focus-ring contrast check runs in the light theme only (the dark ring is about 8:1 by arithmetic) |
 
 ---
 

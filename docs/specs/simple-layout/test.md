@@ -25,7 +25,7 @@ Spec: [spec.md](spec.md) (`SPEC-UX`). IDs `TC-UX-<group><nn>`. ⬜ not run. Case
 | TC-UX-A03 | UX-05 | 200% zoom: no loss of content or function | pass | ✅ |
 | TC-UX-A04 | UX-05 | `prefers-reduced-motion` respected | pass | ✅ |
 | TC-UX-A05 | UX-05 | No horizontal scroll at 375 px and 1280 px | pass | ✅ |
-| TC-UX-F01 | UX-06 | Owner walk-through: within 5 seconds say what Studio is, find Penny, find the latest release (owner step) | 🔒 | ⬜ |
+| TC-UX-F01 | UX-06 | Owner walk-through: within 5 seconds say what Studio is, find Penny, find the latest release (owner step) | 🔒 | ✅ owner, 2026-10-26: run on the sandbox, on a real iPhone |
 
 Phase A run 2026-10-23: unit `tests/spec-ux-phase-a.test.js` (12) and 25 smoke cases (`TC-UX-*`, `scripts/smoke.js`), all green; see [test.md section N](../../test.md). Not run: A01 to A04 (Phase B) and F01 (owner step). N04 here covers the skip link and the header tab order only; the full keyboard pass is A01. P02: Reads has two owner controls (see the spec status log).
 
@@ -38,3 +38,4 @@ Exit criteria: P0 rows ✅ (UX-01 to UX-04); P1 ✅ or deferred in writing.
 - 2026-10-21: Rewritten after the owner dropped usage-based ordering: 22 cases (was 42).
 - 2026-10-23: Phase A cases run and green (S, P, N, L, A05); A01 to A04 and F01 not run.
 - 2026-10-26: Phase B cases run and green (A01 to A04, P03 at 375 px, F01 measured part); F01 owner walk-through still pending. A03 uses widths 320 and 640 as the proxy for zoom. See [test.md section P](../../test.md).
+- 2026-10-26: F01 done by the owner on the sandbox on a real iPhone (owner-reported; no timing or notes recorded). The blank space under the footer found in that run was fixed before merge (PR #30).
