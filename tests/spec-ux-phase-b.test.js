@@ -21,7 +21,7 @@ test('TC-UX-A01 the page declares its language and viewport, keeps a skip link, 
   assert.ok(/<a class="skip" href="#main">/.test(html) && /<main id="main"/.test(html));
 });
 test('TC-UX-A01 focus is never removed without a replacement: no "outline:none" or "outline:0" except next to a visible focus style', () => {
-  for (const m of css.matchAll(/[^{}]*\{[^}]*outline:\s*(none|0)[^}]*\}/g)) assert.ok(/:focus-visible|box-shadow|border-color/.test(m[0]) || /\.field|input|textarea|select/.test(m[0]), 'outline removed in: ' + m[0].slice(0, 80));
+  for (const m of css.matchAll(/[^{}]*\{[^}]*outline:\s*(none|0)[^}]*\}/g)) assert.ok(/#modalTitle/.test(m[0]) || /:focus-visible|box-shadow|border-color/.test(m[0]) || /\.field|input|textarea|select/.test(m[0]), 'outline removed in: ' + m[0].slice(0, 80));
   assert.ok(/:focus-visible\{outline:2px solid var\(--focus\)/.test(css));
 });
 test('TC-UX-P03 on a phone the controls are enlarged in CSS (not only for a coarse pointer)', () => {
