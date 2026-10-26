@@ -101,8 +101,8 @@ async function boot() {
   $('#grid').removeAttribute('aria-busy');
   state.cat = RL.categoryFromHash(location.hash) || RL.defaultCategory(RL.categoryCounts(state.reads.articles.concat(state.reads.books)));
   renderAll();
-  if (followBlogLink()) showId('podcasts');
-  else { const s = SECTIONS.find(x => location.hash === '#' + x[0]); if (s) showId(s[0]); }   // UX-04: the page above grew after the browser placed the anchor, so go there again (closed list; any other fragment is left alone)
+  if (followBlogLink()) landOn('podcasts');
+  else { const s = SECTIONS.find(x => location.hash === '#' + x[0]); if (s) landOn(s[0]); }   // UX-04: the page above grew after the browser placed the anchor, so go there again (closed list; any other fragment is left alone)
   if (RL.isReadsHash(location.hash) && location.hash !== '#reads') showReads();   // '#reads/others' matches no element id, so the browser cannot scroll to it
   if (tokenStore.get()) enableAdmin();   // always reached: renderAll never throws
   if (RL.isAddHash(location.hash)) openAdd();   // the Home Screen entry (QA-08)
@@ -208,6 +208,14 @@ function renderTabs(tabs) {
 /* '#reads/others' matches no element id, so the browser cannot scroll to it: bring the section into view ourselves, instantly (smooth scrolling is cancelled by layout changes during load). */
 const showId = id => $('#' + id).scrollIntoView({behavior: 'instant', block: 'start'});
 const showReads = () => showId('reads');
+/* go to a section, and once more when the late fonts and images have moved the layout (only if the visitor has not scrolled since) */
+function landOn(id) {
+  showId(id); let done = false;
+  const stop = () => { done = true; ro.disconnect(); ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(t => window.removeEventListener(t, stop)); };
+  const ro = new ResizeObserver(() => { if (!done && location.hash === '#' + id) showId(id); });
+  ro.observe(document.body); ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(t => window.addEventListener(t, stop, {passive: true}));
+  setTimeout(stop, 4000);
+}
 function selectCategory(c, focusTab) {
   if (!RL.CATEGORIES.includes(c)) return;
   state.cat = c; state.filter = {tag: '', q: ''}; $('#readSearch').value = '';
