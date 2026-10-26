@@ -1,0 +1,85 @@
+{
+  "books": [
+    {
+      "title": "AI Engineering: Building Applications with Foundation Models (Full Colour Indian Edition)",
+      "author": "by Chip Huyen (Author)",
+      "year": "2024-25",
+      "note": "It is a great book. It would give clarity. Of course after this industry and tech changed a lot, but fundamentals count. \nhttps://www.amazon.in/AI-Engineering-Building-Applications-Foundation/dp/9355426666"
+    }
+  ],
+  "articles": [
+    {
+      "id": 9001,
+      "added": "2026-10-26",
+      "kind": "article",
+      "category": "technical",
+      "title": "Very long title LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+      "url": "https://example.com/long",
+      "comment": "Very long comment LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+      "tags": [
+        "taaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ]
+    },
+    {
+      "id": 1792481723533,
+      "added": "2026-10-20",
+      "url": "https://code.claude.com/docs/en/mcp-quickstart",
+      "title": "Connect to MCP servers - Claude",
+      "comment": "Add an MCP server to Claude Code, verify the connection, and find the configuration on disk.\n\nThe Model Context Protocol (MCP) lets Claude Code use tools beyond its built-in set, such as searching an issue tracker, querying a database, or controlling a web browser.",
+      "kind": "article",
+      "tags": [
+        "ai",
+        "claude"
+      ]
+    },
+    {
+      "id": 1792481607255,
+      "added": "2026-10-20",
+      "url": "https://sukurcf.github.io/resources/cheatsheets/github-copilot-cheatsheet.html",
+      "title": "Copilot Cheatsheet",
+      "comment": "Everything in one place, got it from someone, handy and useful.",
+      "kind": "article",
+      "tags": [
+        "ai",
+        "copilot"
+      ]
+    },
+    {
+      "id": 1792477883409,
+      "added": "2026-10-20",
+      "url": "https://www.youtube.com/watch?v=qGS9Ghnq1RU",
+      "title": "GPT Realtime 2 - Voice Agent (Soham Ray, Dr. Victor B - 22nd min)",
+      "comment": "How Voice agents are getting better by the day ... and about Tau2 bench!",
+      "kind": "article",
+      "tags": [
+        "ai",
+        "voice",
+        "agentic"
+      ]
+    },
+    {
+      "id": 1792410227740,
+      "added": "2026-10-19",
+      "url": "https://code.claude.com/docs/en/plugins/mods/overview",
+      "title": "Claude Code Mods - A hook, a control handle to verification and workflow!",
+      "comment": "Add panes, commands, and tool call rules to Claude Code with a mod. See what a mod can do, how to make or install one, and where mods run.\nA mod is a plugin that changes how Claude Code looks and behaves. It’s made of JavaScript or TypeScript event handlers:",
+      "kind": "article",
+      "tags": [
+        "ai",
+        "claudecode"
+      ]
+    },
+    {
+      "id": 1792407518753,
+      "added": "2026-10-19",
+      "url": "https://claude.com/blog/the-ai-native-sdlc-playbook",
+      "title": "AI Native SDLC - Claude Blog",
+      "comment": "The new norms of AI SDLC, how one would adopt, blend with various harness etc. The SDLC norms are changing fast, need to create a fail proof method",
+      "kind": "article",
+      "tags": [
+        "ai",
+        "sdlc"
+      ]
+    }
+  ]
+}
