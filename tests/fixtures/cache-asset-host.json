@@ -1,0 +1,26 @@
+{
+  "input": {
+    "synced_at": "2026-10-21T03:00:00Z",
+    "products": {
+      "o/a": {
+        "stars": 1,
+        "latest_release": {
+          "tag": "v1.0",
+          "download_url": "https://github.com/o/a/releases/tag/v1",
+          "assets": [
+            {
+              "name": "App.zip",
+              "download_url": "https://example.com/App.zip",
+              "size": 1
+            }
+          ]
+        }
+      }
+    }
+  },
+  "registry": [
+    {
+      "repo": "o/a"
+    }
+  ]
+}

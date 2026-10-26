@@ -31,7 +31,7 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 |-----|-------|--------|
 | REQ-50 | TC-SH-I01–I05, T01–T02 | ✅ (SH Phase A) |
 | REQ-51 | TC-SH-B01–B09 | ✅ B01–B04 · ⬜ B05–B09 (Phase C) |
-| REQ-52 | TC-SH-C01–C03, V01–V04, D01–D02 | ✅ (SH Phase B) · ⬜ A01–A03 (Phase C) |
+| REQ-52 | TC-SH-C01–C03, V01–V04, D01–D02, A01–A04 | ✅ (SH Phase B); SH-06 A01–A04 passed locally 2026-10-26 (review patch; [evidence](specs/stabilize-core-hub/test.md#status-log)) |
 | REQ-53 | TC-RC-D01–D04, M01–M03, V01–V04, X01 | ✅ (RC Phase A; X01 library half only, the third-tab half arrives with RC Phase B) |
 | REQ-54 | TC-RC-U01–U08, L01–L04, E01–E04, S01–S02, B01–B02 | ✅ U, L, E (RC Phase B) · ⬜ S01–S02, B01–B02 (Phase C) |
 | REQ-55 | TC-PC-D01–D03, V01–V07, N01–N02, S01 | ✅ D01–D03, V01–V07 (PC Phase A) · ⬜ N01–N02 (Phase C) · S01 owner step 🔒 |

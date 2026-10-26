@@ -38,9 +38,10 @@ Spec: [spec.md](spec.md) (`SPEC-SH`). IDs `TC-SH-<group><nn>`. ⬜ not run. Test
 ## Asset rules (A), SH-06
 | ID | Case | Expected | Status |
 |----|------|----------|--------|
-| TC-SH-A01 | `size` negative or fractional | error | ⬜ |
-| TC-SH-A02 | `download_url` host not `github.com` | error | ⬜ |
-| TC-SH-A03 | Real `cache.json` passes | no new warning | ⬜ |
+| TC-SH-A01 | `size` negative or fractional | error | ✅ |
+| TC-SH-A02 | `download_url` host not `github.com` | error | ✅ |
+| TC-SH-A03 | Real `cache.json` passes | no new warning | ✅ |
+| TC-SH-A04 | Cached tag and changelog version at 64 / 65 UTF-16 code units | 64 accepted; 65 rejected | ✅ |
 
 ## Docs (D) and timeouts (T), SH-07, SH-08
 | ID | Case | Status |
@@ -54,6 +55,7 @@ Spec: [spec.md](spec.md) (`SPEC-SH`). IDs `TC-SH-<group><nn>`. ⬜ not run. Test
 All P0 rows ✅ (SH-01, 02, 03, 04, 07); SH Phase A merged before any RC/PC/UX code; existing 142 tests unchanged and green; traceability in spec §10 filled.
 
 ## Status log
+- 2026-10-26: SH-06 test-first implementation against main `d69957eb5dee7c200fd5ad051076c2851260c510`. `node --test tests/spec-sh-assets.test.js`: 74 cases, 30 failed and 44 passed before the implementation; then 74 passed. A01 covers negative/fractional, missing, nonnumeric and non-finite sizes, plus zero and positive boundaries. A02 covers both release-page and asset URLs, deceptive hosts, credentials and existing URL hygiene. A03 validates the real registry/cache with zero errors and zero warnings. A04 uses a documented implementation limit of 64 UTF-16 code units (SH-06 gives no numeric bound), preserving tag and version formats. Full `node --test tests/*.test.js`: 350 passed on Node v25.2.1; `node scripts/validate-site.js`: zero errors, one existing duplicate-read warning. `node scripts/smoke.js` was attempted but Chrome exited before launch (`Chrome exited early (null)`); no browser case is credited for this run. SH-05 and other Phase C work remain open. Exact patch prepared for review; no merge or deployment performed.
 - 2026-10-21: Phase B run: `tests/spec-sh-phase-b.test.js` (11 tests, 8 failed first) plus two new smoke cases (version-less reads renders; newer `schema_version` shows the Reads fallback only). Unit tests 164 pass; smoke 15 of 15 (18 s); validator OK. D01: add, hide, retire and recategorise executed as written in OPERATIONS.md (outputs match; one extra harmless warning documented); `gh workflow run`, `gh run list` and `gh secret list` run earlier or now. D02: a new test checks every relative link and heading anchor in README and docs/ (all resolve). C04 note: TC-SH-V04 for `podcasts.json` follows with SPEC-PC; the publish-over-a-newer-file guard in the admin is by code inspection (no stubbed-API test yet).
 - 2026-10-21: Phase A run: unit tests `tests/safe-lib.test.js` (11) and `scripts/smoke.js` (13 cases). Smoke cases failed on the unguarded v1.5 page (7 of 13 failed locally, 6 of 13 passed in the CI red drill) and pass with the change: 13 of 13 locally in 16 s and on GitHub's runner in 29 s. Red proof (B04): a throwaway branch with the old `app.js` made only the smoke step fail while unit tests and the validator stayed green; branch deleted. I03: the fallback is a constant string (unit-tested) and no exception text appears on the page (smoke). Cases B05-B09, C, V, A, D remain for later phases.
 - 2026-10-21: Draft created; nothing run.

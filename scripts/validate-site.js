@@ -14,6 +14,11 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const isObj = v => v && typeof v === 'object' && !Array.isArray(v);
 const isStr = v => typeof v === 'string';
 const httpUrl = RL.isPublishableUrl;   // strict rule, one source (TR-01): http(s) only, no whitespace/control characters, no credentials, <= 2048 chars
+// SH-06: compare the parsed hostname only after the shared clean-URL check.
+const githubUrl = value => httpUrl(value) && new URL(value).hostname === 'github.com';
+const RELEASE_URL_HINT = 'a clean http(s) address hosted on github.com (no spaces, control characters or login details)';
+// SH-06 leaves the numeric bound open; 64 UTF-16 code units keeps badges short.
+const VERSION_TEXT_MAX = 64;
 const URL_HINT = 'a clean http(s) address (no spaces, control characters or login details)';
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const KNOWN_CATEGORIES = ['Productivity', 'Information', 'Tools', 'Education', 'Finance', 'Health', 'Developer', 'Writing'];
@@ -69,9 +74,15 @@ function validateCache(cache, registry, now = Date.now()) {
     if (r !== null && r !== undefined) {
       if (!isObj(r)) { errors.push(`${at}: latest_release must be an object or null`); continue; }
       if (!isStr(r.tag) || !r.tag) errors.push(`${at}: latest_release.tag is required`);
-      if (!httpUrl(r.download_url)) errors.push(`${at}: latest_release.download_url must be ${URL_HINT}`);
+      if (isStr(r.tag) && r.tag.length > VERSION_TEXT_MAX) errors.push(`${at}: latest_release.tag must be at most ${VERSION_TEXT_MAX} characters`);
+      if (!githubUrl(r.download_url)) errors.push(`${at}: latest_release.download_url must be ${RELEASE_URL_HINT}`);
       if (!Array.isArray(r.assets)) errors.push(`${at}: latest_release.assets must be an array`);
-      else r.assets.forEach((a, i) => { if (!isObj(a) || !isStr(a.name) || !httpUrl(a.download_url)) errors.push(`${at}: assets[${i}] needs a name and a download_url that is ${URL_HINT}`); });
+      else r.assets.forEach((a, i) => {
+        if (!isObj(a)) { errors.push(`${at}: assets[${i}] must be an object`); return; }
+        if (!isStr(a.name)) errors.push(`${at}: assets[${i}].name must be a string`);
+        if (!githubUrl(a.download_url)) errors.push(`${at}: assets[${i}].download_url must be ${RELEASE_URL_HINT}`);
+        if (!Number.isInteger(a.size) || a.size < 0) errors.push(`${at}: assets[${i}].size must be a non-negative integer`);
+      });
     }
   }
   if (Array.isArray(registry)) registry.filter(p => p && p.repo && !p.hidden && !cache.products[p.repo])
@@ -181,7 +192,7 @@ function validateChangelog(c) {
   c.releases.forEach((r, i) => {
     const at = `changelog.json[${i}]`;
     if (!isObj(r)) return errors.push(`${at}: must be an object`);
-    if (!isStr(r.version) || !VERSION_RE.test(r.version)) errors.push(`${at}: version must look like 1.3 or 1.3.1`);
+    if (!isStr(r.version) || r.version.length > VERSION_TEXT_MAX || !VERSION_RE.test(r.version)) errors.push(`${at}: version must look like 1.3 or 1.3.1 (at most ${VERSION_TEXT_MAX} characters)`);
     else if (i > 0 && isObj(c.releases[i - 1]) && isStr(c.releases[i - 1].version) && VERSION_RE.test(c.releases[i - 1].version)) {
       const d = vcompare(c.releases[i - 1].version, r.version);
       if (d === 0) errors.push(`${at}: duplicate version ${r.version}`);
@@ -412,6 +423,10 @@ const RULES = [
   { id: 'cache-synced-future', fn: 'validateCache', level: 'error', match: /in the future/, fix: 'ci-rejects-content', doc: 'in the future' },
   { id: 'cache-stars', fn: 'validateCache', level: 'error', match: /stars must be a whole number/, fix: 'ci-rejects-content', doc: 'stars must be a whole number' },
   { id: 'cache-release-tag', fn: 'validateCache', level: 'error', match: /latest_release\.tag is required/, fix: 'ci-rejects-content', doc: 'latest_release.tag is required' },
+  { id: 'cache-release-host', fn: 'validateCache', level: 'error', match: /latest_release\.download_url must be .*hosted on github\.com/, fix: 'ci-rejects-content', doc: 'hosted on github.com' },
+  { id: 'cache-asset-host', fn: 'validateCache', level: 'error', match: /assets\[\d+\]\.download_url must be .*hosted on github\.com/, fix: 'ci-rejects-content', doc: 'hosted on github.com' },
+  { id: 'cache-asset-size', fn: 'validateCache', level: 'error', match: /assets\[\d+\]\.size must be a non-negative integer/, fix: 'ci-rejects-content', doc: 'size must be a non-negative integer' },
+  { id: 'cache-release-tag-length', fn: 'validateCache', level: 'error', match: /latest_release\.tag must be at most/, fix: 'ci-rejects-content', doc: 'latest_release.tag must be at most 64 characters' },
   { id: 'cache-url-clean', fn: 'validateCache', level: 'error', match: /html_url must be a clean/, fix: 'ci-rejects-content', doc: 'html_url' },
   { id: 'cache-orphan', fn: 'validateCache', level: 'warning', match: /hidden or not in the registry/, fix: 'ci-rejects-content', doc: 'hidden or not in the registry' },
   { id: 'blog-date', fn: 'validateBlog', level: 'error', match: /date must be YYYY-MM-DD/, fix: 'ci-rejects-content', doc: 'date must be YYYY-MM-DD' },
