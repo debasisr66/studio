@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-SH` (requirements `SH-01` … `SH-08`) |
-| Status | **Approved by the owner (2026-10-21); Phases A and B merged (PRs #12, #13); SH-02 independently reviewed (docs/reviews/SH-02.md); C partial: SH-06 patch prepared for review; SH-05 open** |
+| Status | **Shipped in v2.0 (2026-10-26 release PR). Phases A and B merged (PRs #12, #13); C: SH-05 cases (TC-SH-B05 to B09) and SH-06 asset rules done, SH-08 timeouts proven; SH-02 independently reviewed ([SH-02](../../reviews/SH-02.md))** |
 | Owner | Debasis Ray |
 | Created | 2026-10-21 |
 | Parent | [PRD](../../PRD.md) §9.1, §9.2, §10.2, §11, §13, Roadmap Phase 1 and Phase 2.5; [§22](../../PRD.md) |
@@ -133,3 +133,4 @@ SH Phase A must merge before any RC, PC or UX code.
 - 2026-10-22: SH-02 independently reviewed by a separate Opus 5.5 agent ([docs/reviews/SH-02.md](../../reviews/SH-02.md)): APPROVE WITH CONDITIONS, then APPROVE after fixes to the harness (process cleanup, watchdog, 400 on bad URLs, GET/HEAD only, Host check, dot-files refused, `SMOKE_ONLY` guarded). Open: accepted risk N2 (Node SIGKILL leaves Chrome running). Spec wording fixed: the CI step limit is 2 minutes with a 100 s watchdog inside it.
 
 - 2026-10-26: SH-06 implemented in a review patch: parsed GitHub hostname checks on release-page and asset download URLs, non-negative integer asset sizes, and 64 UTF-16 code-unit bounds on cached tags and changelog versions. The numeric bound is an implementation choice because SH-06 specifies none. Tests and execution limits recorded in [test.md](test.md); SH-05 and the rest of Phase C are not completed by this change.
+- 2026-10-26: **Shipped in v2.0** (release PR; the tag is pushed after the owner says merge). Phases A and B merged (PRs #12, #13); C: SH-05 cases (TC-SH-B05 to B09) and SH-06 asset rules done, SH-08 timeouts proven; SH-02 independently reviewed ([SH-02](../../reviews/SH-02.md))

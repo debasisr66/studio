@@ -30,15 +30,15 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 | REQ | Cases | Status |
 |-----|-------|--------|
 | REQ-50 | TC-SH-I01–I05, T01–T02 | ✅ (SH Phase A) |
-| REQ-51 | TC-SH-B01–B09 | ✅ B01–B04 · ⬜ B05–B09 (Phase C) |
+| REQ-51 | TC-SH-B01–B09 | ✅ (B05–B09 run as guards 2026-10-26, §Q) |
 | REQ-52 | TC-SH-C01–C03, V01–V04, D01–D02, A01–A04 | ✅ (SH Phase B); SH-06 A01–A04 passed locally 2026-10-26 (review patch; [evidence](specs/stabilize-core-hub/test.md#status-log)) |
 | REQ-53 | TC-RC-D01–D04, M01–M03, V01–V04, X01 | ✅ (RC Phase A; X01 library half only, the third-tab half arrives with RC Phase B) |
-| REQ-54 | TC-RC-U01–U08, L01–L04, E01–E04, S01–S02, B01–B02 | ✅ U, L, E (RC Phase B) · ⬜ S01–S02, B01–B02 (Phase C) |
-| REQ-55 | TC-PC-D01–D03, V01–V07, N01–N02, S01 | ✅ D01–D03, V01–V07 (PC Phase A) · ⬜ N01–N02 (Phase C) · S01 owner step 🔒 |
-| REQ-56 | TC-PC-U01–U08, A01–A06, R01–R05, K01–K02 | ✅ U, A, R01–R04 (PC Phase B) · ⬜ R05 (release PR), K01–K02 (Phase C) |
+| REQ-54 | TC-RC-U01–U08, L01–L04, E01–E04, S01–S02, B01–B02 | ✅ U, L, E (RC Phase B); S01–S02, B01 run 2026-10-26 (§Q); B02 covered by TC-UX-P04 and A05 |
+| REQ-55 | TC-PC-D01–D03, V01–V07, N01–N02, S01 | ✅ D01–D03, V01–V07 (PC Phase A); N01–N02 (Phase C); S01 seeded by the owner's links 2026-10-26 |
+| REQ-56 | TC-PC-U01–U08, A01–A06, R01–R05, K01–K02 | ✅ U, A, R01–R04 (PC Phase B); K01–K02 (Phase C); R05 in the 2.0 changelog (release PR, TC-REL-02) |
 | REQ-57 | TC-UX-S01–S02, P01–P04, N01–N05, L01–L05, A01–A05, F01 | ✅ (F01 run by the owner on a real iPhone via the sandbox, 2026-10-26; owner-reported) |
-| REQ-58 | Regression suite (§D) | ⬜ |
-| REQ-59 | Artefact checklist ([plan.md](plan.md) "Artefact update matrix") | ⬜ |
+| REQ-58 | Regression suite (§D) | ✅ unit, validator and smoke green on the release PR (§R); live checks after the tag are listed in §R |
+| REQ-59 | Artefact checklist ([plan.md](plan.md) "Artefact update matrix") | ✅ in the release PR (§R); the tag and the live smoke follow the merge |
 | REQ-60 | TC-QA-E01–E05, P01–P07, K01–K05, U01–U07, L01–L07, D01–D04, H01–H03, S01–S03, X01–X02 ✅ (§M); O01–O04, O06, O07 | ✅ except O: owner steps 🔒 |
 | REQ-61 | TC-QA-F01–F06, O05 | ➖ dropped with Phase B (not merged) |
 
@@ -215,6 +215,16 @@ Owner report: the footer said "Synced from GitHub · 19 Oct 2026" although the s
 | PC-08 | seeded with the owner's three links (4 podcasts with the earlier one), tagged `tech` or `non-tech` as the owner asked; validator OK |
 | Code changes | Podcast option removed from the Reads composer and Quick add type lists, with a hint; an older entry keeps its type when edited; duplicate podcast links refused in the composer and in Quick add. Nothing else in the app changed |
 | Not done | removing the book-only editor (deferred, the spec says "where possible"); TC-PC-R05 and the 2.0 changelog (release step) |
+
+## R. Results: the v2.0 release PR (2026-10-26)
+
+| Check | Result |
+|-------|--------|
+| Release tests | `tests/release-2-0.test.js` (TC-REL-01 to 07): the 2.0 entry is newest and within the changelog rules; it covers the overhaul, Reads, Podcasts, menu, phone, accessibility, security and privacy; the claims are backed by the code (no cookie, strict CSP, no Blog section); the tag command and the specs agree; four specs say Shipped. Written first: 5 failed, then 7 pass. TC-REL-07 first passed for the wrong reason (it matched the requirements table, not the status table); fixed and shown failing |
+| Suites | unit, validator and browser smoke green (counts in the PR description) |
+| Artefacts | specs (4) and index, PRD, impact, ARCHITECTURE §13, LEARNING-GUIDE Step 18, model-use §9, product intro, README, plan (step 12 and definition of done), build.md (tag message, release line), security §11.4 (residual risks, owner acknowledgement pending), this plan |
+| After the merge (owner says merge) | push the tag `v2.0` (build.md §18.5), `gh run list`, open the live site and What's new, `GH_TOKEN=$(gh auth token) node scripts/health-check.js`, check the rollback tags `v1.6` and `v1.5` exist |
+| Not done | the live checks (after the merge); the owner's acknowledgement of the residual risks; Safari, non-VoiceOver screen readers |
 
 ---
 

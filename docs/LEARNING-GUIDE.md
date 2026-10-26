@@ -452,7 +452,7 @@ curl -s -o /dev/null -w "%{http_code}\n" https://debasisr66.github.io/studio/
 curl -s https://debasisr66.github.io/studio/content/cache.json | head -20
 ```
 
-## Step 18 — Studio 2.0: what changes for the owner (partly built)
+## Step 18 — Studio 2.0: what changes for the owner (built, v2.0)
 
 Written ahead of the build and updated as phases ship. **Built and live so far (2026-10-23):** the Technical / Others tabs and the Section choice in the composer, Podcasts with "Share a podcast", the retired Blog (`#blog` goes to Podcasts), and the cautious publish (it refuses to write over content it could not load or that changed on GitHub; if so, wait a minute, reload, try again). **Built, not yet merged:** Quick add (below). **Still to come:** prefill by link, the fixed page order and matching navs, seed podcasts, final checks.
 

@@ -162,3 +162,7 @@ The token figure on a re-review may be cumulative for that agent rather than the
 | Cumulative input and output tokens, per phase, per agent, cost in currency | Not exposed by the tooling; not estimated |
 
 **Practical note:** a context at about half the window is fine for the next phase, but start UX Phase A in a fresh session if this one grows past about 75%; the documents (`plan.md`, `test.md`, `security.md`, `reviews/`) carry the context.
+
+## 9. Release session (2026-10-26)
+
+The v2.0 release PR, the later phases (UX A and B, Phase C) and their reviews were built by Claude Sonnet 5.5 sessions; independent reviews (SH-02, PC-B, QA-A, UX-04, UX-05) were done by separate Claude Opus 5.5 agents ([review records](reviews/)). Token and cost figures were not measured for these sessions.

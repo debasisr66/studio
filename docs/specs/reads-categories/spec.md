@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-RC` (requirements `RC-01` … `RC-09`) |
-| Status | **Approved by the owner (2026-10-21); Phases A (PR #14) and B (PR #16) merged and live (v1.6); C not started** |
+| Status | **Shipped in v2.0 (2026-10-26 release PR). Phases A (PR #14), B (PR #16) and C checks (RC-07, RC-08) done; deferred in writing: removing the book-only editor** |
 | Owner | Debasis Ray |
 | Created | 2026-10-21 |
 | Parent | [PRD](../../PRD.md) §7, §9.4, §11.3; [§22](../../PRD.md) |
@@ -123,3 +123,4 @@ Rollback: tag `v1.5`; `reads.json` is additive (extra keys), so old code still r
 - 2026-10-22: Phase A merged (PR #14, `122e3d1`).
 - 2026-10-22: Phase B built on `v2/rc-b`: RC-02 (accessible tab list built from `CATEGORIES`: `role=tablist`/`tab`/`tabpanel`, `aria-selected`, `aria-controls`, roving `tabindex`, Left/Right/Home/End with wrap, automatic activation; Technical by default, or the first section with entries; counts are whole-section; switching clears tag and search; empty-section text; "No reads match here" with a Try-other-section button), RC-03 (`#reads`, `#reads/technical`, `#reads/others`; matched against the closed list by exact comparison so `__proto__` and anything else is ignored; switching uses `history.replaceState`, so no scroll and no history entry; a deep link scrolls Reads into view), RC-04 (Section radio group in the composer, preselected with the last section chosen in the session, else the section being viewed; an empty choice is an inline, announced error; editing can move an entry; live preview says where it will appear; the book editor gets a Section select). Decisions made while building: (1) a tab's count is reads plus books, because books are listed in the same section; (2) books are filtered by section in their existing column now (the single-column layout is RC-08, Phase C); (3) plain `#reads` on a later hash change keeps the section you are on (only a fresh load applies the default); (4) the Section control is a radio group preselected for you rather than a blank choice, so adding is one click fewer and the "required" check can only fail if the form is tampered with. Results: [test.md](test.md).
 - 2026-10-22: Phase B merged (PR #16, `5707926`) and shipped in the intermediate release v1.6 (tag `v1.6`). 2026-10-23: the owner published two reads under Others through the live admin screen (a real end-to-end use of RC-04).
+- 2026-10-26: **Shipped in v2.0** (release PR; the tag is pushed after the owner says merge). Phases A (PR #14), B (PR #16) and C checks (RC-07, RC-08) done; deferred in writing: removing the book-only editor
