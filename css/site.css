@@ -6,7 +6,7 @@
 @font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:100 800;font-display:swap;src:url(../fonts/jetbrains-mono-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
 :root{
   --bg:#0D0D0F; --surface:#151519; --surface-2:#1C1C22; --border:#26262E; --field:#6E6E7C;
-  --text:#EDEDF0; --muted:#8B8B97; --accent:#6E56CF; --accent-hover:#8470E0; --accent-press:#5B43BB; --accent-soft:rgba(110,86,207,.14);
+  --text:#EDEDF0; --muted:#8B8B97; --accent:#6E56CF; --accent-hover:#9682EA; --accent-press:#5B43BB; --accent-soft:rgba(110,86,207,.14);
   --focus:#A99BF0; --ok:#3DD68C; --danger:#F2555A; --radius:14px;
   --font:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
 }
@@ -171,8 +171,9 @@ nav.bottom{display:none}
   .hero{padding:24px 0 20px}
   .hero p{font-size:16px;margin-bottom:16px}
   .hero h1{margin:8px 0 10px}
-  .photo,.photo-img,.photo-mono{width:56px;height:56px}.photo-mono{font-size:24px}
   section.block{padding:32px 0}
+  html{scroll-padding-bottom:80px}
+  footer{padding-bottom:132px}
   .brand{min-height:44px;display:inline-flex;align-items:center}
   .card .actions a{min-height:44px}
   details.notes summary{min-height:44px}
@@ -191,7 +192,7 @@ nav.bottom{display:none}
 }
 @media (pointer:coarse){
   .chip{min-height:44px}
-  .read-tags .chip{min-height:36px}
+  .read-tags .chip{min-height:44px}
   .tools button{min-height:40px;min-width:48px}
 }
 @media (prefers-reduced-motion:reduce){
@@ -267,7 +268,7 @@ body.admin .read-head{padding-right:112px}
 .who-text{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
 .who-text .addbtn{margin:0}
 .photo-preview{display:block;width:160px;height:160px;border-radius:50%;object-fit:cover;margin:6px auto 12px;border:2px solid var(--border)}
-@media (max-width:620px){.photo,.photo-img,.photo-mono{width:72px;height:72px}.photo-mono{font-size:30px}}
+@media (max-width:620px){.photo,.photo-img,.photo-mono{width:56px;height:56px}.photo-mono{font-size:24px}}
 
 /* header fit between the phone and desktop layouts (v1.4): the tagline beside the brand is dropped (the hero says it) and the links are slightly tighter */
 @media (max-width:860px){
