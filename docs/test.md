@@ -212,8 +212,9 @@ Owner report: the footer said "Synced from GitHub · 19 Oct 2026" although the s
 | Unit and validator | **356 of 356** unit tests; validator OK (no JS library change: `reads-lib.js` untouched) |
 | Browser smoke | **172 of 172** in about 92 s locally (162 before; +10 cases: `TC-SH-B05 to B07` (one page), `B08`, `B09`, `TC-PC-K01`, `K02`, `N02` (composer and Quick add), `TC-RC-B01`, `S01`, `S02`). The default wait after a page is ready went from 250 ms to 120 ms (cases that need more already wait for what they need), which saved about 8 s; two full runs were stable |
 | Red first | PC-06 (K01) and PC-07 (N02, two cases) failed first. The SH-05 and RC cases passed at once: they are guards for behaviour built earlier, and the log says so |
+| PC-08 | seeded with the owner's three links (4 podcasts with the earlier one), tagged `tech` or `non-tech` as the owner asked; validator OK |
 | Code changes | Podcast option removed from the Reads composer and Quick add type lists, with a hint; an older entry keeps its type when edited; duplicate podcast links refused in the composer and in Quick add. Nothing else in the app changed |
-| Not done | PC-08 (owner supplies 3 or more podcast links); removing the book-only editor (deferred, the spec says "where possible"); TC-PC-R05 and the 2.0 changelog (release step) |
+| Not done | removing the book-only editor (deferred, the spec says "where possible"); TC-PC-R05 and the 2.0 changelog (release step) |
 
 ---
 
