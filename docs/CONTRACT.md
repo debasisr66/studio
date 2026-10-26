@@ -32,7 +32,9 @@ Example: `{ "repo": "debasisr66/PennyExpenseManager", "slug": "penny", "name": "
 
 `{ "synced_at": ISO-8601 UTC, "products": { "<owner/name>": { description, stars, language, topics[], pushed_at (date), html_url, latest_release: null | { tag, name, body, published_at, download_url, assets[ { name, download_url, size } ] } } } }`
 
-Rules: `synced_at` required, UTC, not in the future (`cache-synced-at`, `cache-synced-future`); `stars` whole number ≥ 0 (`cache-stars`); release `tag` non-empty (`cache-release-tag`); links clean (`cache-url-clean`); an entry for a hidden or unregistered repo warns (`cache-orphan`). *Planned (SH-06):* asset `size` is a whole number ≥ 0 and `download_url` host is `github.com`. `synced_at` moves only when data changes, so its age is not a freshness signal (the health check uses the last successful sync run).
+Rules: `synced_at` required, UTC, not in the future (`cache-synced-at`, `cache-synced-future`); `stars` whole number ≥ 0 (`cache-stars`); release `tag` non-empty (`cache-release-tag`); links clean (`cache-url-clean`); an entry for a hidden or unregistered repo warns (`cache-orphan`). SH-06: every asset requires a numeric, non-negative integer `size` (`cache-asset-size`); both `latest_release.download_url` (the release-page fallback, `cache-release-host`) and each asset `download_url` (`cache-asset-host`) must be clean HTTP(S) URLs with parsed hostname exactly `github.com` (case-insensitive, no subdomains or trailing dot). Existing URL length and credential restrictions still apply. Release `tag` is at most 64 UTF-16 code units (`cache-release-tag-length`), an implementation bound chosen because SH-06 does not give a number; no new tag format is required. `synced_at` moves only when data changes, so its age is not a freshness signal (the health check uses the last successful sync run).
+
+A release with `assets: []` still links to its GitHub release page; `latest_release` may remain null or absent.
 
 ## reads.json (object)
 
@@ -60,7 +62,7 @@ The platform label on a card comes from a closed host list in `js/reads-lib.js` 
 
 ## changelog.json
 
-`{ "releases": [ { version, date, title (≤ 80, plain), items (1 to 6 plain strings, each ≤ 160, no links) } ] }`, newest first, versions strictly descending. Rule ids: `changelog-version`, `changelog-plain-text`. The newest entry is the version shown in the footer.
+`{ "releases": [ { version, date, title (≤ 80, plain), items (1 to 6 plain strings, each ≤ 160, no links) } ] }`, newest first, versions strictly descending. Rule ids: `changelog-version`, `changelog-plain-text`. The newest entry is the version shown in the footer. SH-06 version-badge bound: each changelog `version` is at most 64 UTF-16 code units before the renderer adds its fixed label (`changelog-version`); the existing numeric version format is unchanged.
 
 ## profile.json and profile.jpg
 
