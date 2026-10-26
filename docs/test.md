@@ -202,7 +202,8 @@ Owner report: the footer said "Synced from GitHub · 19 Oct 2026" although the s
 | Validator | OK; total 139,973 bytes, `site.css` and `index.html` within budget, CSP unchanged |
 | Visual check | browser pane at about 375 px and desktop width: hero and first product |
 | Independent review | [reviews/UX-05.md](reviews/UX-05.md) (Opus 5.5, gate G3): first verdict APPROVE WITH CONDITIONS (two high findings the author's tests could not see: dark-theme contrast about 4.1:1 on version tags and the active bottom-nav item, and 36 px chips on real touch screens), after the fixes **APPROVE** |
-| Not done or not verified | **F01, the owner's walk-through: done by the owner on a real iPhone (sandbox), 2026-10-26, owner-reported**; a screen reader, Safari, a screen reader; true browser zoom (proxy used); focus order of the owner tools and dialogs was not part of this pass; contrast of non-text UI (borders) was not measured; the focus-ring contrast check runs in the light theme only (the dark ring is about 8:1 by arithmetic) |
+| Owner device checks (2026-10-26) | VoiceOver: fine. Safari at the largest zoom: fine. Chrome at the largest zoom (about 256 CSS px): sideways blank space and cut-off content in the footer and header; fixed afterwards with two new cases at 256 and 200 px (PR "extreme zoom") |
+| Not done or not verified | **F01, the owner's walk-through: done by the owner on a real iPhone (sandbox), 2026-10-26, owner-reported**; screen readers other than VoiceOver (owner checked VoiceOver: fine); true zoom on the owner's devices was checked by the owner (Safari fine; Chrome fixed in PR #32); focus order of the owner tools and dialogs was not part of this pass; contrast of non-text UI (borders) was not measured; the focus-ring contrast check runs in the light theme only (the dark ring is about 8:1 by arithmetic) |
 
 ---
 
