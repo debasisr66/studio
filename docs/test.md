@@ -190,6 +190,20 @@ Date: 2026-10-21 · Specs and per-requirement test cases: [SPEC-SH](specs/stabil
 
 Owner report: the footer said "Synced from GitHub · 19 Oct 2026" although the sync runs daily. Cause: `synced_at` only changes when product data changes (workflow runs of 21, 22 and 23 Oct all succeeded). Change: the version button shows the release date ("Studio v1.6 · 22 Oct 2026", from the changelog, so the owner can read the build date) and the data date is labelled "Product data updated". Test `TC-UX-F02` (unit and smoke) failed first. Unit 276 of 276, smoke 148 of 148, validator OK. No new data, request or storage.
 
+## P. Results: UX Phase B, accessibility and first screen (2026-10-26)
+
+| Check | Result |
+|-------|--------|
+| Unit tests | **282 of 282 pass** (275 before; +7 in `tests/spec-ux-phase-b.test.js`: reduced motion, viewport and skip link, no focus removed, phone rules, no coarse-pointer rule shrinking a target, privacy). 3 failed first |
+| Browser smoke | **160 of 160 pass** in about 97 s locally (148 before; +12 `TC-UX-*` cases; the 110 s watchdog leaves little headroom locally, CI runs faster). Failed before the fixes: phone targets (about 40 controls under 44 px: chips, share buttons, release links, tags, summaries, footer version button, reads titles) and the first screen (Products heading ended at 668 px of 812 and of 667; on 1280x800 the first product started at 850 px). Already held and kept as guards: text contrast in both themes, real-Tab focus, reflow at 320 and 640 px |
+| How it was measured | contrast: computed colours of 28 text styles against their real background, both themes. Focus: real Tab key presses (new `ctx.tab`), each stop's computed ring, order top to bottom, first stop the skip link. Mutation check: adding `outline:none` to chips and buttons made the case fail. Targets: bounding boxes at 375 px. Reflow: 320 px and 640 px emulated widths as a proxy for 400% and 200% zoom |
+| Fixes after review | dark `--accent-hover` raised; touch chips 44 px; scroll padding so focus is not hidden behind the bottom nav; 56 px photo rule actually applied; footer clear of the gear; test helpers made honest (blended contrast, touch emulation, ring contrast, clipping at 640 px, nav-aware first screen) |
+| Fixes | hero padding, headline size and width, photo 56 px on a phone; phone-only 44 px rules for chips, tags, card links, summaries, share buttons, release links, reads title links, brand and footer version button; section padding 48 to 40 (32 on a phone) |
+| Validator | OK; total 139,973 bytes, `site.css` and `index.html` within budget, CSP unchanged |
+| Visual check | browser pane at about 375 px and desktop width: hero and first product |
+| Independent review | [reviews/UX-05.md](reviews/UX-05.md) (Opus 5.5, gate G3): first verdict APPROVE WITH CONDITIONS (two high findings the author's tests could not see: dark-theme contrast about 4.1:1 on version tags and the active bottom-nav item, and 36 px chips on real touch screens), after the fixes **APPROVE** |
+| Not done or not verified | **F01, the owner's walk-through**; a real iPhone, Safari, a screen reader; true browser zoom (proxy used); focus order of the owner tools and dialogs was not part of this pass; contrast of non-text UI (borders) was not measured; the focus-ring contrast check runs in the light theme only (the dark ring is about 8:1 by arithmetic) |
+
 ---
 
 ## F. Not claimed in this plan

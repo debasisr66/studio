@@ -11,7 +11,7 @@ Spec-based work for Studio. A spec is written **before** any change that affects
 | Reads: Technical and Others (`SPEC-RC`) | Phases A and B merged (PRs #14, #16; live in v1.6); C not started | RC-01 … RC-09 | Phase 2.5, step 2 | [reads-categories/](reads-categories/spec.md) |
 | Podcast links replace the Blog (`SPEC-PC`) | Phases A and B merged (PRs #15, #21); C not started | PC-01 … PC-09 | Phase 2.5, step 3 | [podcast-links/](podcast-links/spec.md) |
 | Quick add: paste first, unlock when needed (`SPEC-QA`) | Complete 2026-10-23: Phase A merged (PR #24); QA-09 (Phase B) dropped by the owner | QA-01 … QA-10 | Phase 2.5, planned before UX | [quick-add/](quick-add/spec.md) |
-| Simpler layout (`SPEC-UX`) | Phase A built (2026-10-23), in review; B not started | UX-01 … UX-07 | Phase 2.5, step 4 | [simple-layout/](simple-layout/spec.md) |
+| Simpler layout (`SPEC-UX`) | Phase A merged (PR #27); Phase B built 2026-10-26, in review; owner walk-through pending | UX-01 … UX-07 | Phase 2.5, step 4 | [simple-layout/](simple-layout/spec.md) |
 
 ## Traceability convention
 

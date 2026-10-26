@@ -20,10 +20,10 @@ Spec: [spec.md](spec.md) (`SPEC-UX`). IDs `TC-UX-<group><nn>`. ⬜ not run. Case
 | TC-UX-L03 | UX-04 | `#blog` → Podcasts | pass | ✅ |
 | TC-UX-L04 | UX-04 | Unknown hash (`#xyz`, `#__proto__`, `#reads/<script>`) does nothing harmful | pass | ✅ |
 | TC-UX-L05 | UX-04 | Anchors work with storage blocked | pass | ✅ |
-| TC-UX-A01 | UX-05 | Keyboard-only pass: every control reachable, focus visible | pass | ⬜ |
-| TC-UX-A02 | UX-05 | Contrast ≥ 4.5:1 for text in both themes | pass | ⬜ |
-| TC-UX-A03 | UX-05 | 200% zoom: no loss of content or function | pass | ⬜ |
-| TC-UX-A04 | UX-05 | `prefers-reduced-motion` respected | pass | ⬜ |
+| TC-UX-A01 | UX-05 | Keyboard-only pass: every control reachable, focus visible | pass | ✅ |
+| TC-UX-A02 | UX-05 | Contrast ≥ 4.5:1 for text in both themes | pass | ✅ |
+| TC-UX-A03 | UX-05 | 200% zoom: no loss of content or function | pass | ✅ |
+| TC-UX-A04 | UX-05 | `prefers-reduced-motion` respected | pass | ✅ |
 | TC-UX-A05 | UX-05 | No horizontal scroll at 375 px and 1280 px | pass | ✅ |
 | TC-UX-F01 | UX-06 | Owner walk-through: within 5 seconds say what Studio is, find Penny, find the latest release (owner step) | 🔒 | ⬜ |
 
@@ -37,3 +37,4 @@ Exit criteria: P0 rows ✅ (UX-01 to UX-04); P1 ✅ or deferred in writing.
 - 2026-10-21: Draft created; nothing run.
 - 2026-10-21: Rewritten after the owner dropped usage-based ordering: 22 cases (was 42).
 - 2026-10-23: Phase A cases run and green (S, P, N, L, A05); A01 to A04 and F01 not run.
+- 2026-10-26: Phase B cases run and green (A01 to A04, P03 at 375 px, F01 measured part); F01 owner walk-through still pending. A03 uses widths 320 and 640 as the proxy for zoom. See [test.md section P](../../test.md).
