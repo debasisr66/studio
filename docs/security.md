@@ -345,3 +345,15 @@ These are the author's notes only. The independent review is [reviews/UX-04.md](
 | Layout | one column in Reads; Books block hidden by a class when the open sub-item has none (owner still sees it, so `+ Add book` is reachable) | smoke P04, P02 |
 
 Not covered by the author: Safari and real-device behaviour of `scrollIntoView` and smooth scrolling; a human audit. A model review is not a penetration test.
+
+### 11.14 SPEC-UX Phase B: author's notes (2026-10-26; the verdict is the reviewer's, not the author's)
+
+These are the author's notes only. The independent review is [reviews/UX-05.md](reviews/UX-05.md); this section says nothing about pass or fail.
+
+| Item | What was built | Evidence |
+|------|----------------|----------|
+| Visitor invariant | CSS only in the page (sizes, spacing); no new storage key, cookie, request, host or script; CSP unchanged | unit privacy case, smoke privacy case from Phase A |
+| Test harness | `scripts/smoke.js` gained `ctx.tab` (real Tab key events to the local headless Chrome) and a per-case `height`; still local only, no new network use | smoke |
+| Motion | the reduced-motion block is unchanged and now has a unit test; no scripted smooth scrolling | unit A04 |
+
+Not covered by the author: a human accessibility audit, real devices, assistive technology.
