@@ -179,11 +179,11 @@ No `'unsafe-inline'` or `'unsafe-eval'` anywhere. To make that possible, the sty
 
 **Supply chain.** `actions/checkout` and `actions/setup-node` are pinned by commit hash (currently checkout v7.0.1 and setup-node v7.1.0, after Dependabot's first two proposals were merged on 2026-10-20); Dependabot proposes updates weekly; CI rejects unpinned actions, missing permissions blocks and `contents: write` outside the sync and keep-alive workflows.
 
-## 13. Studio 2.0 target architecture (partly built)
+## 13. Studio 2.0 architecture (built, v2.0)
 
 **Status 2026-10-23:** built and merged: section isolation, timeouts and the browser smoke test (SH A), the content contract and schema versions (SH B), `category` and reads schema 2 (RC A), the Technical / Others tabs and deep links (RC B), `podcasts.json` and its validator (PC A), the Podcasts section and admin with `blog.json` archived and `#blog` redirected (PC B), and the independent review gate ([REVIEW-GATE.md](REVIEW-GATE.md)). Not built: the single ordered list driving page and both navs (UX), books in one column, seed podcasts. §1-12 still describe the v1.5 shape in places (Blog, `blog.json` editing) and are folded into one description at the v2.0 release; the sections below and [CONTRACT.md](CONTRACT.md) are current.
 
-This section describes where the architecture goes. Specs: [SH](specs/stabilize-core-hub/spec.md), [RC](specs/reads-categories/spec.md), [PC](specs/podcast-links/spec.md), [UX](specs/simple-layout/spec.md). Design detail: [design.md](design.md) §12.
+This section describes the architecture as built in v2.0. Specs: [SH](specs/stabilize-core-hub/spec.md), [RC](specs/reads-categories/spec.md), [PC](specs/podcast-links/spec.md), [UX](specs/simple-layout/spec.md). Design detail: [design.md](design.md) §12.
 
 ```mermaid
 flowchart TB

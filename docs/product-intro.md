@@ -1,6 +1,6 @@
 # Studio and Penny — Product Introduction
 
-*Studio by Debasis Ray — learning never ends!* · https://debasisr66.github.io/studio/ · current version **v1.6** (the site itself is built from `main`, which already includes Podcasts)
+*Studio by Debasis Ray — learning never ends!* · https://debasisr66.github.io/studio/ · current version **v2.0**
 
 ## In one paragraph
 
@@ -77,14 +77,14 @@ A mobile-friendly personal expense manager in Indian rupees. All data stays in t
 
 *Sources: Penny's README, release notes, V3.2 verification record and security review (figures as recorded on 19 October 2026); Studio's architecture, test and security documents (figures as recorded on 20 October 2026, v1.4).*
 
-## Roadmap: Studio 2.0 (in progress)
+## What Studio 2.0 brought (released 2026-10-26)
 
 | Change | What a visitor or the owner gets |
 |--------|----------------------------------|
 | Stabilised core (built) | One failing section can no longer affect the rest of the page; rendering is tested automatically; every content file has a written contract |
 | Reads: Technical and Others (built, live) | Two clear sections in Reads, each with its own filters and search, and a direct link to each |
-| Podcasts replace the Blog (built; seed links pending) | The owner shares podcast and episode links with a short take; no embedded players, no third parties |
-| Simpler layout (not started) | One fixed, clear order (Products, Updates, Reads, Podcasts) with the same navigation on every screen; nothing is tracked or stored about visitors |
+| Podcasts replace the Blog (built, with the first shows seeded) | The owner shares podcast and episode links with a short take; no embedded players, no third parties |
+| Simpler layout (built) | One fixed, clear order (Products, Updates, Reads, Podcasts) with the same navigation on every screen; nothing is tracked or stored about visitors |
 
-Specs, impact, plan and security pre-review: [docs/specs/](specs/README.md), [impact](impact.md), [plan](plan.md), [security](security.md) §11. The footer shows **v1.6**; v2.0 ships when the remaining phases (layout, seed content, final checks) are done.
+Specs, impact, plan and security pre-review: [docs/specs/](specs/README.md), [impact](impact.md), [plan](plan.md), [security](security.md) §11. The footer shows **v2.0** and its release date. Also in 2.0: phone-friendly tap targets, clear keyboard focus, readable contrast in both themes, a layout that holds at high zoom, and a tighter first screen.
 

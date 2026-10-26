@@ -1,6 +1,6 @@
 # Build and Publish — Command Reference
 
-Current release line: **v1.6** (an intermediate release on the way to v2.0, whose build is §18); v1.5, v1.4 and v1.3 are tagged. From v1.4 releases go through a **pull request** (see §15). Branch names must differ from tag names: a branch called `v1.1` and a tag `v1.1` made `git push origin v1.1` ambiguous (fix: `git push origin refs/tags/v1.1`).
+Current release line: **v2.0** (released through the release PR in §18.5; rollback tag `v1.6`, and `v1.5` before the Reads split); v1.5, v1.4 and v1.3 are tagged. From v1.4 releases go through a **pull request** (see §15). Branch names must differ from tag names: a branch called `v1.1` and a tag `v1.1` made `git push origin v1.1` ambiguous (fix: `git push origin refs/tags/v1.1`).
 
 Reference only. There is no build step: the repository is the site. Pages serves `main`, root `/`. Run from `/Users/debasisray/CoworkProjects/studio-site`.
 
@@ -288,7 +288,7 @@ After each merge: `gh run list --limit 4`, open the live site, `GH_TOKEN=$(gh au
 ```bash
 git checkout main && git pull --rebase
 node --test tests/*.test.js && node scripts/validate-site.js           # final gate
-git tag -a v2.0 -m "v2.0: stabilised core, Reads split, Podcasts, simpler layout"
+git tag -a v2.0 -m "Studio 2.0: a simpler, safer, easier-to-use Studio (stabilised core, Reads split, Podcasts, simpler layout, accessibility)"
 git push origin refs/tags/v2.0
 gh run list --limit 4
 curl -s https://debasisr66.github.io/studio/content/changelog.json | head -20    # confirms the 2.0 entry is live

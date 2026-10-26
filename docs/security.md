@@ -219,6 +219,8 @@ T15 and T16 (visitor usage data and corrupt local data) were dropped on 2026-10-
 
 A successful smoke test proves rendering in one browser engine only. CI still cannot technically block the owner or the bots (TR-11 decision unchanged).
 
+**Residual risks at the v2.0 release (author's list; owner acknowledgement pending):** CI is not a required check (unchanged); model reviews are not a human audit (the gate's limit); the sandbox and the real site share one browser origin for the token and draft keys (QA-A review F11, accepted); real-device, Safari and non-VoiceOver screen-reader coverage is the owner's own checking, not automated; the smoke test runs one browser engine and is close to its CI time cap; reads publishing has no whole-file validation (older code); the dark-theme focus ring is checked by arithmetic, not in the browser. **Owner acknowledgement: pending.**
+
 ### 11.5 SH Phase A results (2026-10-21)
 
 | Check | Result |
