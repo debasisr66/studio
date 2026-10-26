@@ -302,6 +302,13 @@ const uxContrast = async (ctx, theme, list = UXB_NEED) => {
   for (const sel of list) { const r = await uxWorst(ctx, sel); if (r.none) bad.push(`${theme} ${sel}: matches nothing (the case would be vacuous)`); else if (r.worst < 4.5) bad.push(`${theme} ${sel} ${r.worst}:1 [${r.at}]`); }
   return bad;
 };
+/* extreme zoom: nothing in the page may stick out past the viewport or make the page scroll sideways (the tabs, chips and cards included; long words must wrap) */
+const uxExtreme = async ctx => {
+  const r = await ctx.ev(`(() => { const vw = document.documentElement.clientWidth, out = [...document.querySelectorAll('body *')].filter(e => (e.offsetParent !== null || getComputedStyle(e).position === 'fixed') && !e.closest('#navbottom, .modal-bg')).map(e => ({ e, b: e.getBoundingClientRect() })).filter(x => x.b.width > 0 && (x.b.right > vw + 1 || x.b.left < -1)).slice(0, 6).map(x => (x.e.id || (typeof x.e.className === 'string' && x.e.className) || x.e.tagName) + ' ' + Math.round(x.b.left) + '..' + Math.round(x.b.right));
+    const clipped = [...document.querySelectorAll('main *, footer *')].filter(e => e.offsetParent !== null && e.scrollWidth > e.clientWidth + 1 && ['hidden', 'clip'].includes(getComputedStyle(e).overflowX) && !['A', 'BUTTON', 'INPUT'].includes(e.tagName) && !e.classList.contains('hero') && !e.classList.contains('sr')).slice(0, 4).map(e => e.className || e.tagName);
+    return { vw, over: document.documentElement.scrollWidth - vw, out, clipped }; })()`);
+  const f = []; if (r.over > 1) f.push('sideways scroll of ' + r.over + ' px at ' + r.vw); if (r.out.length) f.push('sticks out: ' + r.out.join('; ')); if (r.clipped.length) f.push('clipped: ' + r.clipped.join(', ')); return f;
+};
 
 const CASES = [
   { id: 'TC-SH-B01 real content, 1280 px', width: 1280, fixtures: [], noErrors: true, check: async ctx => {
@@ -982,6 +989,8 @@ const CASES = [
     const f = []; if (!r.h1 || r.h1.bottom > r.vh) f.push('the headline is not in the first screen'); if (!r.p || r.p.bottom > r.vh - 160) f.push('Products heading ends at ' + (r.p && r.p.bottom) + ' px of ' + r.vh + ' (the first product needs room to show)'); if (!r.card || r.card.top > r.vh - 120) f.push('first product starts at ' + (r.card && r.card.top)); if (r.photo > 60) f.push('photo is ' + r.photo + ' px on a phone (it should be compact)'); if (r.navTop && r.card && r.card.top > r.navTop - 80) f.push('the first product shows only ' + (r.navTop - r.card.top) + ' px above the bottom nav'); return f; } },
   { id: 'TC-UX-F01 first screen on a small phone, 375 x 667: the Products heading is above the bottom nav', width: 375, height: 667, fixtures: TWO, ...uxWith(), check: async ctx => { const r = await ctx.ev("[Math.round(document.querySelector('#products h2').getBoundingClientRect().bottom), Math.round(document.getElementById('navbottom').getBoundingClientRect().top)]"); return r[0] > r[1] - 8 ? ['Products heading ends at ' + r[0] + ' px but the bottom nav starts at ' + r[1]] : []; } },
   { id: 'TC-UX-F01 first screen at 1280 x 800: the first product card starts in view', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => { const t = await ctx.ev("Math.round(document.querySelector('#grid .card').getBoundingClientRect().top)"); return t > 800 - 100 ? ['first product starts at ' + t + ' px of 800'] : []; } },
+  { id: 'TC-UX-A03 extreme zoom, 256 px wide (Chrome at 500%): no sideways scroll, and no text, tab, chip or card is cut off or sticks out', width: 256, fixtures: TWO, ...uxWith(), check: async ctx => uxExtreme(ctx) },
+  { id: 'TC-UX-A03 extreme zoom, 200 px wide', width: 200, fixtures: TWO, ...uxWith(), check: async ctx => uxExtreme(ctx) },
 ];
 
 async function main() {
