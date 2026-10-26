@@ -225,7 +225,8 @@ Owner report: the footer said "Synced from GitHub · 19 Oct 2026" although the s
 | Artefacts | specs (4) and index, PRD, impact, ARCHITECTURE §13, LEARNING-GUIDE Step 18, model-use §9, product intro, README, plan (step 12 and definition of done), build.md (tag message, release line), security §11.4 (residual risks, owner acknowledgement pending), this plan |
 | After the merge (owner says merge) | push the tag `v2.0` (build.md §18.5), `gh run list`, open the live site and What's new, `GH_TOKEN=$(gh auth token) node scripts/health-check.js`, check the rollback tags `v1.6` and `v1.5` exist |
 | Live checks (2026-10-26, after the merge) | tag `v2.0` pushed at the merge commit `67380ab`; CI on `main` green; pages build green; sync run (manual) green; `health-check.js`: HEALTHY; live page: footer "Studio v2.0 · 26 Oct 2026", both navs list the four sections, 2 products, 6 reads, 4 podcasts, no console errors, only this site's host requested, only the `studio-theme` key stored, no cookie, CSP unchanged; `content/changelog.json` live with 2.0 first; rollback tags `v1.6` and `v1.5` exist |
-| Not done | the owner's acknowledgement of the residual risks; Safari, non-VoiceOver screen readers |
+| Safari | marked done by the owner (2026-10-26, instruction in chat); the owner will check it themselves, so this row is owner-reported, not tested by the author (largest-zoom Safari was reported fine earlier) |
+| Not done | the owner's acknowledgement of the residual risks; screen readers other than VoiceOver |
 
 ---
 
