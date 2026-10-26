@@ -226,7 +226,18 @@ Owner report: the footer said "Synced from GitHub · 19 Oct 2026" although the s
 | After the merge (owner says merge) | push the tag `v2.0` (build.md §18.5), `gh run list`, open the live site and What's new, `GH_TOKEN=$(gh auth token) node scripts/health-check.js`, check the rollback tags `v1.6` and `v1.5` exist |
 | Live checks (2026-10-26, after the merge) | tag `v2.0` pushed at the merge commit `67380ab`; CI on `main` green; pages build green; sync run (manual) green; `health-check.js`: HEALTHY; live page: footer "Studio v2.0 · 26 Oct 2026", both navs list the four sections, 2 products, 6 reads, 4 podcasts, no console errors, only this site's host requested, only the `studio-theme` key stored, no cookie, CSP unchanged; `content/changelog.json` live with 2.0 first; rollback tags `v1.6` and `v1.5` exist |
 | Safari | marked done by the owner (2026-10-26, instruction in chat); the owner will check it themselves, so this row is owner-reported, not tested by the author (largest-zoom Safari was reported fine earlier) |
-| Not done | the owner's acknowledgement of the residual risks; screen readers other than VoiceOver |
+| Not done | the owner's acknowledgement of the remaining residual risks (security.md §11.4); screen readers other than VoiceOver were de-scoped by the owner on 2026-10-26 |
+
+## S. Results: residual-risk fixes (2026-10-26)
+
+| Risk | Change | Evidence |
+|------|--------|----------|
+| #7 reads whole-file validation | `RL.validateReadsFile` (same rules and messages as CI; `validate-site.js` delegates to it) and `publishContent` runs it before any write | `tests/risk-fixes.test.js` R01 to R04 (identical to CI on every reads fixture and on the live file; budget); smoke `TC-RISK-R05` failed first (the publish went through with an entry CI would refuse), now refused with nothing written. `reads-lib.js` is 26,582 of 26,624 bytes: no room left |
+| Owner-reported: no search in Others | the toolbar threshold went from 4 to 2 reads (Reads) and 2 entries (Podcasts); `TC-RC-F01` (search in Others with 5 reads) passed at once, `TC-RC-F02` (3 reads) failed first | smoke |
+| #8 dark focus ring | the real-Tab case also runs in the dark theme | passed at once (the ring is about 8:1); shown failing when the dark ring colour is made nearly invisible |
+| #2 CI not required | health check item 5: `CI is red on main` when the newest finished run of `ci.yml` on `main` failed | unit C01 to C04 failed first; runbook row; the live check against GitHub returned HEALTHY |
+| #3 not a human audit | human checkpoint and "ask for a human review" list in the review gate | documentation only; the owner's acknowledgement is the control |
+| VoiceOver / screen readers | de-scoped by the owner | recorded |
 
 ---
 

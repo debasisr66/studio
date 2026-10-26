@@ -237,7 +237,7 @@ function renderReads() {
   const rows = mine.filter(x => shown.has(x.e));
 
   const tags = RL.allTags(mine.map(x => x.e));
-  $('#toolbar').hidden = mine.length < 4;
+  $('#toolbar').hidden = mine.length < 2;
   $('#tagChips').innerHTML = tags.length ? [['', 'All'], ...tags.map(t => [t, '#' + t])].map(([t, lab]) =>
     `<button type="button" class="chip" data-filter="${esc(t)}" aria-pressed="${state.filter.tag === t}">${esc(lab)}</button>`).join('') : '';
   $('#readCount').textContent = mine.length && (state.filter.tag || state.filter.q) ? `Showing ${rows.length} of ${mine.length}` : '';
@@ -283,7 +283,7 @@ function renderPodcasts() {
   all.sort((a, b) => { const da = (a.e && a.e.added) || '', db = (b.e && b.e.added) || ''; return da === db ? a.i - b.i : (da < db ? 1 : -1); });   // newest first
   const shown = new Set(RL.filterPodcasts(all.map(x => x.e), state.pfilter)), rows = all.filter(x => shown.has(x.e));
   const tags = RL.podcastTags(all.map(x => x.e)), n = all.length;
-  $('#podcastToolbar').hidden = n < 4;
+  $('#podcastToolbar').hidden = n < 2;
   $('#podcastChips').innerHTML = tags.length ? [['', 'All'], ...tags.map(t => [t, '#' + t])].map(([t, lab]) =>
     `<button type="button" class="chip" data-pfilter="${esc(t)}" aria-pressed="${state.pfilter.tag === t}">${esc(lab)}</button>`).join('') : '';
   $('#podcastCount').textContent = n && (state.pfilter.tag || state.pfilter.q) ? `Showing ${rows.length} of ${n}` : '';
@@ -688,6 +688,10 @@ async function publishContent(key, data) {
   if ((key === 'podcasts' && state.podcastsFailed) || (key === 'reads' && state.readsFailed)) throw new Error('not published: it could not be loaded when this page opened, so its content is unknown (reload the page)');
   if (key === 'podcasts') {   // the same rules CI applies, before anything is written: a bad entry already in the file blocks the publish
     const bad = RL.validatePodcastsFile(data).errors;
+    if (bad.length) throw new Error('not published: ' + bad[0] + (bad.length > 1 ? ` (and ${bad.length - 1} more)` : ''));
+  }
+  if (key === 'reads') {   // the same rules CI applies: an entry already in the file that CI would refuse blocks the publish, with nothing written
+    const bad = RL.validateReadsFile(data).errors;
     if (bad.length) throw new Error('not published: ' + bad[0] + (bad.length > 1 ? ` (and ${bad.length - 1} more)` : ''));
   }
   if ((key === 'podcasts' && state.podcastsUnsupported) || (key === 'reads' && state.readsUnsupported)) throw new Error('not published: this file is newer than the page understands (reload the page)');

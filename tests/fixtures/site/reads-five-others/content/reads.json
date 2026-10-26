@@ -1,0 +1,90 @@
+{
+  "schema_version": 2,
+  "books": [],
+  "articles": [
+    {
+      "id": 9301,
+      "added": "2026-10-21",
+      "kind": "article",
+      "category": "technical",
+      "title": "Tech one",
+      "url": "https://example.com/five-1",
+      "comment": "",
+      "tags": [
+        "alpha"
+      ]
+    },
+    {
+      "id": 9302,
+      "added": "2026-10-22",
+      "kind": "article",
+      "category": "technical",
+      "title": "Tech two",
+      "url": "https://example.com/five-2",
+      "comment": "",
+      "tags": [
+        "beta"
+      ]
+    },
+    {
+      "id": 9303,
+      "added": "2026-10-23",
+      "kind": "article",
+      "category": "other",
+      "title": "Other apple",
+      "url": "https://example.com/five-3",
+      "comment": "",
+      "tags": [
+        "alpha"
+      ]
+    },
+    {
+      "id": 9304,
+      "added": "2026-10-24",
+      "kind": "article",
+      "category": "other",
+      "title": "Other banana",
+      "url": "https://example.com/five-4",
+      "comment": "",
+      "tags": [
+        "beta"
+      ]
+    },
+    {
+      "id": 9305,
+      "added": "2026-10-25",
+      "kind": "article",
+      "category": "other",
+      "title": "Other cherry",
+      "url": "https://example.com/five-5",
+      "comment": "",
+      "tags": [
+        "alpha"
+      ]
+    },
+    {
+      "id": 9306,
+      "added": "2026-10-26",
+      "kind": "article",
+      "category": "other",
+      "title": "Other date",
+      "url": "https://example.com/five-6",
+      "comment": "",
+      "tags": [
+        "beta"
+      ]
+    },
+    {
+      "id": 9307,
+      "added": "2026-10-27",
+      "kind": "article",
+      "category": "other",
+      "title": "Other elderberry",
+      "url": "https://example.com/five-7",
+      "comment": "",
+      "tags": [
+        "alpha"
+      ]
+    }
+  ]
+}

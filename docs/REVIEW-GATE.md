@@ -56,6 +56,16 @@ If the author's model ever changes, the reviewer must still be a different model
 ## Re-review
 ```
 
+## Human checkpoint (owner, about 10 minutes; added 2026-10-26, residual risk 3)
+
+A model review is not a human audit. Before the owner says "merge" on a gated PR (or any PR that touches the token flow, Quick add, link handling or the CSP), the owner reads three things and writes the date in **Owner acknowledgement** of the record:
+
+1. The record's **Findings** table: every medium or high finding is fixed or has an accepted-risk line.
+2. The PR's **diff of `index.html` and the CSP meta tag**: no new `<script>`, `<link>` or host, and `connect-src` is still only `'self'` and `https://api.github.com`.
+3. The diff of the files that handle the token and fragments (`js/token-store.js`, the hash code in `js/app.js`): no new place where the token or the address bar is read, stored or sent.
+
+**Ask for a human or professional review** (not a model) before adding anything of these kinds: server-side code, a new third-party host or script, accounts or payments, a new kind of stored visitor data, or a change to how the token is held.
+
 ## Limits (stated plainly)
 
 A second model is a second pair of eyes, not a human audit or a penetration test; models share some blind spots even across families. The gate catches the author's self-grading and many real defects. It does not replace the owner's judgement, the browser-engine limits already noted in security.md §11.4, or a human review before anything handles real money or customer data.

@@ -104,33 +104,8 @@ function validateBlog(blog) {
   return errors;
 }
 
-function validateReads(reads) {
-  const errors = [], warnings = [];
-  if (!isObj(reads) || !Array.isArray(reads.articles) || !Array.isArray(reads.books))
-    return { errors: ['reads.json: needs articles and books arrays'], warnings };
-  if (!Number.isInteger(reads.schema_version) || reads.schema_version !== RL.READS_SCHEMA_VERSION)
-    errors.push(`reads.json: schema_version must be ${RL.READS_SCHEMA_VERSION} (this is the version of the file's shape; got ${JSON.stringify(reads.schema_version)})`);
-  const ids = new Set(), urls = new Set();
-  reads.articles.forEach((a, i) => {
-    const at = `reads.json articles[${i}]`;
-    if (!isObj(a)) return errors.push(`${at}: must be an object`);
-    if (!isStr(a.title) || !a.title.trim()) errors.push(`${at}: title is required`);
-    const clean = isStr(a.url) ? RL.normalizeUrl(a.url) : null;
-    if (!clean || !httpUrl(a.url)) errors.push(`${at}: url must be ${URL_HINT}`);
-    else { const k = RL.domainOf(clean) + new URL(clean).pathname.replace(/\/+$/, ''); if (urls.has(k)) warnings.push(`${at}: same link as an earlier read`); urls.add(k); }
-    if (a.kind !== undefined && !RL.KINDS.includes(a.kind)) errors.push(`${at}: kind must be one of ${RL.KINDS.join(', ')}`);
-    if (a.tags !== undefined && (!Array.isArray(a.tags) || a.tags.length > RL.LIMITS.tags || a.tags.some(t => !isStr(t)))) errors.push(`${at}: tags must be an array of at most ${RL.LIMITS.tags} strings`);
-    if (a.comment !== undefined && (!isStr(a.comment) || a.comment.length > RL.LIMITS.comment)) errors.push(`${at}: comment must be text up to ${RL.LIMITS.comment} characters`);
-    if (!RL.CATEGORIES.includes(a.category)) errors.push(`${at}: category must be one of ${RL.CATEGORIES.join(', ')}`);
-    if (a.added !== undefined && !DATE_RE.test(String(a.added))) errors.push(`${at}: added must be YYYY-MM-DD`);
-    if (a.id !== undefined) { if (ids.has(a.id)) errors.push(`${at}: duplicate id ${a.id}`); ids.add(a.id); }
-  });
-  reads.books.forEach((b, i) => {
-    if (!isObj(b) || !isStr(b.title) || !b.title.trim()) errors.push(`reads.json books[${i}]: title is required`);
-    if (isObj(b) && !RL.CATEGORIES.includes(b.category)) errors.push(`reads.json books[${i}]: category must be one of ${RL.CATEGORIES.join(', ')}`);
-  });
-  return { errors, warnings };
-}
+/* The rules live in js/reads-lib.js (validateReadsFile) so the admin screen runs the very same check before every publish. */
+const validateReads = reads => RL.validateReadsFile(reads);
 
 /* SPEC-PC PC-04. The rules live in js/reads-lib.js (validatePodcastsFile) so the admin screen runs the very same check before every publish. */
 const validatePodcasts = file => RL.validatePodcastsFile(file);

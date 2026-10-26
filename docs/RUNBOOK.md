@@ -54,6 +54,7 @@ gh run watch                                                           # follow 
 | `configured download_asset … matches no asset`, `cached download … differs from GitHub` | [release or download missing](#release-or-download-missing) |
 | `workflow "…" is …` | [disabled](#scheduled-workflow-disabled) |
 | `last successful sync was N hours ago`, `no successful run on record` | [sync](#sync-failed-or-did-not-run) |
+| `CI is red on main: the newest finished run failure …` | [bad commit on main](#bad-commit-on-main): open the run, then `git revert` the commit or fix forward; CI is not a required check, so this message is the alarm |
 | `warning: … is in cache.json but hidden or not in the registry` | Note only; remove the entry when convenient |
 
 Each health problem line ends with `Fix: docs/RUNBOOK.md#<section>`.
@@ -138,7 +139,7 @@ git revert <sha>                                       # preferred
 # or restore one file:
 git checkout <sha> -- content/cache.json && git commit -m "Restore cache.json from <sha>" && git push
 ```
-A bad commit from the admin screen is caught by CI afterwards, not prevented; see the [protection decision](rulesets/README.md#decision-record).
+A bad commit from the admin screen is caught by CI afterwards, not prevented; see the [protection decision](rulesets/README.md#decision-record). Since v2.0 the daily health check also fails with `CI is red on main` when the newest finished CI run on `main` failed, so a red main cannot sit unnoticed.
 
 ## Token expired or leaked
 

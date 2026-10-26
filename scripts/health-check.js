@@ -2,7 +2,8 @@
 // Daily health check. Read-only; no dependencies. Exits 1 (red run, GitHub emails the owner) when:
 //   - the live site or its key files do not answer, or
 //   - a product's latest GitHub release differs from what content/cache.json says (broken sync/dispatch), or
-//   - the sync workflow has not succeeded in the last 48 hours.
+//   - the sync workflow has not succeeded in the last 48 hours, or
+//   - the newest finished CI run on main failed (CI is a process rule, not a required check, so a red main must be loud).
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -50,6 +51,15 @@ function findSyncStale(runs, now = Date.now(), maxHours = SYNC_MAX_AGE_HOURS) {
   return [];
 }
 
+/* CI is not a required check (the bots must push straight to main), so a red CI on main is made loud here instead. runs: ci.yml runs on main as the Actions API
+   returns them (newest first). Only a finished run counts; cancelled runs (superseded by a newer push) and running ones are skipped. */
+function findCiRed(runs) {
+  var done = (Array.isArray(runs) ? runs : []).filter(function (r) { return r && r.status === 'completed' && r.conclusion && r.conclusion !== 'cancelled' && !isNaN(Date.parse(r.updated_at)); })
+    .sort(function (a, b) { return Date.parse(b.updated_at) - Date.parse(a.updated_at); });
+  if (!done.length || ['success', 'skipped', 'neutral'].includes(done[0].conclusion)) return [];
+  return [`CI is red on main: the newest finished run ${done[0].conclusion} (${done[0].html_url || 'see the Actions tab'}, ${done[0].updated_at}).`];
+}
+
 /* Release parity beyond the tag (TR-07). releasesByRepo: repo -> latest release as GitHub returns it ({assets:[{name, browser_download_url}], tag_name?}) or null;
    a repo absent from the map was not fetched and is skipped. For products with a download_asset pattern: GitHub's release must contain a match,
    and the cached download link for that match must be GitHub's. (A different tag is findDrift's job and is not repeated here.) */
@@ -85,6 +95,7 @@ function findMissingRepos(registry, existsByRepo) {
 
 /* Every problem line carries a pointer to the matching runbook section (TR-08). */
 const FIXES = [
+  [/CI is red on main/i, 'bad-commit-on-main'],
   [/last successful sync|no successful run/i, 'sync-failed-or-did-not-run'],
   [/not found on GitHub/i, 'sync-failed-or-did-not-run'],
   [/download_asset|cached download/i, 'release-or-download-missing'],
@@ -166,6 +177,16 @@ async function main() {
     else notes.push(`could not read sync runs: GitHub API ${res.status}`);
   } catch (e) { notes.push('could not read sync runs: ' + e.message); }
 
+  // 5. CI is green on main (a process rule only, see docs/rulesets/README.md)
+  try {
+    const repo = process.env.GITHUB_REPOSITORY || 'debasisr66/studio';
+    const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'studio-health' };
+    if (TOKEN) headers.Authorization = 'Bearer ' + TOKEN;
+    const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/ci.yml/runs?branch=main&status=completed&per_page=5`, { headers });
+    if (res.ok) problems.push(...findCiRed((await res.json()).workflow_runs));
+    else notes.push(`could not read CI runs: GitHub API ${res.status}`);
+  } catch (e) { notes.push('could not read CI runs: ' + e.message); }
+
   notes.forEach(n => console.log('note  ' + n));
   const shown = problems.map(withFix);
   shown.forEach(p => console.log('ERROR ' + p));
@@ -175,6 +196,6 @@ async function main() {
   process.exit(problems.length ? 1 : 0);
 }
 
-module.exports = { findDrift, findInactiveWorkflows, findSyncStale, findAssetParity, findOrphans, findMissingRepos, withFix, SYNC_MAX_AGE_HOURS };
+module.exports = { findCiRed, findDrift, findInactiveWorkflows, findSyncStale, findAssetParity, findOrphans, findMissingRepos, withFix, SYNC_MAX_AGE_HOURS };
 
 if (require.main === module) main().catch(e => { console.error('::error::health check crashed: ' + e.message); process.exit(1); });
