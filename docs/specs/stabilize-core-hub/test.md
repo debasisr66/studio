@@ -18,11 +18,11 @@ Spec: [spec.md](spec.md) (`SPEC-SH`). IDs `TC-SH-<group><nn>`. ⬜ not run. Test
 | TC-SH-B02 | Healthy content, 375 px | No horizontal overflow (scrollWidth ≤ width), bottom nav present | ✅ |
 | TC-SH-B03 | CI step runs without npm and finishes under 60 s | pass | ✅ |
 | TC-SH-B04 | Smoke step fails the run when a section is broken (proven by a deliberately broken branch) | red | ✅ |
-| TC-SH-B05 | Product without cache entry | "details syncing" card, no stars/language | ⬜ |
-| TC-SH-B06 | Release without matching asset | Download falls back to the release page | ⬜ |
-| TC-SH-B07 | Product missing tagline | Repo description used | ⬜ |
-| TC-SH-B08 | Empty reads, empty podcasts, empty updates | Friendly empty states | ⬜ |
-| TC-SH-B09 | Very long title and comment | Wraps; no overflow | ⬜ |
+| TC-SH-B05 | Product without cache entry | Card with its own text and a Source link, no stars or language, no download (there is no "details syncing" label in the app; none was added) | ✅ |
+| TC-SH-B06 | Release without matching asset | Download falls back to the release page | ✅ |
+| TC-SH-B07 | Product missing tagline | Repo description used | ✅ |
+| TC-SH-B08 | Empty reads, empty podcasts, empty updates | Friendly empty states | ✅ |
+| TC-SH-B09 | Very long title and comment | Wraps; no overflow | ✅ |
 
 ## Contract and versions (C, V), SH-03, SH-04
 | ID | Case | Expected | Status |
@@ -59,3 +59,4 @@ All P0 rows ✅ (SH-01, 02, 03, 04, 07); SH Phase A merged before any RC/PC/UX c
 - 2026-10-21: Phase B run: `tests/spec-sh-phase-b.test.js` (11 tests, 8 failed first) plus two new smoke cases (version-less reads renders; newer `schema_version` shows the Reads fallback only). Unit tests 164 pass; smoke 15 of 15 (18 s); validator OK. D01: add, hide, retire and recategorise executed as written in OPERATIONS.md (outputs match; one extra harmless warning documented); `gh workflow run`, `gh run list` and `gh secret list` run earlier or now. D02: a new test checks every relative link and heading anchor in README and docs/ (all resolve). C04 note: TC-SH-V04 for `podcasts.json` follows with SPEC-PC; the publish-over-a-newer-file guard in the admin is by code inspection (no stubbed-API test yet).
 - 2026-10-21: Phase A run: unit tests `tests/safe-lib.test.js` (11) and `scripts/smoke.js` (13 cases). Smoke cases failed on the unguarded v1.5 page (7 of 13 failed locally, 6 of 13 passed in the CI red drill) and pass with the change: 13 of 13 locally in 16 s and on GitHub's runner in 29 s. Red proof (B04): a throwaway branch with the old `app.js` made only the smoke step fail while unit tests and the validator stayed green; branch deleted. I03: the fallback is a constant string (unit-tested) and no exception text appears on the page (smoke). Cases B05-B09, C, V, A, D remain for later phases.
 - 2026-10-21: Draft created; nothing run.
+- 2026-10-26: SH-05 cases B05 to B09 written as smoke cases (`TC-SH-B05 to B07` share one page with the `sh-fallbacks` fixture; B08 uses `ux-all-empty`; B09 uses `sh-long-text`). They passed at once: the behaviour already existed, so these are guards, not red-first tests. B05's wording "details syncing" does not match the app (a product with no cache entry shows its own text, a Source link, no stars or language); the case tests what the app does.
