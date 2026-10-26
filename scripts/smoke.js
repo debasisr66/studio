@@ -119,7 +119,7 @@ let caseNo = 0;
 async function runCase(cdp, base, c, errors) {
   overlay = { dirs: (c.fixtures || []).map(f => path.join(FIX, f)), manifest: {} };
   for (const f of c.fixtures || []) { const mf = path.join(FIX, f, 'fixture.json'); if (fs.existsSync(mf)) Object.assign(overlay.manifest, JSON.parse(fs.readFileSync(mf, 'utf8'))); }
-  await cdp.send('Emulation.setDeviceMetricsOverride', { width: c.width, height: c.width < 500 ? 812 : 800, deviceScaleFactor: 1, mobile: c.width < 500 });
+  await cdp.send('Emulation.setDeviceMetricsOverride', { width: c.width, height: c.height || (c.width < 500 ? 812 : 800), deviceScaleFactor: 1, mobile: c.width < 500 });
   await cdp.send('Storage.clearDataForOrigin', { origin: base, storageTypes: 'all' }).catch(() => {});
   const initSrc = [c.token ? "try{sessionStorage.setItem('studio-admin-pat','not-a-real-token-smoke-test')}catch(e){}" : '', c.init || ''].filter(Boolean).join(';\n');
   const init = initSrc ? await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: initSrc }) : null;
@@ -141,7 +141,8 @@ async function runCase(cdp, base, c, errors) {
   await sleep(c.fast ? 60 : 250);   // fast: the case reads its own state after the page is ready (the Quick add cases poll for what they wait on)
   const fails = [];
   if (!ready) fails.push(`the page never finished loading within ${(c.timeout || 15000) / 1000} s`);
-  const ctx = { ev, ms: Date.now() - t0, errors: [...errors] };
+  const tab = async () => { for (const type of ['keyDown', 'keyUp']) await cdp.send('Input.dispatchKeyEvent', { type, key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 }); };
+  const ctx = { ev, tab, ms: Date.now() - t0, errors: [...errors] };
   try { fails.push(...await c.check(ctx)); } catch (e) { fails.push('check crashed: ' + e.message); }
   if (c.noErrors && errors.length) fails.push('console errors: ' + errors.slice(0, 3).join(' | '));
   if (init) await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: init.identifier });
@@ -279,6 +280,15 @@ const uxStill = async ctx => { let last = -1, calm = 0; for (let i = 0; i < 25 &
 const uxLands = async (ctx, id) => { await uxStill(ctx); const t = await uxTop(ctx, id); const end = await ctx.ev('scrollY + innerHeight >= document.documentElement.scrollHeight - 2');   // the last section cannot reach the top of a short page
   return (t > 140 && !(end && t < 700)) || t < -20 ? [`${id} is not at the top of the page (top ${t} px)`] : []; };
 const uxFollow = async (ctx, id) => { await ctx.ev("window.scrollTo({ top: 0, behavior: 'instant' }); history.replaceState(null, '', location.pathname + location.search)"); await sleep(80); await ctx.ev(`location.hash = ${JSON.stringify('#' + id)}`); return uxLands(ctx, id).then(r => r.map(x => 'followed: ' + x)); };
+
+/* ---------- UX Phase B helpers (UX-05, UX-06): measured in the page, in both themes ---------- */
+const UXB_TEXT = ['.brand', 'nav.links a', '.eyebrow', '.hero h1', '.hero p', '.hero p.tagline', '.cta', '.cta.ghost', '.sec-desc', '.sec-head h2', '.card h3', '.card p', '.meta', '.tag', '.tag.ver', '.item h3', '.item .when', '.item .body', '.tab', '.tab[aria-selected=true]', '.empty', '.read-title', '.chip', 'footer span', 'footer .linkbtn', '#readCount', '.toolbar input[type=search]', '.whatsnew'];
+const uxContrast = async (ctx, theme) => {
+  await ctx.ev(`document.documentElement.dataset.theme = ${JSON.stringify(theme)}`); await sleep(40);
+  const bad = [];
+  for (const sel of UXB_TEXT) { const c = await colours(ctx, sel); if (!c) continue; const r = ratio(c.fg, c.bg); if (r < 4.5) bad.push(`${theme} ${sel} ${r.toFixed(2)}:1`); }
+  return bad;
+};
 
 const CASES = [
   { id: 'TC-SH-B01 real content, 1280 px', width: 1280, fixtures: [], noErrors: true, check: async ctx => {
@@ -926,6 +936,28 @@ const CASES = [
   { id: 'TC-UX-F02 the footer shows the release date next to the version and labels the product-data date for what it is', width: 1280, fixtures: ['healthy'], ...uxWith(), noErrors: true, check: async ctx => {
     const t = await ctx.ev("document.querySelector('footer').innerText.replace(/\\s+/g, ' ')"), f = [];
     if (!/Studio v1\.5 · 21 Oct 2026/.test(t)) f.push('version and release date: ' + t); if (!/Product data updated · 19 Oct 2026/.test(t)) f.push('product data date: ' + t); if (/Synced from GitHub/.test(t)) f.push('old label still shown'); return f; } },
+  { id: 'TC-UX-A02 text contrast is at least 4.5:1 in the dark theme', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => uxContrast(ctx, 'dark') },
+  { id: 'TC-UX-A02 text contrast is at least 4.5:1 in the light theme', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => uxContrast(ctx, 'light') },
+  { id: 'TC-UX-A01 real Tab presses: every stop shows a visible focus ring, the order follows the page top to bottom, and focus never gets lost', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => {
+    const probe = `(() => { const e = document.activeElement; if (!e || e === document.body) return null; const cs = getComputedStyle(e), b = e.getBoundingClientRect(), fixed = (() => { for (let n = e; n; n = n.parentElement) if (getComputedStyle(n).position === 'fixed') return true; return false; })();
+      return { n: e.id || (typeof e.className === 'string' && e.className) || e.tagName, ring: (cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 2) || (cs.boxShadow !== 'none'), vis: b.width > 0 && b.height > 0, top: Math.round(b.top + scrollY), left: Math.round(b.left), fixed, pos: e.tabIndex > 0 }; })()`;
+    const seen = [], f = []; await ctx.ev('window.scrollTo(0, 0); document.body.focus()');
+    for (let i = 0; i < 120; i++) { await ctx.tab(); const p = await ctx.ev(probe); if (!p) break; if (seen.length && seen[0].n === p.n && seen[0].top === p.top && i > 3) break; seen.push(p); }
+    const noRing = seen.filter(x => !x.ring).map(x => x.n), hidden = seen.filter(x => !x.vis).map(x => x.n), jumps = [];
+    seen.filter(x => !x.fixed).forEach((x, i, a) => { const p = a[i - 1]; if (p && x.top < p.top - 6 && x.left <= p.left) jumps.push(p.n + ' then ' + x.n); });
+    if (seen.length < 20) f.push('only ' + seen.length + ' tab stops'); if (seen[0] && seen[0].n !== 'skip') f.push('first stop is ' + seen[0].n); if (noRing.length) f.push('no ring: ' + [...new Set(noRing)].slice(0, 6).join(', ')); if (hidden.length) f.push('focus on an invisible element: ' + hidden.slice(0, 3)); if (jumps.length) f.push('order jumps: ' + jumps.slice(0, 3).join('; ')); if (seen.some(x => x.pos)) f.push('tabindex above 0'); return f; } },
+  { id: 'TC-UX-P03 phone: every control outside running text is at least 44 px high at 375 px', width: 375, fixtures: TWO, ...uxWith(), check: async ctx => {
+    const r = await ctx.ev(`[...document.querySelectorAll('a[href], button, summary, input:not([type=hidden]), select, textarea')].filter(e => e.offsetParent !== null && !e.closest('.body, .read-comment, #addBg, #tokBg, .modal-bg, [hidden], .tools') && getComputedStyle(e).position !== 'fixed').map(e => ({ n: (e.id || (e.className && e.className.baseVal === undefined ? e.className : '') || e.tagName).toString().slice(0, 24), h: Math.round(e.getBoundingClientRect().height) })).filter(x => x.h < 44 && x.h > 0)`);
+    const names = [...new Set(r.map(x => x.n + ':' + x.h))]; return names.length ? ['under 44 px: ' + names.slice(0, 12).join(', ') + (names.length > 12 ? ' (+' + (names.length - 12) + ')' : '')] : []; } },
+  { id: 'TC-UX-A03 reflow at 320 px (a 1280 px page at 400% zoom) and 640 px (200% zoom): no horizontal scroll, nothing cut off, four nav items', width: 320, fixtures: TWO, ...uxWith(), check: async ctx => {
+    const r = await ctx.ev(`({ over: document.documentElement.scrollWidth - innerWidth, nav: [...document.querySelectorAll('#navbottom a')].map(a => { const b = a.getBoundingClientRect(); return b.left >= 0 && b.right <= innerWidth && b.height >= 44; }), cut: [...document.querySelectorAll('main *')].filter(e => e.offsetParent !== null && e.getBoundingClientRect().right > innerWidth + 1 && !e.closest('.tabs, pre, .chips')).slice(0, 4).map(e => e.className || e.tagName) })`);
+    const f = []; if (r.over > 1) f.push('overflow ' + r.over + ' px at 320'); if (r.nav.length !== 4 || r.nav.includes(false)) f.push('bottom nav does not fit at 320: ' + r.nav); if (r.cut.length) f.push('cut off: ' + r.cut.join(', ')); return f; } },
+  { id: 'TC-UX-A03 640 px wide (200% zoom of 1280 px)', width: 640, fixtures: TWO, ...uxWith(), check: async ctx => { const o = await ctx.ev('document.documentElement.scrollWidth - innerWidth'); return o > 1 ? ['overflow ' + o + ' px at 640'] : []; } },
+  { id: 'TC-UX-F01 first screen at 375 x 812: what Studio is, and the first product, without scrolling', width: 375, fixtures: TWO, ...uxWith(), check: async ctx => {
+    const r = await ctx.ev(`(() => { const t = s => { const e = document.querySelector(s), b = e && e.getBoundingClientRect(); return b && { top: Math.round(b.top), bottom: Math.round(b.bottom) }; }; return { vh: innerHeight, h1: t('.hero h1'), p: t('#products h2'), card: t('#grid .card'), photo: Math.round(document.querySelector('.photo').getBoundingClientRect().height) }; })()`);
+    const f = []; if (!r.h1 || r.h1.bottom > r.vh) f.push('the headline is not in the first screen'); if (!r.p || r.p.bottom > r.vh - 160) f.push('Products heading ends at ' + (r.p && r.p.bottom) + ' px of ' + r.vh + ' (the first product needs room to show)'); if (!r.card || r.card.top > r.vh - 120) f.push('first product starts at ' + (r.card && r.card.top)); if (r.photo > 96) f.push('photo is ' + r.photo + ' px'); return f; } },
+  { id: 'TC-UX-F01 first screen on a small phone, 375 x 667: Products heading is visible', width: 375, height: 667, fixtures: TWO, ...uxWith(), check: async ctx => { const b = await ctx.ev("Math.round(document.querySelector('#products h2').getBoundingClientRect().bottom)"); return b > 667 - 40 ? ['Products heading ends at ' + b + ' px of 667'] : []; } },
+  { id: 'TC-UX-F01 first screen at 1280 x 800: the first product card starts in view', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => { const t = await ctx.ev("Math.round(document.querySelector('#grid .card').getBoundingClientRect().top)"); return t > 800 - 150 ? ['first product starts at ' + t + ' px of 800'] : []; } },
 ];
 
 async function main() {
