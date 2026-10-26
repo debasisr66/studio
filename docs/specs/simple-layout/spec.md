@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-UX` (requirements `UX-01` … `UX-07`) |
-| Status | **Phases A (merged, PR #27) and B (built 2026-10-26, in review); owner walk-through F01 pending** |
+| Status | **Phases A (merged, PR #27) and B (merged, PR #30); owner walk-through F01 done on a real iPhone (sandbox), 2026-10-26** |
 | Owner | Debasis Ray |
 | Created | 2026-10-21 · revised 2026-10-21 (usage-based ordering dropped by the owner) |
 | Parent | [PRD](../../PRD.md) §7, §8; [§22](../../PRD.md) |
