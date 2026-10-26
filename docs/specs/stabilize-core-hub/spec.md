@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-SH` (requirements `SH-01` … `SH-08`) |
-| Status | **Approved by the owner (2026-10-21); Phases A and B merged (PRs #12, #13); SH-02 independently reviewed (docs/reviews/SH-02.md); C not started** |
+| Status | **Approved by the owner (2026-10-21); Phases A and B merged (PRs #12, #13); SH-02 independently reviewed (docs/reviews/SH-02.md); C partial: SH-06 patch prepared for review; SH-05 open** |
 | Owner | Debasis Ray |
 | Created | 2026-10-21 |
 | Parent | [PRD](../../PRD.md) §9.1, §9.2, §10.2, §11, §13, Roadmap Phase 1 and Phase 2.5; [§22](../../PRD.md) |
@@ -131,3 +131,5 @@ SH Phase A must merge before any RC, PC or UX code.
 - 2026-10-21: Phase A merged (PR #12). Phase B built on `v2/sh-b`: SH-03 (CONTRACT.md enforced by `checkContractDoc` in CI, tests C01-C03), SH-04 (`schema_version` 1 in `reads.json`; rule `reads-schema-version` with fixture and runbook row; browser tolerates missing or older, refuses newer; `RL.serializeReads` so the admin publish keeps the key; `podcasts.json` gets its version with SPEC-PC), SH-07 (OPERATIONS.md: every product procedure executed once and the output recorded). Finding: the admin publish built `{books, articles}` by hand and would have dropped any new key; now one tested serializer.
 - 2026-10-22: Phase B merged (PR #13). Reads `schema_version` moved from 1 to 2 by SPEC-RC Phase A (rule and mechanism unchanged).
 - 2026-10-22: SH-02 independently reviewed by a separate Opus 5.5 agent ([docs/reviews/SH-02.md](../../reviews/SH-02.md)): APPROVE WITH CONDITIONS, then APPROVE after fixes to the harness (process cleanup, watchdog, 400 on bad URLs, GET/HEAD only, Host check, dot-files refused, `SMOKE_ONLY` guarded). Open: accepted risk N2 (Node SIGKILL leaves Chrome running). Spec wording fixed: the CI step limit is 2 minutes with a 100 s watchdog inside it.
+
+- 2026-10-26: SH-06 implemented in a review patch: parsed GitHub hostname checks on release-page and asset download URLs, non-negative integer asset sizes, and 64 UTF-16 code-unit bounds on cached tags and changelog versions. The numeric bound is an implementation choice because SH-06 specifies none. Tests and execution limits recorded in [test.md](test.md); SH-05 and the rest of Phase C are not completed by this change.

@@ -106,6 +106,7 @@ Every content rule CI enforces, with what to do (each is proven by a failing fix
 | products.json | `unknown category` (warning) | Typo, or add the new category to `KNOWN_CATEGORIES` in `scripts/validate-site.js` on purpose |
 | products.json, cache.json, blog.json, reads.json | `clean http(s) address`, `html_url`, `link must be` | Plain `https://` link: no spaces, hidden characters or `user:pass@` |
 | cache.json | `synced_at is required`, `in the future`, `stars must be a whole number`, `latest_release.tag is required` | Restore from the last good commit or re-run the sync |
+| cache.json | `hosted on github.com`, `size must be a non-negative integer`, `latest_release.tag must be at most 64 characters` | Restore or re-run sync; release and asset links must use exactly the GitHub hostname; asset sizes must be numeric integers ≥ 0; shorten an oversized release tag at its source |
 | cache.json | `hidden or not in the registry` (warning) | Remove that entry from `content/cache.json` when convenient |
 | blog.json | `date must be YYYY-MM-DD`, `title is required` | Fix the post in the JSON (the blog is an archive; there is no editor since PC Phase B) |
 | reads.json | `schema_version must be` | The file's shape version is missing, wrong, or newer than this page. Restore it from the last good commit, or set `"schema_version": 2` as the first key. The admin screen writes it for you on every publish |
@@ -117,7 +118,7 @@ Every content rule CI enforces, with what to do (each is proven by a failing fix
 | podcasts.json | `podcast tags must be`, `podcast comment must be`, `podcast show must be` | At most 5 tags of 24 characters, a take of at most 280 characters, a show name of at most 80 |
 | podcasts.json | `podcast duplicate id` | Two entries share an `id`; change one |
 | podcasts.json | `same link as an earlier podcast` (warning) | The same link appears twice; remove one when convenient |
-| changelog.json | `version must look like`, `plain text` | Versions like `1.5`; release notes are plain text without `<` or `>` |
+| changelog.json | `version must look like`, `plain text` | Versions like `1.5`, at most 64 characters; release notes are plain text without `<` or `>` |
 
 ## Browser smoke test fails
 
