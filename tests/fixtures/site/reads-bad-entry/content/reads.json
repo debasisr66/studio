@@ -73,8 +73,8 @@
       "id": 9200,
       "added": "2026-10-26",
       "kind": "article",
-      "title": "An entry that CI would refuse",
-      "url": "https://example.com/no-category",
+      "title": "An entry that CI would refuse (bad address)",
+      "url": "https://exa mple.com/not a clean address",
       "comment": "",
       "tags": []
     }

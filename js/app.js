@@ -690,6 +690,10 @@ async function publishContent(key, data) {
     const bad = RL.validatePodcastsFile(data).errors;
     if (bad.length) throw new Error('not published: ' + bad[0] + (bad.length > 1 ? ` (and ${bad.length - 1} more)` : ''));
   }
+  if (key === 'reads') {   // the same rules CI applies: an entry already in the file that CI would refuse blocks the publish, with nothing written
+    const bad = RL.validateReadsFile(data).errors;
+    if (bad.length) throw new Error('not published: ' + bad[0] + (bad.length > 1 ? ` (and ${bad.length - 1} more)` : ''));
+  }
   if ((key === 'podcasts' && state.podcastsUnsupported) || (key === 'reads' && state.readsUnsupported)) throw new Error('not published: this file is newer than the page understands (reload the page)');
   return publishFile(path, data, `cms: update ${label}`, true);
 }

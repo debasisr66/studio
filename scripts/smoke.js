@@ -1036,7 +1036,7 @@ const CASES = [
   { id: 'TC-RISK-R05 Publish refuses when the reads file already holds an entry CI would refuse, and writes nothing', width: 1280, token: true, fixtures: ['reads-bad-entry', 'healthy'], check: async ctx => {
     await stubApi(ctx); await fillComposer(ctx, { url: 'https://example.com/risk-r05', title: 'R05 valid', section: 'technical' }); await ctx.ev("document.getElementById('composerForm').requestSubmit()"); await sleep(250);
     const r = await publishResult(ctx), n = await ctx.ev('window.__puts.length'), f = [];
-    if (!/not published|category must be/.test(r)) f.push('result did not refuse: "' + r.slice(0, 160) + '"'); if (n !== 0) f.push(n + ' write(s) were made'); return f; } },
+    if (!/not published: .*url must be/.test(r)) f.push('result did not refuse: "' + r.slice(0, 160) + '"'); if (n !== 0) f.push(n + ' write(s) were made'); return f; } },
 ];
 
 async function main() {
