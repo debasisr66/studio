@@ -292,7 +292,7 @@ const uxWorst = (ctx, sel) => ctx.ev(`(() => { const rgb = x => { const n = (x.m
   for (const e of els) { const layers = []; for (let n = e; n; n = n.parentElement) { const cs = getComputedStyle(n); const c = rgb(cs.backgroundColor); if (c.length >= 3 && (c.length === 3 || c[3] > 0)) layers.push([c]); if (cs.backgroundImage.includes('gradient')) { const st = [...cs.backgroundImage.matchAll(/(rgba?\\([^)]*\\))\\s*(\\d+(?:\\.\\d+)?%)?/g)].map(m => ({ c: rgb(m[1]).concat(rgb(m[1]).length === 3 ? [1] : []), p: m[2] ? parseFloat(m[2]) / 100 : null })); if (st.length) { st[0].p = st[0].p === null ? 0 : st[0].p; st[st.length - 1].p = st[st.length - 1].p === null ? 1 : st[st.length - 1].p; for (let i = 1; i < st.length - 1; i++) if (st[i].p === null) st[i].p = i / (st.length - 1);
       const box = n.getBoundingClientRect(), eb = e.getBoundingClientRect(), at = t => { t = Math.max(0, Math.min(1, t)); let i = 0; while (i < st.length - 2 && t > st[i + 1].p) i++; const A = st[i], B = st[i + 1], k = B.p === A.p ? 1 : Math.max(0, Math.min(1, (t - A.p) / (B.p - A.p))); const pm = c => [c[0] * c[3], c[1] * c[3], c[2] * c[3], c[3]], P = pm(A.c).map((x, j) => x + (pm(B.c)[j] - x) * k), al = P[3] || 1e-9; return [P[0] / al, P[1] / al, P[2] / al, P[3]]; };   // premultiplied, as the browser blends
       const t1 = (eb.top - box.top) / box.height, t2 = (eb.bottom - box.top) / box.height; layers.push([at(t1), at(t2)]); } } }
-    layers.reverse(); let variants = [[255, 255, 255]]; if (!layers.length) variants = [[0, 0, 0]]; else variants = [[0, 0, 0]]; for (const L of layers) variants = variants.flatMap(v => L.map(c => over(c, v)));
+    layers.reverse(); let variants = [[0, 0, 0]]; for (const L of layers) variants = variants.flatMap(v => L.map(c => over(c, v)));
     const fg = rgb(getComputedStyle(e).color); for (const v of variants) { const r = ratio(over(fg, v), v); if (r < worst) { worst = r; at = (e.className || e.tagName) + ' fg=' + fg.join() + ' bg=' + v.map(Math.round).join() + ' layers=' + layers.length; } } }
   return { worst: Math.round(worst * 100) / 100, at, n: els.length }; })()`);
 const UXB_NEED = ['.brand', '.eyebrow', '.hero h1', '.hero p', '.hero p.tagline', '.cta', '.cta.ghost', '.sec-desc', '.sec-head h2', '.card h3', '.card p', '.card.featured .tag.ver', '.item .tag.ver', '.meta', '.item h3', '.item .when', '.item .body', '.tab', '.tab[aria-selected=true]', '.read-title', '.chip', 'footer span', 'footer .linkbtn', '.whatsnew'];
@@ -302,7 +302,6 @@ const uxContrast = async (ctx, theme, list = UXB_NEED) => {
   for (const sel of list) { const r = await uxWorst(ctx, sel); if (r.none) bad.push(`${theme} ${sel}: matches nothing (the case would be vacuous)`); else if (r.worst < 4.5) bad.push(`${theme} ${sel} ${r.worst}:1 [${r.at}]`); }
   return bad;
 };
-const UXB_PHONE = ['nav.bottom a', '.tab', '.tag', '.empty'];
 
 const CASES = [
   { id: 'TC-SH-B01 real content, 1280 px', width: 1280, fixtures: [], noErrors: true, check: async ctx => {
