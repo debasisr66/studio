@@ -1031,6 +1031,7 @@ const CASES = [
     const r = await ctx.ev(`(() => { const row = document.querySelector('#articlesFeed .share-row'), a = row.querySelector('a'); const url = document.querySelector('#articlesFeed .read-title').getAttribute('href'); row.querySelector('[data-copy]').click(); return { href: a.getAttribute('href'), target: a.target, rel: a.rel, url, share: !!row.querySelector('[data-share]') }; })()`);
     await sleep(50); const copied = await ctx.ev('window.__copied'); const f = [];
     if (!r.href.startsWith('https://www.linkedin.com/sharing/share-offsite/?url=') || r.target !== '_blank' || !/noopener/.test(r.rel)) f.push('LinkedIn link: ' + JSON.stringify(r)); if (copied.length !== 1 || copied[0] !== r.url) f.push('copied: ' + JSON.stringify(copied) + ' want ' + r.url); if (r.share) f.push('Share… offered without navigator.share'); return f; } },
+  { id: 'TC-UX-L01 #podcasts still lands on Podcasts when the fonts arrive late and change the layout above it', width: 1280, hash: '#podcasts', fixtures: ['slow-font', ...TWO], ...uxWith(), check: async ctx => { await sleep(1000); return uxLands(ctx, 'podcasts'); } },
 ];
 
 async function main() {
