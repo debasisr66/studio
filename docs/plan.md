@@ -32,7 +32,7 @@ PRD updated (done) → four specs (done, this PR) → impact (done) → **plan (
 | 9 | UX | A | Fixed order, section pattern, matching navs, stable links | Navs identical; anchors verified; **independent review of UX-04 (G2)**. **Built 2026-10-23 on `v2/ux-a-build` (review [UX-04](reviews/UX-04.md)); waiting for the owner to say merge** |
 | 10 | UX | B | Accessibility and responsiveness pass, first-screen clarity | Keyboard, contrast, zoom, 375 px; owner walk-through; **independent review of UX-05 (G3)**. **Built 2026-10-26 on `v2/ux-b-build` (review [UX-05](reviews/UX-05.md)); owner walk-through F01 done on a real iPhone 2026-10-26; merged (PR #30)** |
 | 11 | SH, RC, PC, UX | C | Fallback proofs, asset rules, books in sub-items, seed podcasts, **check the footer date** (see "Revisit later") | P1 rows ✅ or deferred in writing. SH-06 asset rules implemented in a review patch (2026-10-26); [local evidence](specs/stabilize-core-hub/test.md#status-log). Other step 11 work: SH-05 cases, PC-06, PC-07, RC-07 and RC-08 checks built 2026-10-26 on `v2/sh-c` (PR pending owner review); PC-08 seeded with the owner's links; **open: book-editor path removal (deferred), 2.0 changelog (release step)** |
-| 12 | all | Release | Changelog 2.0, REQ rows, security log, architecture, learning guide, product intro; tag `v2.0` | Exit criteria in all four test plans. **Prepared 2026-10-26 on `v2/release` (release PR): changelog 2.0, artefacts, REQ rows; the tag `v2.0` is pushed after the owner says merge** |
+| 12 | all | Release | Changelog 2.0, REQ rows, security log, architecture, learning guide, product intro; tag `v2.0` | Exit criteria in all four test plans. **Released 2026-10-26: release PR #34 merged, tag `v2.0` pushed, live checks green (test.md §R)** |
 
 Steps 3-4 can run in either order; steps 5 and 6 can swap; steps 7-8 (Quick add) come before the layout work because they are small, owner-facing and touch the same composer markup; everything else is sequential.
 
@@ -104,9 +104,9 @@ Heavy edits to `js/app.js`: keep new logic in small tested modules and watch the
 
 - [x] Four specs Shipped; every P0 requirement traced to a passing case; P1 done or deferred in writing.
 - [x] 142 existing tests plus the new ones green; smoke test green in CI; `validate-site.js` OK.
-- [ ] Live: no console errors, CSP clean, no new third-party request, health check green, sync run green.
+- [x] Live: no console errors, CSP clean, no new third-party request, health check green, sync run green.
 - [x] Owner steps done: real read and podcast published; seed podcasts (4); real phone check (iPhone, sandbox).
-- [ ] Every artefact in the matrix updated (done in the release PR); `v2.0` tagged after merge; rollback tags `v1.6` and `v1.5` verified (after the tag).
+- [x] Every artefact in the matrix updated (release PR #34); `v2.0` tagged; rollback tags `v1.6` and `v1.5` exist.
 
 ## Revisit later
 

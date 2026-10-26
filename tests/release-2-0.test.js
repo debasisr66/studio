@@ -37,7 +37,7 @@ test('TC-REL-05 each of the four specs says Shipped (v2.0) in its status line an
 });
 test('TC-REL-06 the README, the product intro and the plan name v2.0 as the current release', () => {
   assert.match(read('README.md'), /v2\.0/); assert.match(read('docs/product-intro.md'), /current version \*\*v2\.0\*\*/);
-  assert.match(read('docs/plan.md'), /\| 12 \| all \| Release \|.*(Prepared|Merged)/);
+  assert.match(read('docs/plan.md'), /\| 12 \| all \| Release \|.*(Prepared|Merged|Released)/);
 });
 test('TC-REL-07 the status rows of REQ-51, 54, 55, 56, 58 and 59 in the test plan have no open case', () => {
   const t = read('docs/test.md'); for (const r of ['REQ-51', 'REQ-54', 'REQ-55', 'REQ-56', 'REQ-58', 'REQ-59']) { const row = t.split('\n').find(l => new RegExp('^\\| ' + r + ' \\| (TC-|Regression|Artefact)').test(l)); assert.ok(row, r + ': no status row'); assert.ok(!/⬜/.test(row), r + ' still has an open case: ' + row); }
