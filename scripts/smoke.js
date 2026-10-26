@@ -139,7 +139,7 @@ async function runCase(cdp, base, c, errors) {
     if (ready) break;
     await sleep(100);
   }
-  await sleep(c.fast ? 60 : 250);   // fast: the case reads its own state after the page is ready (the Quick add cases poll for what they wait on)
+  await sleep(c.fast ? 60 : 120);   // fast: the case reads its own state after the page is ready (the Quick add cases poll for what they wait on)
   const fails = [];
   if (!ready) fails.push(`the page never finished loading within ${(c.timeout || 15000) / 1000} s`);
   const tab = async () => { for (const type of ['keyDown', 'keyUp']) await cdp.send('Input.dispatchKeyEvent', { type, key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 }); };
@@ -1018,6 +1018,19 @@ const CASES = [
   { id: 'TC-PC-N02 Quick add refuses a podcast link that is already in Podcasts, without any API call', width: 1280, token: true, fixtures: PODS, ...qaWith(), check: async ctx => {
     await stubGh(ctx); await ctx.ev("document.getElementById('addOpen').click()"); await qaFill(ctx, { kind: 'podcast', url: 'https://open.spotify.com/show/abc123', title: 'Duplicate' }); await qaClick(ctx, 'qa-draft', 100);
     const s = await qs(ctx), f = []; if (!/already in your podcasts/.test(s.errs.url)) f.push('no duplicate message: "' + s.errs.url + '"'); const n = await ctx.ev('window.__puts.length'); if (n) f.push(n + ' write(s) made'); return f; } },
+  /* ---------- SPEC-RC Phase C: RC-07, RC-08 ---------- */
+  { id: 'TC-RC-B01 Books appear under the reads of their own sub-item, in the same column, and only there; no two-column layout at 375 px', width: 375, fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => {
+    const f = [], v = () => ctx.ev(`(() => { const a = document.getElementById('articlesFeed').getBoundingClientRect(), b = document.getElementById('booksFeed').getBoundingClientRect(); return { books: [...document.querySelectorAll('#booksFeed .item h3')].map(e => e.textContent.trim()), below: b.top > a.top, same: Math.round(a.left) === Math.round(b.left), over: document.documentElement.scrollWidth - innerWidth }; })()`);
+    let r = await v(); if (r.books.join() !== 'Tech book') f.push('Technical books: ' + r.books); if (!r.below || !r.same) f.push('Books are not under the reads in one column'); if (r.over > 1) f.push('overflow ' + r.over);
+    await ctx.ev("document.querySelectorAll('#readTabs [role=tab]')[1].click()"); r = await v(); if (r.books.join() !== 'Other book') f.push('Others books: ' + r.books); return f; } },
+  { id: 'TC-RC-S02 filtering by a tag or a search does not change the counts on the sub-item buttons', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => {
+    const counts = () => ctx.ev("[...document.querySelectorAll('#readTabs [role=tab]')].map(t => t.textContent.replace(/\\s+/g, ' ').trim()).join('|')"), f = [], before = await counts();
+    await ctx.ev("document.querySelector('#tagChips [data-filter=claude]').click()"); const shown = await ctx.ev("document.querySelectorAll('#articlesFeed .item').length"); const after = await counts();
+    if (before !== after) f.push('counts changed: ' + before + ' -> ' + after); if (shown >= 4) f.push('the filter did not narrow the list (' + shown + ')'); return f; } },
+  { id: 'TC-RC-S01 each read keeps its LinkedIn share link (new tab, no opener), Copy link copies the address, and Share… exists only where the browser offers it', width: 1280, fixtures: TWO, ...uxWith("window.__copied = []; Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: t => { window.__copied.push(t); return Promise.resolve(); }, readText: () => Promise.resolve('') } }); Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });"), check: async ctx => {
+    const r = await ctx.ev(`(() => { const row = document.querySelector('#articlesFeed .share-row'), a = row.querySelector('a'); const url = document.querySelector('#articlesFeed .read-title').getAttribute('href'); row.querySelector('[data-copy]').click(); return { href: a.getAttribute('href'), target: a.target, rel: a.rel, url, share: !!row.querySelector('[data-share]') }; })()`);
+    await sleep(50); const copied = await ctx.ev('window.__copied'); const f = [];
+    if (!r.href.startsWith('https://www.linkedin.com/sharing/share-offsite/?url=') || r.target !== '_blank' || !/noopener/.test(r.rel)) f.push('LinkedIn link: ' + JSON.stringify(r)); if (copied.length !== 1 || copied[0] !== r.url) f.push('copied: ' + JSON.stringify(copied) + ' want ' + r.url); if (r.share) f.push('Share… offered without navigator.share'); return f; } },
 ];
 
 async function main() {

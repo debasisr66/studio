@@ -205,6 +205,16 @@ Owner report: the footer said "Synced from GitHub · 19 Oct 2026" although the s
 | Owner device checks (2026-10-26) | VoiceOver: fine. Safari at the largest zoom: fine. Chrome at the largest zoom (about 256 CSS px): sideways blank space and cut-off content in the footer and header; fixed afterwards with two new cases at 256 and 200 px (PR "extreme zoom") |
 | Not done or not verified | **F01, the owner's walk-through: done by the owner on a real iPhone (sandbox), 2026-10-26, owner-reported**; screen readers other than VoiceOver (owner checked VoiceOver: fine); true zoom on the owner's devices was checked by the owner (Safari fine; Chrome fixed in PR #32); focus order of the owner tools and dialogs was not part of this pass; contrast of non-text UI (borders) was not measured; the focus-ring contrast check runs in the light theme only (the dark ring is about 8:1 by arithmetic) |
 
+## Q. Results: Phase C depth items (2026-10-26)
+
+| Check | Result |
+|-------|--------|
+| Unit and validator | **356 of 356** unit tests; validator OK (no JS library change: `reads-lib.js` untouched) |
+| Browser smoke | **172 of 172** in about 92 s locally (162 before; +10 cases: `TC-SH-B05 to B07` (one page), `B08`, `B09`, `TC-PC-K01`, `K02`, `N02` (composer and Quick add), `TC-RC-B01`, `S01`, `S02`). The default wait after a page is ready went from 250 ms to 120 ms (cases that need more already wait for what they need), which saved about 8 s; two full runs were stable |
+| Red first | PC-06 (K01) and PC-07 (N02, two cases) failed first. The SH-05 and RC cases passed at once: they are guards for behaviour built earlier, and the log says so |
+| Code changes | Podcast option removed from the Reads composer and Quick add type lists, with a hint; an older entry keeps its type when edited; duplicate podcast links refused in the composer and in Quick add. Nothing else in the app changed |
+| Not done | PC-08 (owner supplies 3 or more podcast links); removing the book-only editor (deferred, the spec says "where possible"); TC-PC-R05 and the 2.0 changelog (release step) |
+
 ---
 
 ## F. Not claimed in this plan

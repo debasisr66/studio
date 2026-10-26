@@ -31,10 +31,10 @@ Spec: [spec.md](spec.md) (`SPEC-RC`). IDs `TC-RC-<group><nn>`. ⬜ not run. Unit
 | TC-RC-V02 | RC-06 | Unknown category | CI error | ✅ |
 | TC-RC-V03 | RC-06 | After the bump: version `1` and a missing version are CI errors; `2` passes (rule `reads-schema-version` exists since SPEC-SH SH-04) | pass | ✅ |
 | TC-RC-V04 | RC-06 | Both rules have fixtures and runbook rows (TR-04 guard) | pass | ✅ |
-| TC-RC-S01 | RC-07 | Share, copy, native share unchanged | pass | ⬜ |
-| TC-RC-S02 | RC-07 | Counts stay whole-sub-item while filtering | pass | ⬜ |
-| TC-RC-B01 | RC-08 | Books appear under articles in their sub-item | pass | ⬜ |
-| TC-RC-B02 | RC-08 | Two-column layout gone at all widths; no overflow | pass | ⬜ |
+| TC-RC-S01 | RC-07 | Share, copy, native share unchanged | pass | ✅ |
+| TC-RC-S02 | RC-07 | Counts stay whole-sub-item while filtering | pass | ✅ |
+| TC-RC-B01 | RC-08 | Books appear under articles in their sub-item | pass | ✅ |
+| TC-RC-B02 | RC-08 | Two-column layout gone at all widths; no overflow | pass | ✅ |
 | TC-RC-X01 | RC-09 | Adding a value to `CATEGORIES` in a test double yields a third tab with no other code change | pass | ✅ (unit: `tests/spec-rc-phase-b.test.js`; browser: smoke adds a category at run time and a third tab appears) |
 
 Regression: all existing reads tests (filter, share, normalise, composer, admin) and the 142-test suite stay green; CSP clean; no new third-party request.
@@ -45,3 +45,4 @@ Exit criteria: P0 rows ✅ (RC-01 to RC-06); owner Q2 answered before M-tests ru
 - 2026-10-21: Draft created; nothing run.
 - 2026-10-22: RC Phase A run (`v2/rc-a`): `tests/spec-rc-phase-a.test.js` (17 tests; 25 of 181 failed before the build, counting 8 existing tests updated to version 2), then 181 of 181 pass; smoke 17 of 17 (new: odd categories render with no console error; admin composer publishes `category` and `schema_version` 2 with the API stubbed); validator OK. D01-D04, V01-V04, M01-M03 ✅. M01: before/after comparison of ids, urls, titles, comments, tags, kinds, added and all book fields identical (snapshot `tests/fixtures/reads-before-rc-a.json`). M02: all 5 reads and the book `technical`. M03: the `v1.5` tag exported to a scratch folder with the migrated file renders products, updates and all 5 reads with no console error (run by hand, not in CI; the in-CI half asserts the migration only adds the `category` key). X01: library half only. Groups U, L, E, S, B arrive in Phases B and C.
 - 2026-10-22: RC Phase B run (`v2/rc-b`): `tests/spec-rc-phase-b.test.js` (9 unit tests, all failed first) and 21 new smoke cases plus one updated (22 of 23 RC smoke cases failed before the build; only the Phase A odd-category case passed). Now 203 of 203 unit tests, 38 of 38 smoke cases (32 s), validator OK. U01-U08, L01-L04, E01-E04 and X01 ✅. Extra cases beyond the plan: `TC-RC-E05` (the book editor has a Section choice and a saved book moves), `TC-RC-U05` also asserts the empty section hides the search toolbar (found by looking at the page, then fixed with `.toolbar[hidden]`). U07 measures real computed colours for selected and unselected tabs in both themes (≥ 4.5:1). Groups S and B (RC-07, RC-08) arrive in Phase C.
+- 2026-10-26: Phase C cases run as guards (all passed at once; the behaviour was built in Phases A and B and UX Phase A): S01 share link, copy and Share… (clipboard stubbed); S02 counts stay whole while filtering; B01 Books under the reads of their own sub-item in one column at 375 px; B02 covered by `TC-UX-P04` and `TC-UX-A05` plus B01. **Not done (deferred in writing):** removing the book-only editor path (RC-08 says "where possible"; the book editor stays, as the spec allowed).
