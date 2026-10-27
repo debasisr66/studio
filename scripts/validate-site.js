@@ -310,6 +310,15 @@ function checkWorkflows(sources) {
       const m = ln.match(/^([ \t]*)permissions\s*:\s*([^#\n]*)/);
       if (!m) return;
       if (/^write-all\b/.test(m[2].trim())) { errors.push(`${file}: permissions: write-all is not allowed`); return; }
+      const flow = m[2].match(/^\{([^}]*)\}/);   // permissions: { contents: write }
+      if (flow) {
+        for (const w of flow[1].matchAll(/([a-z-]+)\s*:\s*write\b/g)) {
+          if (w[1] === 'contents' && WRITE_ALLOWED.includes(base)) continue;
+          if (w[1] === 'issues' && base === 'health.yml') continue;
+          errors.push(`${file}: ${w[1]}: write is not allowed here`);
+        }
+        return;
+      }
       for (let j = i + 1; j < lines.length; j++) {
         if (!lines[j].trim() || /^\s*#/.test(lines[j])) continue;
         const ind = lines[j].match(/^[ \t]*/)[0].length;

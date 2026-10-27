@@ -133,3 +133,10 @@ test('TC-CIR-R04 the checkout takes no ref (so the default branch is used), keep
 test('TC-CIR-R05 the doc says which revert command fits a merge commit and which a single commit', () => {
   assert.match(DOC, /git revert -m 1 <merge-commit>/); assert.match(DOC, /git revert <commit>/);
 });
+test('TC-CIR-R06 flow-style permissions are read too: {contents: write} is refused where contents: write is, and a read-only flow block passes', () => {
+  const wf = p => `permissions:\n  contents: read\njobs:\n  a:\n    runs-on: x\n    permissions: ${p}\n`;
+  assert.ok(V.checkWorkflows({ '.github/workflows/ci.yml': wf('{ contents: write }') }).some(e => /contents: write/.test(e)));
+  assert.ok(V.checkWorkflows({ '.github/workflows/ci.yml': wf('{ issues: write, contents: read }') }).some(e => /issues: write/.test(e)));
+  assert.deepEqual(V.checkWorkflows({ '.github/workflows/ci.yml': wf('{ contents: read }') }), []);
+  assert.deepEqual(V.checkWorkflows({ '.github/workflows/ci.yml': wf('read-all') }), []);
+});
