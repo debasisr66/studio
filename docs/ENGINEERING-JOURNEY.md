@@ -1,0 +1,98 @@
+# Studio: the engineering journey
+
+*An owner's view, written at a pause. Studio by Debasis Ray, v1.0 to v2.1, 19 to 27 October 2026.*
+
+## In one line
+
+A small, static, self-contained product hub that stays current by itself, that the owner can update from a phone, and that was built spec first, test first, and with its security-sensitive parts reviewed by a second AI model.
+
+## What Studio can do today
+
+| For visitors | For the owner |
+|--------------|---------------|
+| **Products** and **Updates** built from the products' own GitHub releases, refreshed nightly | **Add to Studio** on the phone: paste a link, post, publish, the session locks itself |
+| **Reads** (Technical and Others) with search, tags, sharing, and direct links | Reads, podcasts, profile photo and the **status line** editable without code |
+| **Podcasts**: shows and episodes worth a listen | **What's new** and the footer version and date, from one changelog file |
+| An **owner status line**: how Studio is doing, what is next, when updated | Daily health check, and an **alarm with fix steps by email** if CI goes red on `main` |
+| Works on phone and desktop, light and dark, at high zoom and by keyboard | One-command **rollback** to any tagged release |
+
+No cookies, no tracking, no third-party requests, no accounts for visitors.
+
+## The journey in six steps
+
+1. **v1.0 to v1.3 (19 Oct):** the hub, release feed, Reads, the admin layer, a strict content security policy, fonts hosted on the site itself.
+2. **v1.4 to v1.5 (20 to 21 Oct):** trust and reliability: protected history on `main`, pinned automation, a daily health check, clear failure messages with a runbook.
+3. **v1.6 (22 Oct):** Reads split into Technical and Others.
+4. **Quick add (23 Oct):** the owner's phone workflow. A second phase (prefilled links from an iPhone Shortcut) was built, reviewed, then **dropped** when it did not work on the owner's phone: the code stayed out.
+5. **v2.0 (26 Oct):** the overhaul: stabilised core, Podcasts replacing the Blog, one simple layout, accessibility and phone work.
+6. **v2.1 (27 Oct):** the owner status line, small fixes, a split code library, and the CI alarm.
+
+In numbers: 9 releases in 9 days, about 45 pull requests, 422 unit tests, 169 browser checks, 6 independent reviews.
+
+## How it was built
+
+- **Spec first.** Every change started as a short written spec with numbered requirements and a test plan, agreed with the owner.
+- **Tests first, shown failing.** Each test was written before the code and seen to fail. Where a test passed at once (because the behaviour existed) the log says so. Mutation checks proved several tests really can fail.
+- **One branch, one pull request, green CI.** The owner said "merge" every time; nothing was merged unprompted.
+- **Real devices.** The owner ran the phone checks (iPhone, Chrome and Safari, VoiceOver, zoom). They found things automatic tests missed: blank space under the footer, a layout break at the largest zoom, the landscape first screen.
+- **Plain reporting.** Every pull request lists what did not work or was not verified.
+- **Small steps, rollback ready.** Each release is a tag; the rollback recipes are tested.
+
+## Secure building practices
+
+| Practice | What it means here |
+|----------|--------------------|
+| **Strict content security policy** | No inline code, no outside hosts except the GitHub API; no cookies; nothing about visitors stored or sent |
+| **Untrusted input stays text** | Links, fragments and content values are matched against closed lists or checked by one shared rule set, and reach the page only as text |
+| **Token handling** | The owner's token lives in the tab only, is asked for just when posting, and is cleared after a successful publish |
+| **Same checks in CI and in the admin** | The rules CI applies to content are the ones the owner tools apply before every publish |
+| **Locked-down automation** | Actions pinned by commit hash, minimum permissions (validated), protected history on `main`, no secrets beyond GitHub's own token |
+| **Independent review gate** | Security-sensitive work is judged by a separate AI model (Opus 5.5 or Haiku 5.5), never by the author; findings are fixed test-first and re-checked; records are kept in `docs/reviews/` |
+| **Human checkpoint** | A ten-minute owner read of the findings, the CSP and the token code before merging sensitive changes |
+| **Alarm, not a lock** | CI cannot be made mandatory without stopping the bots, so a red `main` raises an issue with fix steps by email |
+
+## Honest lessons
+
+- Several defects reached the owner or a reviewer before they reached my tests. Measuring a layout is not the same as looking at it.
+- Some tests proved less than their names claimed. Reviews and mutation checks caught them, and the guards got stricter.
+- Size budgets (and the CI time limit) became real constraints; they were trimmed, then raised or split on purpose.
+- Dropping a feature that did not work (the iPhone Shortcut) was the right call and cost little because the process allowed it.
+
+## The owner's guidelines for AI-native development
+
+The principles the owner applied, as seen in how the work was directed. The AI was treated as a capable, fallible colleague: fast and tireless, and in need of checks.
+
+1. **Simplicity is a requirement.** "Simplicity is the key." Features that add no value, or that did not work on the owner's phone, were dropped. Making removal cheap is part of the process.
+2. **Spec first, tests first, show the failure.** A test never seen failing proves nothing. AI-written tests can pass for the wrong reason, so the log says when a test passed at once.
+3. **The owner decides; nothing happens unprompted.** Wide freedom to build, none to publish, merge or hold a secret. Every merge waited for the owner's word.
+4. **Independent judgement of sensitive work.** The author never grades its own security work: a different model with fresh context reviews it, and a human checkpoint covers what a model cannot.
+5. **Decide with evidence.** Ask for risk, impact, likelihood and who is affected, then accept or fix each item explicitly. Visitors and the owner are separate lenses.
+6. **Value sets the boundary.** AI can chase completeness without end. The owner says what is not important (for example, extra screen readers) and the AI records it.
+7. **Quality without bulk.** Strongest coverage with clear traceability, not the most tests: trim, but show where each removed check is still covered.
+8. **A failure arrives with its fix.** An alarm without next steps moves the work back to the human. The red-CI alert emails the steps, and a doc holds them.
+9. **Test on real devices and report honestly.** Automation measures, people see. The owner found what the tests missed, and every change lists what was not verified.
+10. **Plain words, plain steps.** Visitor wording and owner instructions are design work: clear labels, step-by-step checks.
+11. **Freeze, tag, roll back.** Fast iteration needs hard release boundaries and a tested way back.
+
+## If you run an agency that builds products
+
+The same practices, read as an agency owner's responsibilities when building products for clients:
+
+1. **Own the decisions, not the typing.** Scope, risk acceptance and release are the agency owner's. Set explicit sign-off points where the AI stops and a person says go.
+2. **Make quality visible to the client.** A spec, a test plan and a short evidence note per release, including what was not verified, is a deliverable a client can read and trust.
+3. **Separate the builder from the checker.** An independent review (another model, then a human checkpoint on sensitive work) is assurance you can offer, not an overhead.
+4. **Security by default, as a house standard.** A fixed baseline: strict content policy, least privilege, pinned automation, no secrets in the repository, input kept as text. Reuse it on every product.
+5. **Predictable delivery.** Small changes, green checks, tagged releases, a tested rollback and frozen release boundaries make delivery boring in the best way.
+6. **Protect focus; drop what does not earn its place.** Say no to features that add no value, and make removal cheap, so scope and margin stay under control.
+7. **Validate with real users and real devices.** Automation measures; people see. Put a real-device pass in every definition of done.
+8. **Hand over something the client can run.** Runbook, operations guide, content contract, architecture and an alarm that arrives with its fix steps, so the product does not depend on the people who built it.
+9. **Keep a risk register with named owners.** Rate each risk by likelihood, impact and who is affected; accept or fix it explicitly and record the date.
+10. **Turn the process into a playbook.** The spec and test templates, the review gate, size and time budgets and the guard tests carry over to the next product.
+
+## Where it stands, and what is next
+
+Studio 2.1 is live and frozen for now. Open: the owner's sign-off on the review records and the accepted risks, a real-phone look at the status line, and proving the CI-red email on a real red run. Ideas parked: an owner-tools entry for the status line, greying a stale status, loading owner-only code on demand.
+
+Also as a self-contained page: [engineering-journey.html](engineering-journey.html).
+
+More detail: [plan](plan.md) · [security log](security.md) · [test results](test.md) · [specs](specs/README.md) · [reviews](reviews/) · [architecture](ARCHITECTURE.md)
