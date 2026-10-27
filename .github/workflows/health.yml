@@ -7,10 +7,16 @@ on:
   schedule:
     - cron: '0 12 * * *'
   workflow_dispatch:
+  # also right after CI finishes on main, so a red main is reported in minutes, not at noon (docs/CI-RED-FIX.md)
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: read
-  actions: read      # lets the check see whether any workflow has been switched off
+  actions: read      # lets the check see whether any workflow has been switched off, and read the CI runs
+  issues: write      # the one issue that carries the fix steps when CI is red on main (the only write this workflow has)
 
 jobs:
   health:

@@ -105,3 +105,6 @@ test('TC-CIR-W04 the workflow run only trusts main: the trigger is limited to ma
   const y = read('.github/workflows/health.yml'); assert.match(y, /branches:\s*\[main\]/);
   assert.ok(!/github\.event\.workflow_run\.head_branch/.test(y.replace(/#.*$/gm, '')) || /ref:\s*main/.test(y));
 });
+test('TC-CIR-W05 only pushes to main count: the CI runs are read with event=push, so a pull request from a fork whose branch is also called main cannot raise the alarm', () => {
+  assert.match(read('scripts/health-check.js'), /workflows\/ci\.yml\/runs\?branch=main&event=push&status=completed/);
+});

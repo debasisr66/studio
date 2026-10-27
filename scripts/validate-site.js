@@ -308,6 +308,7 @@ function checkWorkflows(sources) {
     const block = (text.match(/^permissions\s*:\s*\n((?:[ \t]+[^\n]*\n?)*)/m) || [, ''])[1];
     for (const m of block.matchAll(/^[ \t]+([a-z-]+)\s*:\s*write\b/gm)) {
       if (m[1] === 'contents' && WRITE_ALLOWED.includes(base)) continue;
+      if (m[1] === 'issues' && base === 'health.yml') continue;   // the CI-red issue (docs/CI-RED-FIX.md); nothing else may write issues
       errors.push(`${file}: ${m[1]}: write is not allowed here${m[1] === 'contents' ? ' (only ' + WRITE_ALLOWED.join(' and ') + ' may commit)' : ''}`);
     }
   }

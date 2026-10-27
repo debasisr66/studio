@@ -54,7 +54,7 @@ gh run watch                                                           # follow 
 | `configured download_asset … matches no asset`, `cached download … differs from GitHub` | [release or download missing](#release-or-download-missing) |
 | `workflow "…" is …` | [disabled](#scheduled-workflow-disabled) |
 | `last successful sync was N hours ago`, `no successful run on record` | [sync](#sync-failed-or-did-not-run) |
-| `CI is red on main: the newest finished run failure …` | [bad commit on main](#bad-commit-on-main): open the run, then `git revert` the commit or fix forward; CI is not a required check, so this message is the alarm |
+| `CI is red on main: the newest finished run failure …` | [CI is red on main](#ci-is-red-on-main): the steps are in [CI-RED-FIX.md](CI-RED-FIX.md) and arrive by email as an issue; CI is not a required check, so this is the alarm |
 | `warning: … is in cache.json but hidden or not in the registry` | Note only; remove the entry when convenient |
 
 Each health problem line ends with `Fix: docs/RUNBOOK.md#<section>`.
@@ -130,6 +130,10 @@ Every content rule CI enforces, with what to do (each is proven by a failing fix
 - **`console errors:`** a new error appeared on a healthy page; fix the cause.
 - **`Chrome not found`:** install Chrome, or set `CHROME_BIN`. On GitHub's runner Chrome is preinstalled; a missing Chrome there means the runner image changed.
 - **Cleanup message such as `ENOTEMPTY`:** harmless temp-folder cleanup; the script ignores it (fixed in v2.0 SH Phase A).
+
+## CI is red on main
+
+Follow [CI-RED-FIX.md](CI-RED-FIX.md). The same steps are emailed as a GitHub issue titled **CI is red on main** the moment CI fails on `main` (the Health check workflow runs when CI finishes, and daily). The issue closes itself when CI is green again. First question: is the live site broken for visitors; if yes, revert first.
 
 ## Bad commit on `main`
 

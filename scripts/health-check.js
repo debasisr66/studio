@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const RL = require('../js/reads-lib.js');
+const CIRED = require('./ci-red.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const SITE = (process.env.HEALTH_URL || 'https://debasisr66.github.io/studio').replace(/\/$/, '');
@@ -95,7 +96,7 @@ function findMissingRepos(registry, existsByRepo) {
 
 /* Every problem line carries a pointer to the matching runbook section (TR-08). */
 const FIXES = [
-  [/CI is red on main/i, 'bad-commit-on-main'],
+  [/CI is red on main/i, 'ci-is-red-on-main'],
   [/last successful sync|no successful run/i, 'sync-failed-or-did-not-run'],
   [/not found on GitHub/i, 'sync-failed-or-did-not-run'],
   [/download_asset|cached download/i, 'release-or-download-missing'],
@@ -182,9 +183,13 @@ async function main() {
     const repo = process.env.GITHUB_REPOSITORY || 'debasisr66/studio';
     const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'studio-health' };
     if (TOKEN) headers.Authorization = 'Bearer ' + TOKEN;
-    const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/ci.yml/runs?branch=main&status=completed&per_page=5`, { headers });
-    if (res.ok) problems.push(...findCiRed((await res.json()).workflow_runs));
-    else notes.push(`could not read CI runs: GitHub API ${res.status}`);
+    const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/ci.yml/runs?branch=main&event=push&status=completed&per_page=5`, { headers });
+    if (res.ok) {
+      const runs = (await res.json()).workflow_runs;
+      problems.push(...findCiRed(runs));
+      // inside GitHub Actions only: open, update or close the one issue that carries the fix steps (a local run must not write anything)
+      if (process.env.GITHUB_ACTIONS && process.env.GITHUB_REPOSITORY) notes.push(await CIRED.syncIssue({ fetch, repo: process.env.GITHUB_REPOSITORY, token: TOKEN, runs, doc: fs.readFileSync(path.join(ROOT, CIRED.DOC), 'utf8') }));
+    } else notes.push(`could not read CI runs: GitHub API ${res.status}`);
   } catch (e) { notes.push('could not read CI runs: ' + e.message); }
 
   notes.forEach(n => console.log('note  ' + n));
