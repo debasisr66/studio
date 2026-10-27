@@ -58,6 +58,22 @@ In numbers: 9 releases in 9 days, about 45 pull requests, 422 unit tests, 169 br
 - Size budgets (and the CI time limit) became real constraints; they were trimmed, then raised or split on purpose.
 - Dropping a feature that did not work (the iPhone Shortcut) was the right call and cost little because the process allowed it.
 
+## The owner's guidelines for AI-native development
+
+The principles the owner applied, as seen in how the work was directed. The AI was treated as a capable, fallible colleague: fast and tireless, and in need of checks.
+
+1. **Simplicity is a requirement.** "Simplicity is the key." Features that add no value, or that did not work on the owner's phone, were dropped. Making removal cheap is part of the process.
+2. **Spec first, tests first, show the failure.** A test never seen failing proves nothing. AI-written tests can pass for the wrong reason, so the log says when a test passed at once.
+3. **The owner decides; nothing happens unprompted.** Wide freedom to build, none to publish, merge or hold a secret. Every merge waited for the owner's word.
+4. **Independent judgement of sensitive work.** The author never grades its own security work: a different model with fresh context reviews it, and a human checkpoint covers what a model cannot.
+5. **Decide with evidence.** Ask for risk, impact, likelihood and who is affected, then accept or fix each item explicitly. Visitors and the owner are separate lenses.
+6. **Value sets the boundary.** AI can chase completeness without end. The owner says what is not important (for example, extra screen readers) and the AI records it.
+7. **Quality without bulk.** Strongest coverage with clear traceability, not the most tests: trim, but show where each removed check is still covered.
+8. **A failure arrives with its fix.** An alarm without next steps moves the work back to the human. The red-CI alert emails the steps, and a doc holds them.
+9. **Test on real devices and report honestly.** Automation measures, people see. The owner found what the tests missed, and every change lists what was not verified.
+10. **Plain words, plain steps.** Visitor wording and owner instructions are design work: clear labels, step-by-step checks.
+11. **Freeze, tag, roll back.** Fast iteration needs hard release boundaries and a tested way back.
+
 ## Where it stands, and what is next
 
 Studio 2.1 is live and frozen for now. Open: the owner's sign-off on the review records and the accepted risks, a real-phone look at the status line, and proving the CI-red email on a real red run. Ideas parked: an owner-tools entry for the status line, greying a stale status, loading owner-only code on demand.
