@@ -27,7 +27,7 @@ test('TC-RISK-R03 the admin publish path runs the reads check before anything is
   const app = fs.readFileSync(path.join(ROOT, 'js/app.js'), 'utf8');
   assert.match(app, /RL\.validateReadsFile\(data\)/);
 });
-test('TC-RISK-R04 reads-lib stays within its size budget', () => assert.ok(fs.statSync(path.join(ROOT, 'js/reads-lib.js')).size <= 34 * 1024));
+test('TC-RISK-R04 reads-lib stays within its size budget', () => assert.ok(fs.statSync(path.join(ROOT, 'js/reads-lib.js')).size <= 24 * 1024));
 
 const run = (conclusion, when, status = 'completed') => ({ conclusion, status, updated_at: when, html_url: 'https://github.com/o/r/actions/runs/1' });
 test('TC-RISK-C01 findCiRed: the newest finished CI run on main failing is a problem; a passing newest run is not', () => {

@@ -19,12 +19,13 @@ test('TC-SPLIT-01 the interface is the same 51 names after the split, in Node', 
   for (const k of API) assert.ok(RL[k] !== undefined, k);
 });
 test('TC-SPLIT-02 the browser path gives the same interface: the four files run in order with no module system, as the page loads them', () => {
-  const sandbox = { self: {}, URL };   // a browser has URL sandbox.self.self = sandbox.self; vm.createContext(sandbox);
+  const sandbox = { self: {}, URL };   // a browser has URL
+  sandbox.self.self = sandbox.self; vm.createContext(sandbox);
   for (const f of ['js/reads-lib.js', ...PARTS]) vm.runInContext(read(f), sandbox, { filename: f });
   const L = sandbox.self.ReadsLib; assert.ok(L, 'ReadsLib was not created');
   assert.deepEqual(Object.keys(L).filter(k => k !== '_h').sort(), [...API].sort());
   assert.equal(L.platformOf('https://open.spotify.com/show/x'), 'Spotify');                               // podcast part
-  assert.deepEqual(L.statusView({ schema_version: 1, updated: '2026-10-01', items: [{ label: 'a', value: 'b' }] }).items, [{ label: 'a', value: 'b' }]);   // status part
+  assert.equal(JSON.stringify(L.statusView({ schema_version: 1, updated: '2026-10-01', items: [{ label: 'a', value: 'b' }] }).items), '[{"label":"a","value":"b"}]');   // status part
   assert.equal(L.suggestKind('https://open.spotify.com/show/x'), 'podcast');                               // quick add part uses the podcast part
   assert.equal(L.normalizeUrl('https://Example.com/a#x'), 'https://example.com/a');                         // core
 });
