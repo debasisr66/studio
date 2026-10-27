@@ -33,7 +33,7 @@ function issueBody(run, steps) {
 
 function newest(runs) {
   const done = (Array.isArray(runs) ? runs : []).filter(r => r && r.status === 'completed' && r.conclusion && r.conclusion !== 'cancelled' && !isNaN(Date.parse(r.updated_at)))
-    .sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
+    .sort((a, b) => (b.run_number || 0) - (a.run_number || 0) || Date.parse(b.updated_at) - Date.parse(a.updated_at));   // push order, not finishing order
   return done[0] || null;
 }
 

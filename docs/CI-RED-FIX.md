@@ -10,7 +10,7 @@ The newest finished CI run on `main` failed. The live site may or may not be aff
 1. **Is the live site broken?** Open https://debasisr66.github.io/studio/ and run `GH_TOKEN=$(gh auth token) node scripts/health-check.js`. If the site is broken for visitors, revert first (step 4) and investigate after.
 2. **Find the failing step.** `gh run list --workflow ci.yml --branch main --limit 3`, then `gh run view <run-id> --log-failed`. The step name tells you the kind of failure (table below).
 3. **Flake or real?** If the log says "Chrome did not report a DevTools address", a timeout with no failing case, or a network error, rerun it once: `gh run rerun <run-id> --failed`. Green on rerun means a flake; note it. Red again means real.
-4. **Fix forward or revert.** A small, clear fix goes in a pull request with its test first. Otherwise undo the change that caused it: `git revert -m 1 <merge-commit>` on a branch, pull request, green CI, merge. Never force-push `main`.
+4. **Fix forward or revert.** A small, clear fix goes in a pull request with its test first. Otherwise undo the change that caused it: `git revert -m 1 <merge-commit>` for a merge commit, or `git revert <commit>` for a single commit, on a branch, pull request, green CI, merge. Never force-push `main`.
 5. **Confirm.** CI green on `main`, `node scripts/health-check.js` says HEALTHY, and this issue closes itself on the first green run (close it by hand if it does not).
 <!-- steps:end -->
 

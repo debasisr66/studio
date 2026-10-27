@@ -56,7 +56,7 @@ function findSyncStale(runs, now = Date.now(), maxHours = SYNC_MAX_AGE_HOURS) {
    returns them (newest first). Only a finished run counts; cancelled runs (superseded by a newer push) and running ones are skipped. */
 function findCiRed(runs) {
   var done = (Array.isArray(runs) ? runs : []).filter(function (r) { return r && r.status === 'completed' && r.conclusion && r.conclusion !== 'cancelled' && !isNaN(Date.parse(r.updated_at)); })
-    .sort(function (a, b) { return Date.parse(b.updated_at) - Date.parse(a.updated_at); });
+    .sort(function (a, b) { return (b.run_number || 0) - (a.run_number || 0) || Date.parse(b.updated_at) - Date.parse(a.updated_at); });   // push order (run_number), not the order the runs happened to finish in
   if (!done.length || ['success', 'skipped', 'neutral'].includes(done[0].conclusion)) return [];
   return [`CI is red on main: the newest finished run ${done[0].conclusion} (${done[0].html_url || 'see the Actions tab'}, ${done[0].updated_at}).`];
 }

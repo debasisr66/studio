@@ -88,7 +88,6 @@ test('TC-CIR-W01 the health workflow also runs when CI finishes on main, keeps t
   assert.match(y, /schedule:[\s\S]*cron:/); assert.match(y, /workflow_dispatch:/);
   const block = y.match(/^permissions:\s*\n((?:[ \t]+[^\n]*\n)+)/m)[1];
   assert.match(block, /issues:\s*write/); assert.deepEqual([...block.matchAll(/^[ \t]+([a-z-]+):\s*write/gm)].map(m => m[1]), ['issues']);
-  assert.match(y, /name: CI|workflows:\s*\[CI\]/);
 });
 test('TC-CIR-W02 the validator allows issues: write only in health.yml, and still refuses it elsewhere and every other write', () => {
   const wf = perm => `permissions:\n  contents: read\n  ${perm}\njobs: {}\n`;
@@ -101,10 +100,36 @@ test('TC-CIR-W03 the real workflow files pass the validator rules', () => {
   const src = {}; for (const f of fs.readdirSync(path.join(ROOT, '.github/workflows'))) src['.github/workflows/' + f] = read('.github/workflows/' + f);
   assert.deepEqual(V.checkWorkflows(src), []);
 });
-test('TC-CIR-W04 the workflow run only trusts main: the trigger is limited to main and the checkout is the default branch', () => {
-  const y = read('.github/workflows/health.yml'); assert.match(y, /branches:\s*\[main\]/);
-  assert.ok(!/github\.event\.workflow_run\.head_branch/.test(y.replace(/#.*$/gm, '')) || /ref:\s*main/.test(y));
-});
 test('TC-CIR-W05 only pushes to main count: the CI runs are read with event=push, so a pull request from a fork whose branch is also called main cannot raise the alarm', () => {
   assert.match(read('scripts/health-check.js'), /workflows\/ci\.yml\/runs\?branch=main&event=push&status=completed/);
+});
+
+// Haiku 5.5 review (docs/reviews/CI-RED.md): findings 1 to 4, 7, 8
+const run2 = (conclusion, n, t) => ({ status: 'completed', conclusion, run_number: n, updated_at: t, html_url: 'https://github.com/o/r/actions/runs/' + n, head_sha: 'abcdef1234567', display_title: 't' });
+test('TC-CIR-R01 concurrent health runs cannot both open an issue: the workflow serialises itself', () => {
+  assert.match(read('.github/workflows/health.yml'), /^concurrency:\s*\n\s+group:\s*health\s*\n\s+cancel-in-progress:\s*false/m);
+});
+test('TC-CIR-R02 the newest run is the newest PUSH, not the last to finish: a late red run of an older push does not open an issue or raise the alarm', async () => {
+  const runs = [run2('failure', 10, '2026-10-27T10:05:00Z'), run2('success', 11, '2026-10-27T10:02:00Z')];   // push 11 finished first; push 10 finished red afterwards
+  const g = fakeGh([]); await C.syncIssue({ fetch: g.fetch, repo: 'o/r', token: 't', runs, doc: DOC });
+  assert.equal(g.calls.filter(c => c.m !== 'GET').length, 0);
+  assert.deepEqual(require('../scripts/health-check.js').findCiRed(runs), []);
+  const red = [run2('success', 10, '2026-10-27T10:05:00Z'), run2('failure', 11, '2026-10-27T10:02:00Z')];
+  assert.equal(require('../scripts/health-check.js').findCiRed(red).length, 1);
+});
+test('TC-CIR-R03 the validator reads permissions blocks at any depth: a job-level write or write-all is refused', () => {
+  const job = body => `permissions:\n  contents: read\njobs:\n  a:\n    runs-on: x\n${body}`;
+  assert.ok(V.checkWorkflows({ '.github/workflows/ci.yml': job('    permissions:\n      contents: write\n') }).some(e => /contents: write/.test(e)));
+  assert.ok(V.checkWorkflows({ '.github/workflows/ci.yml': job('    permissions:\n      issues: write\n') }).some(e => /issues: write/.test(e)));
+  assert.ok(V.checkWorkflows({ '.github/workflows/ci.yml': job('    permissions: write-all\n') }).some(e => /write-all/.test(e)));
+  assert.deepEqual(V.checkWorkflows({ '.github/workflows/ci.yml': job('    permissions:\n      contents: read\n') }), []);
+});
+test('TC-CIR-R04 the checkout takes no ref (so the default branch is used), keeps no credentials, and the trigger names the real CI workflow', () => {
+  const y = read('.github/workflows/health.yml');
+  assert.ok(!/^\s*ref:/m.test(y), 'no ref: line');
+  assert.match(y, /uses: actions\/checkout@[0-9a-f]{40}[^\n]*\n\s+with:\s*\n\s+persist-credentials:\s*false/);
+  assert.match(read('.github/workflows/ci.yml'), /^name: CI\s*$/m); assert.match(y, /workflows:\s*\[CI\]/);
+});
+test('TC-CIR-R05 the doc says which revert command fits a merge commit and which a single commit', () => {
+  assert.match(DOC, /git revert -m 1 <merge-commit>/); assert.match(DOC, /git revert <commit>/);
 });
