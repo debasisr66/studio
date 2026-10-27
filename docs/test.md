@@ -290,6 +290,19 @@ Every removed case id is named in `tests/smoke-trim-coverage.test.js`, which fai
 | After the merge (owner says merge) | push the tag `v2.1`, `gh run list`, `health-check.js`, check the live footer shows "Studio v2.1" and What's new lists 2.1 first, the status line shows |
 | Not done | the live checks (after the merge); a real phone look at the status line (sandbox) |
 
+## X. Results: size budgets raised by decision (2026-10-27)
+
+Owner decision: raise the limits knowingly. `js/reads-lib.js` 30 to 34 KB and the total 150 to 160 KB in `scripts/validate-site.js`; the test that pins the budget table (TC-QA-S03) failed first, then passed with the new numbers. Why: the library stood at 28.7 KB and the total at 148.9 KB, so the next feature would have tripped the guard; raw size matters little (the files are served compressed, about 35 to 40 KB over the wire) and the guard stays, only wider. A split of the library moves bytes between files and does not remove them. Unit 415 of 415, validator OK. Not changed: the other per-file budgets (`app.js` is 71 of 80 KB).
+
+## Y. Results: the library split (2026-10-27)
+
+| Check | Result |
+|-------|--------|
+| What changed | `js/reads-lib.js` (28.7 KB) is now four files with **one interface** (`ReadsLib`, the same 51 names): `reads-lib.js` (core and Reads, 16.7 KB), `podcast-lib.js` (7.6), `status-lib.js` (2.7), `quickadd-lib.js` (4.7). The parts install themselves after reads-lib.js (the page loads them in order; in Node reads-lib.js requires them), so `app.js`, the validator and every existing test are unchanged. The functions were moved by a script, not retyped; shared helpers reach the parts through an internal `ReadsLib._h` |
+| Tests | `tests/lib-split.test.js` (7 cases, written first; 4 failed for the page wiring, budgets and health list): same 51 names in Node and when the four files run with no module system (as in a browser); script order; a budget per file and room in reads-lib.js; the health check serves the new files; the page never uses `_h`; no name defined twice. Unit **422 of 422**, validator OK, smoke **169 of 169** in about 72 s |
+| Size | the split adds about 3 KB of wrapper text: total 152.2 KB of the 160 KB budget; per file: reads-lib 24, podcast 10, status 6, quickadd 8 KB budgets (the owner's 34 KB limit was replaced by these tighter ones). The split does not reduce the bytes a visitor downloads; it adds three requests |
+| Not verified | on a real phone (the sandbox is for that); an independent review was not run: no behaviour changed, and the interface and the browser load path are pinned by tests |
+
 ---
 
 ## F. Not claimed in this plan

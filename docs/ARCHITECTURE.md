@@ -41,7 +41,7 @@ Key property: **data flows one way**. Product repos notify the hub; the hub only
 | `css/site.css` | The stylesheet, including the `@font-face` rules | Developer |
 | `fonts/` | Self-hosted Inter and JetBrains Mono (Latin and Latin Extended) with their licences | Developer |
 | `assets/logo.svg` | The Studio logo (header mark and favicon) | Developer |
-| `js/app.js`, `js/reads-lib.js` | Site logic and admin layer; pure, unit-tested helpers (URLs, validation, filters, dates, asset choice) | Developer |
+| `js/app.js`, `js/reads-lib.js`, `js/podcast-lib.js`, `js/status-lib.js`, `js/quickadd-lib.js` | Site logic and admin layer; pure, unit-tested helpers (URLs, validation, filters, dates, asset choice). One interface (`ReadsLib`) built from four files since 2026-10-27: reads-lib.js holds the core and Reads, the other three add podcasts, the status line and Quick add | Developer |
 | `js/token-store.js` | Where the admin token lives (`sessionStorage`, memory fallback, legacy purge) and the idle lock; unit-tested | Developer |
 | `js/image-lib.js` | Rules for the profile photo (types, limits, crop, quality steps, JPEG reader); unit-tested | Developer |
 | `content/profile.json`, `content/profile.jpg` | The profile photo manifest and the photo (the photo exists only after the owner uploads one) | Admin screen |
@@ -190,7 +190,7 @@ flowchart TB
   subgraph Repo[studio repo, static files]
     IDX[index.html: sections Products, Updates, Reads, Podcasts]
     APP[js/app.js: boot, guarded renderers, admin]
-    LIBS[js/reads-lib.js, js/image-lib.js, js/token-store.js: pure, tested]
+    LIBS[js/reads-lib.js + podcast-lib.js, status-lib.js, quickadd-lib.js; js/image-lib.js, js/token-store.js: pure, tested]
     CON[content/: products, cache, reads (v2), podcasts (new), changelog, profile, blog (archive)]
     CI[CI: unit tests, validator + RULES fixtures, smoke test (new)]
   end
@@ -221,6 +221,7 @@ The sync and its workflows, product repos and the one-way flow, CSP, token handl
 
 | Module | Owns | Does not touch |
 |--------|------|----------------|
-| `js/reads-lib.js` | URL rules, categories, filters, platform labels, share links | DOM, storage |
+| `js/reads-lib.js` | URL rules, limits, versions, categories, filters, share links (the core and Reads) | DOM, storage |
+| `js/podcast-lib.js`, `js/status-lib.js`, `js/quickadd-lib.js` | Podcast checks and labels, the status-line rules, Quick add parsing; each installs itself into `ReadsLib` after reads-lib.js | DOM, storage |
 | `js/app.js` | DOM, events, fetch, admin | Rules that can be pure |
 
