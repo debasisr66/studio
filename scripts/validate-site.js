@@ -370,6 +370,8 @@ function run() {
   const podcasts = json('content/podcasts.json');
   if (podcasts !== undefined) { const r = validatePodcasts(podcasts); errors.push(...r.errors); warnings.push(...r.warnings); }
 
+  const status = json('content/status.json');
+  if (status !== undefined) errors.push(...validateStatus(status, Date.now()).errors);
   const changelog = json('content/changelog.json');
   if (changelog !== undefined) errors.push(...validateChangelog(changelog));
 
@@ -408,6 +410,12 @@ function run() {
 /* TR-04: the content rules, enumerated. Each one needs a failing fixture in tests/fixtures/<id>.json ({input, registry?}), a runbook
    section (fix) and a phrase the runbook must contain (doc). A test fails if any of these is missing, so no rule is untested. */
 const RULES = [
+  { id: 'status-schema-version', fn: 'validateStatus', level: 'error', match: /schema_version must be/, fix: 'ci-rejects-content', doc: 'schema_version must be' },
+  { id: 'status-items', fn: 'validateStatus', level: 'error', match: /items must be a list of 1 to 4/, fix: 'ci-rejects-content', doc: 'items must be a list of 1 to 4' },
+  { id: 'status-label', fn: 'validateStatus', level: 'error', match: /label must be text/, fix: 'ci-rejects-content', doc: 'label must be text' },
+  { id: 'status-value', fn: 'validateStatus', level: 'error', match: /value must be text/, fix: 'ci-rejects-content', doc: 'value must be text' },
+  { id: 'status-updated', fn: 'validateStatus', level: 'error', match: /updated must be a real date|is in the future/, fix: 'ci-rejects-content', doc: 'updated must be a real date' },
+  { id: 'status-plain', fn: 'validateStatus', level: 'error', match: /must be plain text/, fix: 'ci-rejects-content', doc: 'must be plain text (no markup' },
   { id: 'product-repo-format', fn: 'validateProducts', level: 'error', match: /repo must look like/, fix: 'ci-rejects-content', doc: 'repo must look like' },
   { id: 'product-repo-duplicate', fn: 'validateProducts', level: 'error', match: /duplicate repo/, fix: 'ci-rejects-content', doc: 'duplicate repo' },
   { id: 'product-url-clean', fn: 'validateProducts', level: 'error', match: /url must be a clean/, fix: 'ci-rejects-content', doc: 'clean http(s) address' },
@@ -446,6 +454,7 @@ const RULES = [
   { id: 'changelog-version', fn: 'validateChangelog', level: 'error', match: /version must look like/, fix: 'ci-rejects-content', doc: 'version must look like' },
   { id: 'changelog-plain-text', fn: 'validateChangelog', level: 'error', match: /plain text/, fix: 'ci-rejects-content', doc: 'plain text' },
 ];
+const validateStatus = (file, now) => RL.validateStatusFile(file, now);   // SPEC-ST: the rules live in js/reads-lib.js, so the page and CI agree
 const RULE_NOW = Date.parse('2026-10-21T12:00:00Z');
 
 /* Runs the validator a rule belongs to on a fixture ({input, registry?}); always returns { errors, warnings }. */
@@ -458,6 +467,7 @@ function runRule(rule, fx) {
     case 'validateChangelog': return arr(validateChangelog(fx.input));
     case 'validateReads': return validateReads(fx.input);
     case 'validatePodcasts': return validatePodcasts(fx.input);
+    case 'validateStatus': return validateStatus(fx.input, RULE_NOW);
     default: throw new Error('unknown validator ' + rule.fn);
   }
 }
@@ -470,7 +480,7 @@ function checkContractDoc(doc, files, ruleIds) {
 }
 const missingFixtures = (rules, ids) => rules.filter(r => !ids.includes(r.id)).map(r => r.id);
 
-module.exports = { RULES, runRule, missingFixtures, checkContractDoc, productWarnings, checkWorkflows, validateProfileManifest, validateProfileImage, checkSvg, checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validatePodcasts, run, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
+module.exports = { validateStatus, RULES, runRule, missingFixtures, checkContractDoc, productWarnings, checkWorkflows, validateProfileManifest, validateProfileImage, checkSvg, checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validatePodcasts, run, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
 
 if (require.main === module) {
   const { errors, warnings, sizes } = run();
