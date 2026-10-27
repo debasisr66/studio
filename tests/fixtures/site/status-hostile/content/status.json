@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "updated": "2026-10-26",
+  "items": [
+    {
+      "label": "Studio",
+      "value": "<img src=x onerror=\"window.__x=1\">"
+    },
+    {
+      "label": "Next",
+      "value": "<script>window.__x=1</script>"
+    }
+  ]
+}
