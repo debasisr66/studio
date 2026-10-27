@@ -290,6 +290,10 @@ Every removed case id is named in `tests/smoke-trim-coverage.test.js`, which fai
 | After the merge (owner says merge) | push the tag `v2.1`, `gh run list`, `health-check.js`, check the live footer shows "Studio v2.1" and What's new lists 2.1 first, the status line shows |
 | Not done | the live checks (after the merge); a real phone look at the status line (sandbox) |
 
+## X. Results: size budgets raised by decision (2026-10-27)
+
+Owner decision: raise the limits knowingly. `js/reads-lib.js` 30 to 34 KB and the total 150 to 160 KB in `scripts/validate-site.js`; the test that pins the budget table (TC-QA-S03) failed first, then passed with the new numbers. Why: the library stood at 28.7 KB and the total at 148.9 KB, so the next feature would have tripped the guard; raw size matters little (the files are served compressed, about 35 to 40 KB over the wire) and the guard stays, only wider. A split of the library moves bytes between files and does not remove them. Unit 415 of 415, validator OK. Not changed: the other per-file budgets (`app.js` is 71 of 80 KB).
+
 ---
 
 ## F. Not claimed in this plan

@@ -25,8 +25,8 @@ const KNOWN_CATEGORIES = ['Productivity', 'Information', 'Tools', 'Education', '
 const ISO_UTC_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
 
-// size budgets in bytes: generous versus today's sizes, tight enough to catch accidental bloat (reads-lib.js 20 -> 26 KB for the Quick add helpers, SPEC-QA Phase A, 2026-10-23; 26 -> 30 KB on 2026-10-27 after the shared whole-file validators left it at 26,582 of 26,624 bytes; the total is unchanged and has room: about 144.7 of 150 KB)
-const BUDGETS = { 'index.html': 60 * 1024, 'css/site.css': 30 * 1024, 'js/app.js': 80 * 1024, 'js/reads-lib.js': 30 * 1024, 'js/safe-lib.js': 10 * 1024, 'js/token-store.js': 10 * 1024, 'js/image-lib.js': 10 * 1024, total: 150 * 1024 };
+// size budgets in bytes: generous versus today's sizes, tight enough to catch accidental bloat (reads-lib.js 20 -> 26 KB for the Quick add helpers, SPEC-QA Phase A, 2026-10-23; 26 -> 30 KB on 2026-10-27 after the shared whole-file validators left it at 26,582 of 26,624 bytes; 30 -> 34 KB and total 150 -> 160 KB on 2026-10-27 as an owner decision, after the library reached 28.7 KB and the total 148.9 KB: raw size matters little (about 35 to 40 KB compressed over the wire) and the guard stays, only wider; a split moves bytes but does not remove them)
+const BUDGETS = { 'index.html': 60 * 1024, 'css/site.css': 30 * 1024, 'js/app.js': 80 * 1024, 'js/reads-lib.js': 34 * 1024, 'js/safe-lib.js': 10 * 1024, 'js/token-store.js': 10 * 1024, 'js/image-lib.js': 10 * 1024, total: 160 * 1024 };
 
 function validateProducts(list) {
   if (!Array.isArray(list)) return ['products.json: must be an array'];
