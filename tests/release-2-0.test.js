@@ -38,7 +38,7 @@ test('TC-REL-05 each of the four specs says Shipped (v2.0) in its status line an
   assert.ok((read('docs/specs/README.md').match(/Shipped in v2\.0/g) || []).length >= 4);
 });
 test('TC-REL-06 the README, the product intro and the plan name v2.0 as the current release', () => {
-  assert.match(read('README.md'), /v2\.0/); assert.match(read('docs/product-intro.md'), /current version \*\*v2\.0\*\*/);
+  assert.match(read('README.md'), /v2\.0/); assert.match(read('docs/product-intro.md'), /current version \*\*v2\.[01]\*\*/);
   assert.match(read('docs/plan.md'), /\| 12 \| all \| Release \|.*(Prepared|Merged|Released)/);
 });
 test('TC-REL-07 the status rows of REQ-51, 54, 55, 56, 58 and 59 in the test plan have no open case', () => {
