@@ -1037,6 +1037,9 @@ const CASES = [
     await stubApi(ctx); await fillComposer(ctx, { url: 'https://example.com/risk-r05', title: 'R05 valid', section: 'technical' }); await ctx.ev("document.getElementById('composerForm').requestSubmit()"); await sleep(250);
     const r = await publishResult(ctx), n = await ctx.ev('window.__puts.length'), f = [];
     if (!/not published: .*url must be/.test(r)) f.push('result did not refuse: "' + r.slice(0, 160) + '"'); if (n !== 0) f.push(n + ' write(s) were made'); return f; } },
+  { id: 'TC-UX-F01 first screen of a phone held sideways, 812 x 375: the Products heading and the top of the first product show without scrolling (the lead paragraph may give way)', width: 812, height: 375, touch: true, fixtures: TWO, ...uxWith(), check: async ctx => {
+    const r = await ctx.ev(`(() => { const b = s => { const e = document.querySelector(s); return e && e.getBoundingClientRect(); }, nav = getComputedStyle(document.getElementById('navbottom')).display; return { vh: innerHeight, h: b('#products h2').bottom, card: b('#grid .card').top, navTop: nav === 'none' ? innerHeight : b('#navbottom').top }; })()`);
+    const f = []; if (r.h > r.navTop - 8) f.push('Products heading ends at ' + Math.round(r.h) + ' px of ' + r.vh + ' (bottom nav at ' + Math.round(r.navTop) + ')'); if (r.card > r.navTop - 24) f.push('the first product starts at ' + Math.round(r.card) + ' px; less than 24 px of it shows'); return f; } },
 ];
 
 async function main() {
