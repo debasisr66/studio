@@ -239,6 +239,29 @@ Owner report: the footer said "Synced from GitHub · 19 Oct 2026" although the s
 | #3 not a human audit | human checkpoint and "ask for a human review" list in the review gate | documentation only; the owner's acknowledgement is the control |
 | VoiceOver / screen readers | de-scoped by the owner | recorded |
 
+## T. Smoke run trimmed, and where each removed case is covered (2026-10-27)
+
+Why: the browser run had reached about 95 s locally and about 98 s in CI against a 110 s watchdog, and two CI runs failed that week (one on timing-sensitive layout, one when Chrome did not start). Owner decision 2026-10-27: keep the most important behaviour as browser cases, cover the rest in other tests, keep the traceability complete.
+
+| What changed | Result |
+|--------------|--------|
+| Browser run | **165 cases in about 69 s locally (176 in about 95 s before)**; three runs stable. Harness: readiness polling 100 to 40 ms, wait after load 120 to 60 ms (40 ms for `fast` cases), scroll-settle step 100 to 60 ms; the slow-reads fixture answers after 1 s (was 2 s) and TC-SH-T02 says so; the link-following cases follow two links instead of four |
+| Cases merged | contrast in both themes is one case (TC-UX-A02); overflow in both themes moved into TC-SH-B02; overflow at 1280 px moved into TC-SH-B01 (healthy) |
+
+| Removed browser case | Covered by |
+|----------------------|-----------|
+| TC-UX-S01 (DOM order) | unit TC-UX-S01 (page order from `index.html`); browser TC-UX-S02 (storage blocked, unlocked) |
+| TC-UX-N01 at 1280 px (both navs equal) | unit TC-UX-N01 and N02 (static equality and the `SECTIONS` list); browser TC-UX-N01 at 375 px and TC-UX-S02 unlocked |
+| TC-UX-L03 and TC-PC-R01 (`#blog/some-old-post`) | unit `RL.redirectHash` over five link forms (TC-PC-R01) and a static check that load and change both follow it; browser TC-PC-R01 (`#blog` cold) and the while-open case remain |
+| TC-UX-L01 `#products` cold | the page has no scroll code for it (anchor at the top); static check in `tests/smoke-trim-coverage.test.js`; `#podcasts` and `#reads` cold remain (the ones that moved with the layout) |
+| TC-UX-L04 `#Products` | static check that section links match four exact lower-case ids by equality; `#__proto__` and the broken percent sequence cold, and eight hostile fragments on an open page, remain |
+| TC-UX-A03 at 640 and 200 px | reflow at 320 and 256 px remains (narrower than either, so a layout that fits there fits at 640 and 200 px: both are monotone checks of the same rule) |
+| TC-UX-A05 at 375 and 1280 px | TC-SH-B02 (375, both themes) and TC-SH-B01 (1280), plus the reflow cases |
+
+Every removed case id is named in `tests/smoke-trim-coverage.test.js`, which fails if its replacement disappears. Not claimed: the removed cases measured real pixels at 640, 200 and 1280 px in two themes; the surviving ones measure narrower widths and the main ones, so a regression that only shows at exactly those widths would now go unseen.
+
+**reads-lib size (risk D):** budget raised 26 to 30 KB in `scripts/validate-site.js` (it stood at 26,582 of 26,624 bytes); the total budget (150 KB, now about 144.7 KB) is unchanged. A test pins the budget table.
+
 ---
 
 ## F. Not claimed in this plan

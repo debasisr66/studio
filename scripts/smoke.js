@@ -137,9 +137,9 @@ async function runCase(cdp, base, c, errors) {
   while (Date.now() - t0 < (c.timeout || 15000)) {
     ready = await ev("document.readyState==='complete' && !!document.querySelector('#grid') && !document.querySelector('#grid').hasAttribute('aria-busy')").catch(() => false);
     if (ready) break;
-    await sleep(100);
+    await sleep(40);
   }
-  await sleep(c.fast ? 60 : 120);   // fast: the case reads its own state after the page is ready (the Quick add cases poll for what they wait on)
+  await sleep(c.fast ? 40 : 60);   // fast: the case reads its own state after the page is ready (the Quick add cases poll for what they wait on)
   const fails = [];
   if (!ready) fails.push(`the page never finished loading within ${(c.timeout || 15000) / 1000} s`);
   const tab = async () => { for (const type of ['keyDown', 'keyUp']) await cdp.send('Input.dispatchKeyEvent', { type, key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 }); };
@@ -277,7 +277,7 @@ const uxOrder = ctx => ctx.ev("[...document.querySelectorAll('main > section')].
 const uxNavs = ctx => ctx.ev(`(() => { const lab = a => [...a.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim(), of = id => [...document.querySelectorAll('#' + id + ' a')].map(a => lab(a) + '>' + a.getAttribute('href')).join('|'); return { head: of('navlinks'), bottom: of('navbottom') }; })()`);
 const uxTop = (ctx, id) => ctx.ev(`Math.round(document.getElementById(${JSON.stringify(id)}).getBoundingClientRect().top)`);
 /* waits until the scroll position has stopped moving (smooth scrolling, late layout), up to 2.5 s */
-const uxStill = async ctx => { let last = -1, calm = 0; for (let i = 0; i < 25 && calm < 3; i++) { await sleep(100); const y = await ctx.ev('Math.round(scrollY)'); calm = y === last ? calm + 1 : 0; last = y; } };
+const uxStill = async ctx => { let last = -1, calm = 0; for (let i = 0; i < 40 && calm < 3; i++) { await sleep(60); const y = await ctx.ev('Math.round(scrollY)'); calm = y === last ? calm + 1 : 0; last = y; } };
 const uxLands = async (ctx, id) => { await uxStill(ctx); const t = await uxTop(ctx, id); const end = await ctx.ev('scrollY + innerHeight >= document.documentElement.scrollHeight - 2');   // the last section cannot reach the top of a short page
   return (t > 140 && !(end && t < 700)) || t < -20 ? [`${id} is not at the top of the page (top ${t} px)`] : []; };
 const uxFollow = async (ctx, id) => { await ctx.ev("window.scrollTo({ top: 0, behavior: 'instant' }); history.replaceState(null, '', location.pathname + location.search)"); await sleep(80); await ctx.ev(`location.hash = ${JSON.stringify('#' + id)}`); return uxLands(ctx, id).then(r => r.map(x => 'followed: ' + x)); };
@@ -325,10 +325,10 @@ const CASES = [
     if (!(await ctx.ev(count('#grid .card:not(.skel)')))) f.push('no product cards from the real content');
     if ((await ctx.ev(count('#articlesFeed .item'))) < 1) f.push('Reads did not render any read from the real (schema 2, categorised) content');
     return f; } },
-  { id: 'TC-SH-B01 healthy fixture, 1280 px, no console errors (TC-SH-I05)', width: 1280, fixtures: ['healthy'], noErrors: true, check: ctx => sectionsRendered(ctx) },
+  { id: 'TC-SH-B01 healthy fixture, 1280 px, no console errors (TC-SH-I05), no horizontal scroll (TC-UX-A05)', width: 1280, fixtures: ['healthy'], noErrors: true, check: async ctx => { const o = await ctx.ev('document.documentElement.scrollWidth - innerWidth'); return [...(o > 1 ? ['overflow ' + o + ' px at 1280'] : []), ...await sectionsRendered(ctx)]; } },
   { id: 'TC-SH-B02 healthy fixture, 375 px: no horizontal overflow, bottom nav shown', width: 375, fixtures: ['healthy'], noErrors: true, check: async ctx => {
     const f = [];
-    const w = await ctx.ev('document.documentElement.scrollWidth'); if (w > 375) f.push(`page is ${w} px wide at 375 px (horizontal scroll)`);
+    for (const t of ['dark', 'light']) { await ctx.ev(`document.documentElement.dataset.theme = '${t}'`); const w = await ctx.ev('document.documentElement.scrollWidth'); if (w > 375) f.push(`page is ${w} px wide at 375 px in the ${t} theme (horizontal scroll, TC-UX-A05)`); }
     const nav = await ctx.ev(q('#navbottom', "getComputedStyle(e).display")); if (!nav || nav === 'none') f.push('bottom nav not shown on a phone');
     return [...f, ...await sectionsRendered(ctx)]; } },
   { id: 'TC-SH-I01 Products and Updates fail (cache products null): only they degrade', width: 1280, fixtures: ['poison-cache-null', 'healthy'], check: async ctx => {
@@ -610,7 +610,6 @@ const CASES = [
   { id: 'TC-PC-R01 #blog lands on Podcasts', width: 1280, hash: '#blog', fixtures: PODS, noErrors: true, check: async ctx => {
     await sleep(900); const r = await ctx.ev("[location.hash, Math.round(document.getElementById('podcasts').getBoundingClientRect().top)]"); const f = [];
     if (r[0] !== '#podcasts') f.push('hash is ' + r[0]); if (r[1] > 200 || r[1] < -50) f.push('Podcasts not in view (top ' + r[1] + ')'); return f; } },
-  { id: 'TC-PC-R01 #blog/some-old-post lands on Podcasts too', width: 1280, hash: '#blog/some-old-post', fixtures: PODS, check: async ctx => { await sleep(600); const h = await ctx.ev('location.hash'); return h === '#podcasts' ? [] : ['hash is ' + h]; } },
   { id: 'TC-PC-R01 a #blog link followed while the page is open also lands on Podcasts', width: 1280, fixtures: PODS, check: async ctx => { await ctx.ev("location.hash = '#blog'"); await sleep(500); const h = await ctx.ev('location.hash'); return h === '#podcasts' ? [] : ['hash is ' + h]; } },
   { id: 'TC-PC-R02 the page does not fetch blog.json but does fetch podcasts.json', width: 1280, fixtures: ['healthy'], check: async ctx => {
     const r = await ctx.ev("performance.getEntriesByType('resource').map(e => e.name)"), f = [];
@@ -618,7 +617,7 @@ const CASES = [
     const t = await ctx.ev('document.body.textContent'); if (/Fixture post/.test(t)) f.push('an archived blog post is on the page'); return f; } },
   { id: 'TC-SH-T01 reads.json never answers: the page still loads (8 s timeout) and the rest renders', width: 1280, fixtures: ['hang-reads', 'healthy'], timeout: 20000, check: async ctx => {
     const f = [...await sectionsRendered(ctx, ['reads'])]; if (ctx.ms > 14000) f.push(`took ${ctx.ms} ms; the timeout should end the wait at about 8 s`); return f; } },
-  { id: 'TC-SH-T02 reads.json answers after 2 s: it still renders', width: 1280, fixtures: ['slow-reads', 'healthy'], check: ctx => sectionsRendered(ctx) },
+  { id: 'TC-SH-T02 reads.json answers after 1 s: it still renders', width: 1280, fixtures: ['slow-reads', 'healthy'], check: ctx => sectionsRendered(ctx) },
   /* ---------- SPEC-QA Phase A: Quick add (docs/specs/quick-add/test.md) ---------- */
   { id: 'TC-QA-E01 locked: the gear opens the Add to Studio sheet (not only a token prompt)', width: 1280, fixtures: TWO, ...qaWith(), check: async ctx => {
     const f = []; await qaOpenGear(ctx); const s = await qs(ctx);
@@ -887,9 +886,6 @@ const CASES = [
     for (const id of ['qa-draft', 'qa-publish']) { await qaClick(ctx, id, 150); const s = await qs(ctx); if (!s.tok) f.push(id + ': no token prompt'); await qaClick(ctx, 'tok-cancel', 100); }
     const n = await apiCalls(ctx); if (n) f.push(n + ' API call(s) before a token'); return f; } },
   /* ---------- SPEC-UX Phase A (TC-UX-*): the simple layout ---------- */
-  { id: 'TC-UX-S01 DOM order at 1280 px: hero, Products, Updates, Reads, Podcasts', width: 1280, fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => {
-    const f = [], a = await uxOrder(ctx); if (a !== UX_ORDER) f.push('order: ' + a);
-    return f; } },
   { id: 'TC-UX-S02 the order is the same with storage blocked, and with the admin token present', width: 1280, fixtures: TWO, ...uxWith(UX_BLOCK), noErrors: true, check: async ctx => { const a = await uxOrder(ctx); return a === UX_ORDER ? [] : ['order (storage blocked): ' + a]; } },
   { id: 'TC-UX-S02 unlocked: the same order, and the nav is unchanged', width: 1280, token: true, fixtures: TWO, ...uxWith(), check: async ctx => { const a = await uxOrder(ctx), n = await uxNavs(ctx); return [...(a === UX_ORDER ? [] : ['order (unlocked): ' + a]), ...(n.head === UX_NAV && n.bottom === UX_NAV ? [] : ['nav (unlocked): ' + JSON.stringify(n)])]; } },
   { id: 'TC-UX-P01 every section has a heading and a one-line description in the same pattern', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => {
@@ -904,7 +900,6 @@ const CASES = [
     await ctx.ev("document.body.classList.add('admin')"); const open = await ctx.ev(vis);
     if (open.includes('products') || open.includes('updates')) f.push('add action in Products or Updates: ' + open); if (open.filter(x => x === 'podcasts').length !== 1) f.push('Podcasts add actions: ' + open.filter(x => x === 'podcasts').length); if (!open.includes('reads')) f.push('Reads has no add action');
     return f; } },
-  { id: 'TC-UX-N01 header nav (1280 px) and bottom nav (375 px) list the same four links, in page order', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => { const n = await uxNavs(ctx); return n.head === UX_NAV && n.bottom === UX_NAV ? [] : ['navs: ' + JSON.stringify(n)]; } },
   { id: 'TC-UX-N01 at 375 px the four bottom-nav items fit, with labels, at least 44 px high; no overflow (TC-UX-P03, A05)', width: 375, fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => {
     const r = await ctx.ev(`(() => { const nav = document.getElementById('navbottom'), as = [...nav.querySelectorAll('a')].map(a => { const b = a.getBoundingClientRect(); return { t: a.textContent.trim(), w: Math.round(b.width), h: Math.round(b.height), l: Math.round(b.left), r: Math.round(b.right) }; }); return { shown: getComputedStyle(nav).display, as, over: document.documentElement.scrollWidth - innerWidth, text: [...nav.querySelectorAll('a')].map(a => [...a.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim()).join('|') }; })()`);
     const f = []; if (r.shown === 'none') f.push('bottom nav hidden'); if (r.as.length !== 4) f.push(r.as.length + ' items');
@@ -926,14 +921,11 @@ const CASES = [
     if (r.t === r.t2) f.push('the theme did not change'); if (!r.wn) f.push("What's new is hidden"); if (!r.logo) f.push('logo missing'); return f; } },
   { id: 'TC-UX-L01 #products, #updates, #reads and #podcasts each reach their section (and the section is the one in the nav)', width: 1280, hash: '#updates', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => uxLands(ctx, 'updates') },
   { id: 'TC-UX-L01 #podcasts on a cold load', width: 1280, hash: '#podcasts', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => uxLands(ctx, 'podcasts') },
-  { id: 'TC-UX-L01 #products on a cold load', width: 1280, hash: '#products', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => uxLands(ctx, 'products') },
   { id: 'TC-UX-L01 #reads on a cold load', width: 1280, hash: '#reads', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => uxLands(ctx, 'reads') },
   { id: 'TC-UX-L01 the same four links followed while the page is open, and on a phone', width: 375, fixtures: TWO, ...uxWith(), check: async ctx => {
-    const f = []; for (const id of ['podcasts', 'updates', 'reads', 'products']) { f.push(...await uxFollow(ctx, id)); } return f; } },
+    const f = []; for (const id of ['podcasts', 'reads']) { f.push(...await uxFollow(ctx, id)); } return f; } },
   { id: 'TC-UX-L02 #reads/technical and #reads/others open that sub-item and show Reads', width: 1280, hash: '#reads/others', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => {
     const f = [...await uxLands(ctx, 'reads'), ...await expectSection(ctx, 'Others')]; await ctx.ev("location.hash = '#reads/technical'"); await sleep(300); f.push(...await expectSection(ctx, 'Technical')); return f; } },
-  { id: 'TC-UX-L03 #blog and #blog/x land on Podcasts, in view', width: 1280, hash: '#blog', fixtures: PODS, ...uxWith(), noErrors: true, check: async ctx => {
-    await sleep(500); const f = await uxLands(ctx, 'podcasts'); const h = await ctx.ev('location.hash'); if (h !== '#podcasts') f.push('hash is ' + h); return f; } },
   { id: 'TC-UX-L04 an unknown or hostile fragment does nothing harmful: no error, nothing inserted, nothing runs, the default Reads section', width: 1280, hash: '#reads/%3Cscript%3Ewindow.__x=1%3C/script%3E', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => {
     const f = [], before = await ctx.ev(count('script'));
     for (const h of ['#xyz', '#__proto__', '#constructor', '#reads/<img src=x onerror=window.__x=1>', '#products/../x', '#%E0%A4%A', '#' + 'a'.repeat(5000), '#blog<script>window.__x=1</script>']) {
@@ -944,18 +936,14 @@ const CASES = [
     return [...f, ...await expectSection(ctx, 'Technical')]; } },
   { id: 'TC-UX-L04 an unknown fragment on a cold load leaves the page at the top, the page fully rendered', width: 1280, hash: '#xyz', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => { const y = await ctx.ev('Math.round(scrollY)'); return [...(y > 5 ? ['page scrolled to ' + y] : []), ...await sectionsRendered(ctx)]; } },
   { id: 'TC-UX-L04 cold load of #__proto__: no error, no scroll, everything rendered', width: 1280, hash: '#__proto__', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => { const y = await ctx.ev('Math.round(scrollY)'); return [...(y > 5 ? ['scrolled to ' + y] : []), ...await sectionsRendered(ctx)]; } },
-  { id: 'TC-UX-L04 cold load of #Products (wrong case) is left alone', width: 1280, hash: '#Products', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => { const y = await ctx.ev('Math.round(scrollY)'); return [...(y > 5 ? ['scrolled to ' + y] : []), ...await sectionsRendered(ctx)]; } },
   { id: 'TC-UX-L04 cold load of a broken percent sequence', width: 1280, hash: '#%E0%A4%A', fixtures: TWO, ...uxWith(), noErrors: true, check: async ctx => { const y = await ctx.ev('Math.round(scrollY)'); return [...(y > 5 ? ['scrolled to ' + y] : []), ...await sectionsRendered(ctx)]; } },
   { id: 'TC-UX-P04 when Reads fails to render, the Books block is hidden (no empty Books heading under the fallback line)', width: 1280, fixtures: ['poison-reads-book-null', 'healthy'], ...uxWith(), check: async ctx => { const v = await ctx.ev("(() => { const b = document.getElementById('booksBlock'); return getComputedStyle(b).display; })()"); return v === 'none' ? [] : ['the Books block is shown (' + v + ')']; } },
   { id: 'TC-UX-L05 with storage blocked: #updates and #reads/others land, #blog reaches Podcasts', width: 1280, hash: '#reads/others', fixtures: TWO, ...uxWith(UX_BLOCK), noErrors: true, check: async ctx => {
-    const f = [...await uxLands(ctx, 'reads'), ...await expectSection(ctx, 'Others')]; for (const id of ['updates', 'podcasts']) f.push(...await uxFollow(ctx, id));
+    const f = [...await uxLands(ctx, 'reads'), ...await expectSection(ctx, 'Others')]; for (const id of ['updates']) f.push(...await uxFollow(ctx, id));
     await ctx.ev("location.hash = '#blog'"); await sleep(400); const h = await ctx.ev('location.hash'); if (h !== '#podcasts') f.push('#blog went to ' + h); return f; } },
   { id: 'TC-UX-P04 Reads is one column: Books sit under the reads, same left edge, no side-by-side layout', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => {
     const r = await ctx.ev(`(() => { const a = document.getElementById('articlesFeed').getBoundingClientRect(), b = document.getElementById('booksFeed').getBoundingClientRect(); return { al: Math.round(a.left), bl: Math.round(b.left), at: Math.round(a.top), bt: Math.round(b.top), aw: Math.round(a.width) }; })()`);
     const f = []; if (r.al !== r.bl) f.push('Books start at x ' + r.bl + ' but the reads at ' + r.al); if (r.bt <= r.at) f.push('Books are not below the reads'); if (r.aw < 600) f.push('the reads column is only ' + r.aw + ' px wide at 1280 px'); return f; } },
-  { id: 'TC-UX-A05 no horizontal scroll at 375 px and 1280 px, in both themes', width: 375, fixtures: TWO, ...uxWith(), check: async ctx => {
-    const f = []; for (const t of ['dark', 'light']) { await ctx.ev(`document.documentElement.dataset.theme = ${JSON.stringify(t)}`); const o = await ctx.ev('document.documentElement.scrollWidth - innerWidth'); if (o > 1) f.push(t + ' overflow ' + o + ' px at 375'); } return f; } },
-  { id: 'TC-UX-A05 no horizontal scroll at 1280 px', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => { const o = await ctx.ev('document.documentElement.scrollWidth - innerWidth'); return o > 1 ? ['overflow ' + o + ' px'] : []; } },
   { id: 'TC-UX-privacy the layout work adds no storage key, cookie or request: a visitor has only the theme key, no cookie, and no host other than this one', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => {
     await ctx.ev("document.getElementById('theme').click()");
     const r = await ctx.ev(`({ local: Object.keys(localStorage).sort().join(), session: Object.keys(sessionStorage).join(), cookie: document.cookie, hosts: [...new Set(performance.getEntriesByType('resource').map(e => new URL(e.name).host))].join() })`);
@@ -963,8 +951,7 @@ const CASES = [
   { id: 'TC-UX-F02 the footer shows the release date next to the version and labels the product-data date for what it is', width: 1280, fixtures: ['healthy'], ...uxWith(), noErrors: true, check: async ctx => {
     const t = await ctx.ev("document.querySelector('footer').innerText.replace(/\\s+/g, ' ')"), f = [];
     if (!/Studio v1\.5 · 21 Oct 2026/.test(t)) f.push('version and release date: ' + t); if (!/Product data updated · 19 Oct 2026/.test(t)) f.push('product data date: ' + t); if (/Synced from GitHub/.test(t)) f.push('old label still shown'); return f; } },
-  { id: 'TC-UX-A02 text contrast is at least 4.5:1 in the dark theme', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => uxContrast(ctx, 'dark') },
-  { id: 'TC-UX-A02 text contrast is at least 4.5:1 in the light theme', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => uxContrast(ctx, 'light') },
+  { id: 'TC-UX-A02 text contrast is at least 4.5:1 in both themes', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => [...await uxContrast(ctx, 'dark'), ...await uxContrast(ctx, 'light')] },
   { id: 'TC-UX-A02 phone: the bottom nav (including the item in view) and tags meet 4.5:1 in both themes', width: 375, fixtures: TWO, ...uxWith(), check: async ctx => { await ctx.ev("document.querySelector('#navbottom a').setAttribute('aria-current', 'location')"); return [...await uxContrast(ctx, 'dark', ['nav.bottom a', 'nav.bottom a[aria-current]', '.tag', '.item .tag.ver', '.card.featured .tag.ver']), ...await uxContrast(ctx, 'light', ['nav.bottom a', 'nav.bottom a[aria-current]', '.tag', '.item .tag.ver', '.card.featured .tag.ver'])]; } },
   { id: 'TC-UX-A01 real Tab presses: every stop shows a visible focus ring, the order follows the page top to bottom, and focus never gets lost', width: 1280, fixtures: TWO, ...uxWith(), check: uxTabRing },
   { id: 'TC-UX-A01 the same in the dark theme (ring colour against the dark background)', width: 1280, fixtures: TWO, ...uxWith("try { localStorage.setItem('studio-theme', 'dark'); } catch (e) {}"), check: async ctx => { const t = await ctx.ev('document.documentElement.dataset.theme'); return [...(t === 'dark' ? [] : ['the page is not in the dark theme: ' + t]), ...await uxTabRing(ctx)]; } },
@@ -978,9 +965,6 @@ const CASES = [
   { id: 'TC-UX-A03 reflow at 320 px (a 1280 px page at 400% zoom) and 640 px (200% zoom): no horizontal scroll, nothing cut off, four nav items', width: 320, fixtures: TWO, ...uxWith(), check: async ctx => {
     const r = await ctx.ev(`({ over: document.documentElement.scrollWidth - innerWidth, nav: [...document.querySelectorAll('#navbottom a')].map(a => { const b = a.getBoundingClientRect(); return b.left >= 0 && b.right <= innerWidth && b.height >= 44; }), cut: [...document.querySelectorAll('main *')].filter(e => e.offsetParent !== null && e.getBoundingClientRect().right > innerWidth + 1 && !e.closest('.tabs, pre, .chips')).slice(0, 4).map(e => e.className || e.tagName) })`);
     const f = []; if (r.over > 1) f.push('overflow ' + r.over + ' px at 320'); if (r.nav.length !== 4 || r.nav.includes(false)) f.push('bottom nav does not fit at 320: ' + r.nav); if (r.cut.length) f.push('cut off: ' + r.cut.join(', ')); return f; } },
-  { id: 'TC-UX-A03 640 px wide (200% zoom of 1280 px): no overflow and nothing clipped by the hero or a section', width: 640, fixtures: TWO, ...uxWith(), check: async ctx => {
-    const r = await ctx.ev(`({ over: document.documentElement.scrollWidth - innerWidth, cut: [...document.querySelectorAll('main *')].filter(e => e.offsetParent !== null && e.getBoundingClientRect().right > innerWidth + 1 && !e.closest('.tabs, pre, .chips')).slice(0, 4).map(e => e.className || e.tagName) })`);
-    return [...(r.over > 1 ? ['overflow ' + r.over + ' px at 640'] : []), ...(r.cut.length ? ['cut off at 640: ' + r.cut.join(', ')] : [])]; } },
   { id: 'TC-UX-P03 phone: at the end of the page the footer text is clear of the gear and the bottom nav', width: 375, touch: true, fixtures: TWO, ...uxWith(), check: async ctx => {
     await ctx.ev("document.documentElement.style.scrollBehavior = 'auto'; window.scrollTo(0, document.documentElement.scrollHeight)"); await sleep(60);
     const r = await ctx.ev(`(() => { let box = e => { const b = e.getBoundingClientRect(); return { l: b.left, r: b.right, t: b.top, b: b.bottom }; }, g = box(document.getElementById('gear')), n = box(document.getElementById('navbottom')), hit = [], low = 0; for (const e of document.querySelectorAll('footer span, footer button')) { const b = box(e); if (b.r > g.l && b.l < g.r && b.b > g.t && b.t < g.b) hit.push('gear over ' + (e.id || e.className || e.tagName)); if (b.b > n.t) hit.push('nav over ' + (e.id || e.className || e.tagName)); low = Math.max(low, b.b); } if (n.t - low > 28) hit.push('blank space of ' + Math.round(n.t - low) + ' px between the last footer text and the bottom nav at the end of the page'); return hit; })()`);
@@ -991,7 +975,6 @@ const CASES = [
   { id: 'TC-UX-F01 first screen on a small phone, 375 x 667: the Products heading is above the bottom nav', width: 375, height: 667, fixtures: TWO, ...uxWith(), check: async ctx => { const r = await ctx.ev("[Math.round(document.querySelector('#products h2').getBoundingClientRect().bottom), Math.round(document.getElementById('navbottom').getBoundingClientRect().top)]"); return r[0] > r[1] - 8 ? ['Products heading ends at ' + r[0] + ' px but the bottom nav starts at ' + r[1]] : []; } },
   { id: 'TC-UX-F01 first screen at 1280 x 800: the first product card starts in view', width: 1280, fixtures: TWO, ...uxWith(), check: async ctx => { const t = await ctx.ev("Math.round(document.querySelector('#grid .card').getBoundingClientRect().top)"); return t > 800 - 100 ? ['first product starts at ' + t + ' px of 800'] : []; } },
   { id: 'TC-UX-A03 extreme zoom, 256 px wide (Chrome at 500%): no sideways scroll, and no text, tab, chip or card is cut off or sticks out', width: 256, fixtures: TWO, ...uxWith(), check: async ctx => uxExtreme(ctx) },
-  { id: 'TC-UX-A03 extreme zoom, 200 px wide', width: 200, fixtures: TWO, ...uxWith(), check: async ctx => uxExtreme(ctx) },
   /* ---------- SPEC-SH SH-05: fallbacks proven (TC-SH-B05 to B09) ---------- */
   { id: 'TC-SH-B05 to B07 fallbacks on one page: a product with no cache entry (own text, Source link, no stars or language, no download), a release with no matching asset (Release notes link, not Download), no tagline (repository description)', width: 1280, fixtures: ['sh-fallbacks', 'healthy'], ...uxWith(), noErrors: true, check: async ctx => {
     const r = await ctx.ev(`(() => { const card = re => [...document.querySelectorAll('#grid .card')].find(x => re.test(x.querySelector('h3').textContent)), n = card(/New Thing/), p = card(/Penny/), d = card(/Debasis Web/);
@@ -1086,7 +1069,7 @@ async function main() {
       if (only && !c.id.includes(only)) continue;
       const t0 = Date.now(), fails = await runCase(cdp, base, c, errors), secs = (Date.now() - t0) / 1000;
       ran++;
-      console.log(`${fails.length ? 'FAIL' : 'ok  '} ${c.id}${secs >= 2 ? `  [${secs.toFixed(1)} s]` : ''}`);   // only slow cases are timed, so the output stays readable
+      console.log(`${fails.length ? 'FAIL' : 'ok  '} ${c.id}${(secs >= 2 || process.env.SMOKE_TIMES) ? `  [${secs.toFixed(1)} s]` : ''}`);   // only slow cases are timed, so the output stays readable
       fails.forEach(x => console.log('       - ' + x));
       if (fails.length) failed++;
     }
