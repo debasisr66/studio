@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-ST` (requirements `ST-01` … `ST-06`) |
-| Status | **Built (2026-10-27); in review; ships as Studio 2.1 in a release PR** |
+| Status | **Shipped in v2.1 (release PR prepared 2026-10-27; built and merged in PR #42)** |
 | Owner | Debasis Ray |
 | Created | 2026-10-27 |
 | Parent | [PRD](../../PRD.md) §7; [Content contract](../../CONTRACT.md) |
@@ -70,3 +70,4 @@ The owner can tell every visitor, in one short line, where Studio stands: for ex
 
 - 2026-10-27: Draft created from the owner's idea (Mode, New product, Owner); the three labels improved to Studio, Next, Owner; approved ("go") with the better words. Defaults D3 and D4 chosen by the author.
 - 2026-10-27: Built. Unit `tests/spec-st.test.js`, smoke `TC-ST-R01` to `R03`, six CI rules with fixtures, contract and runbook entries, health check serves-list. The validation lives in `js/reads-lib.js` (`validateStatusFile`, `statusView`) so CI and the page apply the same rules; `reads-lib.js` is about 28.7 of 30 KB and the total about 148.9 of 150 KB: little room left. The initial `content/status.json` carries the owner's example (Studio: Steady, Next: Incubating, Owner: Thinking), dated 27 Oct; edit it to change it. Not in 2.1: ST-06.
+- 2026-10-27: Release PR prepared for 2.1 (changelog entry, version and rollback steps in build.md 18.5b); the tag follows the owner's merge.

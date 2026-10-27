@@ -7,17 +7,19 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const read = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const log = JSON.parse(read('content/changelog.json')).releases;
+const i = log.findIndex(r => r.version === '2.0');   // 2.0 stays in the history; newer entries may sit above it
 
-test('TC-REL-01 the newest changelog entry is 2.0, above 1.6, dated, plain text, within the limits', () => {
-  assert.equal(log[0].version, '2.0'); assert.equal(log[1].version, '1.6');
-  assert.match(log[0].date, /^2026-10-\d\d$/);
-  assert.ok(log[0].title.length <= 80 && /2\.0/.test(log[0].title));
-  assert.ok(log[0].items.length >= 5 && log[0].items.length <= 6);
-  for (const t of [log[0].title, ...log[0].items]) assert.ok(!/[<>]|https?:|www\./.test(t), t);
-  for (const t of log[0].items) assert.ok(t.length <= 160, t);
+test('TC-REL-01 the 2.0 changelog entry sits above 1.6, is dated, plain text, within the limits', () => {
+  assert.ok(i >= 0 && i <= 1);
+  assert.equal(log[i + 1].version, '1.6');
+  assert.match(log[i].date, /^2026-10-\d\d$/);
+  assert.ok(log[i].title.length <= 80 && /2\.0/.test(log[i].title));
+  assert.ok(log[i].items.length >= 5 && log[i].items.length <= 6);
+  for (const t of [log[i].title, ...log[i].items]) assert.ok(!/[<>]|https?:|www\./.test(t), t);
+  for (const t of log[i].items) assert.ok(t.length <= 160, t);
 });
 test('TC-REL-02 the 2.0 notes cover the overhaul, Reads, Podcasts, the phone and accessibility work, and security and privacy', () => {
-  const all = log[0].items.join(' ').toLowerCase() + ' ' + log[0].title.toLowerCase();
+  const all = log[i].items.join(' ').toLowerCase() + ' ' + log[i].title.toLowerCase();
   for (const [name, re] of [['overhaul', /overhaul|redesign|rebuilt/], ['Reads', /reads/], ['Podcasts', /podcasts/], ['order or menu', /order|menu|navigation/], ['phone', /phone/], ['accessibility', /accessib|contrast|focus|zoom/], ['security', /secur|safer|checks/], ['privacy', /privacy|private|no tracking|cookies|nothing about you|nothing stored/]])
     assert.ok(re.test(all), 'the notes do not mention: ' + name);
 });
@@ -36,7 +38,7 @@ test('TC-REL-05 each of the four specs says Shipped (v2.0) in its status line an
   assert.ok((read('docs/specs/README.md').match(/Shipped in v2\.0/g) || []).length >= 4);
 });
 test('TC-REL-06 the README, the product intro and the plan name v2.0 as the current release', () => {
-  assert.match(read('README.md'), /v2\.0/); assert.match(read('docs/product-intro.md'), /current version \*\*v2\.0\*\*/);
+  assert.match(read('README.md'), /v2\.0/); assert.match(read('docs/product-intro.md'), /current version \*\*v2\.[01]\*\*/);
   assert.match(read('docs/plan.md'), /\| 12 \| all \| Release \|.*(Prepared|Merged|Released)/);
 });
 test('TC-REL-07 the status rows of REQ-51, 54, 55, 56, 58 and 59 in the test plan have no open case', () => {

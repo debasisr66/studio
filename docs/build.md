@@ -1,6 +1,6 @@
 # Build and Publish — Command Reference
 
-Current release line: **v2.0** (released through the release PR in §18.5; rollback tag `v1.6`, and `v1.5` before the Reads split); v1.5, v1.4 and v1.3 are tagged. From v1.4 releases go through a **pull request** (see §15). Branch names must differ from tag names: a branch called `v1.1` and a tag `v1.1` made `git push origin v1.1` ambiguous (fix: `git push origin refs/tags/v1.1`).
+Current release line: **v2.1** (released through the release PR in §18.5b; rollback tag `v2.0`, then `v1.6`, and `v1.5` before the Reads split); v1.5, v1.4 and v1.3 are tagged. From v1.4 releases go through a **pull request** (see §15). Branch names must differ from tag names: a branch called `v1.1` and a tag `v1.1` made `git push origin v1.1` ambiguous (fix: `git push origin refs/tags/v1.1`).
 
 Reference only. There is no build step: the repository is the site. Pages serves `main`, root `/`. Run from `/Users/debasisray/CoworkProjects/studio-site`.
 
@@ -294,6 +294,34 @@ gh run list --limit 4
 curl -s https://debasisr66.github.io/studio/content/changelog.json | head -20    # confirms the 2.0 entry is live
 ```
 The changelog entry (`content/changelog.json`, version `2.0`) and the artefact updates are part of the final release PR, not earlier phases, so visitors see "What's new" only when 2.0 is real.
+
+### 18.5b Release 2.1 (owner status line and small fixes)
+
+The release PR carries the changelog entry (`content/changelog.json`, version `2.1`) and the artefact updates; the tag is pushed only after the owner says merge.
+
+```bash
+git checkout main && git pull --rebase
+node --test tests/*.test.js && node scripts/validate-site.js && node scripts/smoke.js      # final gate
+git tag -a v2.1 -m "Studio 2.1: owner status line, search in Others, landscape phones, section links, CI alarm"
+git push origin refs/tags/v2.1
+gh run list --limit 4
+GH_TOKEN=$(gh auth token) node scripts/health-check.js
+curl -s https://debasisr66.github.io/studio/content/changelog.json | head -8        # the 2.1 entry is first
+```
+
+**Rollback, from the smallest step to the largest** (never force-push; the ruleset forbids it):
+
+1. *One feature:* `git revert -m 1 <merge-commit-of-that-PR>` on a branch, pull request, green CI, merge (for example PR #42 removes the status line; delete `content/status.json` too if the revert leaves it).
+2. *The release notes only:* revert the release PR's merge commit; the code is untouched and What's new goes back to 2.0.
+3. *Everything since 2.0* (code, docs and the status file), keeping the owner's published content:
+```bash
+git checkout -b rollback-2.1 origin/main
+git read-tree -u --reset v2.0                       # files, including deletions, as at v2.0
+git checkout origin/main -- content/reads.json content/podcasts.json content/products.json content/cache.json content/profile.json content/profile.jpg   # keep what the owner and the sync published since
+git commit -m "Roll back to v2.0 code (keeps published content)" && git push -u origin rollback-2.1
+# pull request, green CI, merge; the footer then shows v2.0 again
+```
+`content/status.json` must not stay in the tree under v2.0 code: its contract test fails on an unknown content file, which is why step 3 removes it. The tag `v2.1` can stay: it records what was released.
 
 ### 18.6 Rollback
 

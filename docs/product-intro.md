@@ -1,6 +1,6 @@
 # Studio and Penny — Product Introduction
 
-*Studio by Debasis Ray — learning never ends!* · https://debasisr66.github.io/studio/ · current version **v2.0**
+*Studio by Debasis Ray — learning never ends!* · https://debasisr66.github.io/studio/ · current version **v2.1**
 
 ## In one paragraph
 
@@ -77,7 +77,9 @@ A mobile-friendly personal expense manager in Indian rupees. All data stays in t
 
 *Sources: Penny's README, release notes, V3.2 verification record and security review (figures as recorded on 19 October 2026); Studio's architecture, test and security documents (figures as recorded on 20 October 2026, v1.4).*
 
-## What Studio 2.0 brought (released 2026-10-26)
+## What Studio 2.0 brought (released 2026-10-26), and 2.1 (2026-10-27)
+
+2.1 adds an **owner status line** (how Studio is doing, what comes next, when updated), search in every Reads list with two or more entries, a better first screen on phones held sideways, section links that keep their place, and a stricter reading-list publish check.
 
 | Change | What a visitor or the owner gets |
 |--------|----------------------------------|

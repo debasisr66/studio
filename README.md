@@ -10,6 +10,7 @@ Product studio hub for [@debasisr66](https://github.com/debasisr66): one site th
 
 - **Products:** a card grid built from public GitHub repos, showing description, language, stars, latest version and a download link.
 - **Updates:** a feed of the latest GitHub Releases, with notes and attached files.
+- **Status line:** one short line under the hero where the owner shares how Studio is doing (`content/status.json`).
 - **What's new:** the version and its release date are shown in the footer and a **What's new** button lists every release in plain language.
 - **Reads:** a curated reading list in two tabs, **Technical** and **Others** (direct links `#reads/technical` and `#reads/others`), with a LinkedIn-style "Share a read…" composer (owner only, with a Section choice), tag filters, search, and share buttons (LinkedIn, copy link, native share). Books sit in the same tabs.
 - **Podcasts:** links to shows and episodes worth a listen, each with a short take; the owner adds them with "Share a podcast…". Nothing is embedded and no third party is contacted. The old Blog became Podcasts (`#blog` links still land there).
@@ -66,7 +67,7 @@ Data flows one way: product repos notify the hub, and the hub only reads them. D
 - [Content contract](docs/CONTRACT.md) · [Operations guide](docs/OPERATIONS.md) · [Independent review gate](docs/REVIEW-GATE.md) ([reviews](docs/reviews/SH-02.md))
 - [Runbook](docs/RUNBOOK.md): symptom → cause → fix for sync, cache, CI and token problems
 - [Learning guide](docs/LEARNING-GUIDE.md): step-by-step setup, commands, tokens and the rotation runbook
-- **Studio 2.0 (v2.0, released)**: [specs](docs/specs/README.md) · [impact](docs/impact.md) · [plan](docs/plan.md) · [design §12](docs/design.md) · [security §11](docs/security.md) (in progress: the footer shows **v1.6**, an intermediate release tagged `v1.6`; `main` is ahead of it and already carries Podcasts; **v2.0** is the full release, rollback tag `v1.5`)
+- **Studio 2.1 (v2.1, released)** adds the owner status line and small fixes on top of **Studio 2.0 (v2.0)**: [specs](docs/specs/README.md) · [impact](docs/impact.md) · [plan](docs/plan.md) · [design §12](docs/design.md) · [security §11](docs/security.md) (in progress: the footer shows **v1.6**, an intermediate release tagged `v1.6`; `main` is ahead of it and already carries Podcasts; **v2.0** is the full release, rollback tag `v1.5`)
 - Release set: [Security](docs/security.md) · [Impact](docs/impact.md) · [Plan](docs/plan.md) · [Design](docs/design.md) · [Tests and traceability](docs/test.md) · [Build commands](docs/build.md) · [Model use](docs/model-use.md)
 
 ## License

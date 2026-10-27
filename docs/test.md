@@ -281,6 +281,15 @@ Every removed case id is named in `tests/smoke-trim-coverage.test.js`, which fai
 | Privacy and safety | values reach the page through `textContent` only after the same rules as CI; hostile markup hides the line; no new storage key, cookie, host or script; CSP unchanged |
 | Not verified | on a real phone (the sandbox is for that); the content is the owner's example values, dated 27 Oct, to be edited; sizes are close to the budgets (`reads-lib.js` about 28.7 of 30 KB, total about 148.9 of 150 KB) |
 
+## W. Results: the 2.1 release PR (2026-10-27)
+
+| Check | Result |
+|-------|--------|
+| Release tests | `tests/release-2-1.test.js` (6 cases, written first; 5 failed): the 2.1 entry is newest, directly above 2.0, plain and within limits; it covers the status line, search in Others, landscape phones and section links; each claim is backed by the code (status file and renderer, the search rule, the landscape rule, the section-link fix, the CI alarm); build.md has the tag command and the rollback steps; README, intro, plan and specs name 2.1. `tests/release-2-0.test.js` now allows newer entries above 2.0 |
+| Rollback proven | the full-rollback recipe (`git read-tree -u --reset v2.0`) was tried in a scratch worktree: it removes `content/status.json` and the 2.1 code, and keeps v2.0's file set |
+| After the merge (owner says merge) | push the tag `v2.1`, `gh run list`, `health-check.js`, check the live footer shows "Studio v2.1" and What's new lists 2.1 first, the status line shows |
+| Not done | the live checks (after the merge); a real phone look at the status line (sandbox) |
+
 ---
 
 ## F. Not claimed in this plan
