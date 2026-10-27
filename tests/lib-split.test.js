@@ -10,10 +10,10 @@ const V = require('../scripts/validate-site.js');
 const ROOT = path.resolve(__dirname, '..');
 const read = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const PARTS = ['js/podcast-lib.js', 'js/status-lib.js', 'js/quickadd-lib.js'];
-// the public interface as it was before the split (51 names); a part that forgets to install its names, or a rename, fails here
+// the public interface as it was before the split (50 names); a part that forgets to install its names, or a rename, fails here
 const API = ['KINDS', 'CATEGORIES', 'categoryLabel', 'categorySlug', 'categoryFromHash', 'isReadsHash', 'categoryHash', 'categoryTabs', 'defaultCategory', 'nextTabIndex', 'DEFAULT_NEW_CATEGORY', 'categoryOf', 'categoryCounts', 'pickAsset', 'formatDate', 'LIMITS', 'normalizeUrl', 'isPublishableUrl', 'READS_SCHEMA_VERSION', 'PODCASTS_SCHEMA_VERSION', 'PODCAST_LIMITS', 'isSupportedPodcastsVersion', 'platformOf', 'podcastView', 'validatePodcastEntry', 'serializePodcasts', 'validatePodcastsFile', 'validateReadsFile', 'validateStatusFile', 'statusView', 'filterPodcasts', 'podcastTags', 'redirectHash', 'extractLink', 'extractTitle', 'suggestKind', 'isAddHash', 'serializeDraft', 'parseDraft', 'isSupportedReadsVersion', 'serializeReads', 'domainOf', 'keyOf', 'isDuplicate', 'parseTags', 'validateEntry', 'shareLinks', 'entryView', 'filterReads', 'allTags'];
 
-test('TC-SPLIT-01 the interface is the same 51 names after the split, in Node', () => {
+test('TC-SPLIT-01 the interface is the same 50 names after the split, in Node', () => {
   const have = Object.keys(RL).filter(k => k !== '_h').sort();
   assert.deepEqual(have, [...API].sort());
   for (const k of API) assert.ok(RL[k] !== undefined, k);
