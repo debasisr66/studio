@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studio: the engineering journey</title>
+<meta name="description" content="An owner's view of building Studio: capabilities, process and secure building practices, v1.0 to v2.1.">
+<style>
+:root{--bg:#fff;--text:#14213d;--muted:#4a5875;--blue:#0057b8;--blue-soft:#e8f1fb;--line:#d7e1ef;--card:#f5f8fc}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1526;--text:#e8eefb;--muted:#a9b8d6;--blue:#6fb0ff;--blue-soft:#14284a;--line:#233355;--card:#121d36}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:920px;margin:0 auto;padding:28px 16px 64px}
+header{border-bottom:3px solid var(--blue);padding-bottom:16px;margin-bottom:24px}
+h1{margin:0 0 4px;font-size:clamp(26px,5vw,38px);line-height:1.15;color:var(--blue)}
+.sub{color:var(--muted);margin:0}
+h2{margin:34px 0 10px;font-size:21px;color:var(--blue)}
+p{margin:8px 0}
+.lead{background:var(--blue-soft);border-left:4px solid var(--blue);padding:12px 16px;border-radius:6px;font-size:17px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:14px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.stat b{display:block;font-size:26px;color:var(--blue);line-height:1.1}
+.stat span{color:var(--muted);font-size:13px}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:15px}
+th,td{text-align:left;vertical-align:top;padding:9px 10px;border-bottom:1px solid var(--line)}
+th{background:var(--card);color:var(--blue);font-size:13px;text-transform:uppercase;letter-spacing:.04em}
+td:first-child{font-weight:600;white-space:nowrap}
+ol,ul{padding-left:22px;margin:8px 0}
+li{margin:5px 0}
+.steps li b{color:var(--blue)}
+.note{color:var(--muted);font-size:14px}
+a{color:var(--blue)}
+footer{margin-top:36px;border-top:1px solid var(--line);padding-top:14px;color:var(--muted);font-size:14px}
+@media (max-width:620px){td:first-child{white-space:normal}th,td{padding:8px 6px}}
+@media print{body{font-size:12px}h2{margin-top:18px}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Studio: the engineering journey</h1>
+  <p class="sub">An owner's view, written at a pause. Studio by Debasis Ray, v1.0 to v2.1, 19 to 27 October 2026.</p>
+</header>
+
+<p class="lead">A small, static, self-contained product hub that stays current by itself, that the owner can update from a phone, and that was built spec first, test first, with its security-sensitive parts reviewed by a second AI model.</p>
+
+<div class="stats" aria-label="Key numbers">
+  <div class="stat"><b>9</b><span>releases in 9 days</span></div>
+  <div class="stat"><b>~45</b><span>pull requests</span></div>
+  <div class="stat"><b>422</b><span>unit tests</span></div>
+  <div class="stat"><b>169</b><span>browser checks</span></div>
+  <div class="stat"><b>6</b><span>independent reviews</span></div>
+  <div class="stat"><b>0</b><span>cookies, trackers, third parties</span></div>
+</div>
+
+<h2>What Studio can do today</h2>
+<table>
+  <tr><th>For visitors</th><th>For the owner</th></tr>
+  <tr><td style="font-weight:400;white-space:normal"><b>Products</b> and <b>Updates</b> built from the products' own GitHub releases, refreshed nightly</td><td style="font-weight:400"><b>Add to Studio</b> on the phone: paste a link, post, publish; the session locks itself</td></tr>
+  <tr><td style="font-weight:400;white-space:normal"><b>Reads</b> (Technical and Others) with search, tags, sharing and direct links</td><td style="font-weight:400">Reads, podcasts, profile photo and the <b>status line</b> editable without code</td></tr>
+  <tr><td style="font-weight:400;white-space:normal"><b>Podcasts</b>: shows and episodes worth a listen</td><td style="font-weight:400"><b>What's new</b> and the footer version and date from one changelog file</td></tr>
+  <tr><td style="font-weight:400;white-space:normal">An <b>owner status line</b>: how Studio is doing, what is next, when updated</td><td style="font-weight:400">Daily health check, and an <b>alarm with fix steps by email</b> if CI goes red on <code>main</code></td></tr>
+  <tr><td style="font-weight:400;white-space:normal">Phone and desktop, light and dark, high zoom, keyboard</td><td style="font-weight:400">One-command <b>rollback</b> to any tagged release</td></tr>
+</table>
+<p class="note">No cookies, no tracking, no third-party requests, no accounts for visitors.</p>
+
+<h2>The journey in six steps</h2>
+<ol class="steps">
+  <li><b>v1.0 to v1.3 (19 Oct):</b> the hub, release feed, Reads, the admin layer, a strict content security policy, fonts hosted on the site itself.</li>
+  <li><b>v1.4 to v1.5 (20 to 21 Oct):</b> trust and reliability: protected history on <code>main</code>, pinned automation, a daily health check, clear failure messages with a runbook.</li>
+  <li><b>v1.6 (22 Oct):</b> Reads split into Technical and Others.</li>
+  <li><b>Quick add (23 Oct):</b> the owner's phone workflow. A second phase (prefilled links from an iPhone Shortcut) was built and reviewed, then <b>dropped</b> when it did not work on the owner's phone; the code stayed out.</li>
+  <li><b>v2.0 (26 Oct):</b> the overhaul: stabilised core, Podcasts replacing the Blog, one simple layout, accessibility and phone work.</li>
+  <li><b>v2.1 (27 Oct):</b> the owner status line, small fixes, a split code library, and the CI alarm.</li>
+</ol>
+
+<h2>How it was built</h2>
+<ul>
+  <li><b>Spec first.</b> Every change began as a short written spec with numbered requirements and a test plan, agreed with the owner.</li>
+  <li><b>Tests first, shown failing.</b> Where a test passed at once because the behaviour existed, the log says so. Mutation checks proved several tests really can fail.</li>
+  <li><b>One branch, one pull request, green CI.</b> The owner said "merge" every time; nothing was merged unprompted.</li>
+  <li><b>Real devices.</b> The owner ran the phone checks (iPhone, Chrome and Safari, VoiceOver, zoom) and found what automatic tests missed: blank space under the footer, a break at the largest zoom, the landscape first screen.</li>
+  <li><b>Plain reporting.</b> Every pull request lists what did not work or was not verified.</li>
+  <li><b>Small steps, rollback ready.</b> Each release is a tag, and the rollback recipes are tested.</li>
+</ul>
+
+<h2>Secure building practices</h2>
+<table>
+  <tr><th>Practice</th><th>What it means here</th></tr>
+  <tr><td>Strict content security policy</td><td>No inline code, no outside hosts except the GitHub API; no cookies; nothing about visitors stored or sent</td></tr>
+  <tr><td>Untrusted input stays text</td><td>Links, fragments and content values are matched against closed lists or one shared rule set, and reach the page only as text</td></tr>
+  <tr><td>Token handling</td><td>The owner's token lives in the tab only, is asked for just when posting, and is cleared after a successful publish</td></tr>
+  <tr><td>Same checks in CI and the admin</td><td>The rules CI applies to content are the ones the owner tools apply before every publish</td></tr>
+  <tr><td>Locked-down automation</td><td>Actions pinned by commit hash, minimum permissions (validated), protected history on <code>main</code>, no secrets beyond GitHub's own token</td></tr>
+  <tr><td>Independent review gate</td><td>Security-sensitive work is judged by a separate AI model (Opus 5.5 or Haiku 5.5), never the author; findings are fixed test-first and re-checked; records live in <code>docs/reviews/</code></td></tr>
+  <tr><td>Human checkpoint</td><td>A ten-minute owner read of the findings, the CSP and the token code before merging sensitive changes</td></tr>
+  <tr><td>Alarm, not a lock</td><td>CI cannot be made mandatory without stopping the bots, so a red <code>main</code> raises an issue with fix steps by email</td></tr>
+</table>
+
+<h2>Honest lessons</h2>
+<ul>
+  <li>Several defects reached the owner or a reviewer before they reached my tests. Measuring a layout is not the same as looking at it.</li>
+  <li>Some tests proved less than their names claimed. Reviews and mutation checks caught them, and the guards got stricter.</li>
+  <li>Size budgets and the CI time limit became real constraints; they were trimmed, then raised or split on purpose.</li>
+  <li>Dropping a feature that did not work (the iPhone Shortcut) was the right call, and cheap because the process allowed it.</li>
+</ul>
+
+<h2>Where it stands, and what is next</h2>
+<p>Studio 2.1 is live and frozen for now. <b>Open:</b> the owner's sign-off on the review records and the accepted risks, a real-phone look at the status line, and proving the CI-red email on a real red run. <b>Parked ideas:</b> an owner-tools entry for the status line, greying a stale status, loading owner-only code on demand.</p>
+
+<footer>
+  More detail: <a href="plan.md">plan</a> · <a href="security.md">security log</a> · <a href="test.md">test results</a> · <a href="specs/README.md">specs</a> · <a href="reviews/">reviews</a> · <a href="ARCHITECTURE.md">architecture</a>. Markdown version: <a href="ENGINEERING-JOURNEY.md">ENGINEERING-JOURNEY.md</a>.
+</footer>
+</main>
+</body>
+</html>
