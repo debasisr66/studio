@@ -140,3 +140,10 @@ test('TC-CIR-R06 flow-style permissions are read too: {contents: write} is refus
   assert.deepEqual(V.checkWorkflows({ '.github/workflows/ci.yml': wf('{ contents: read }') }), []);
   assert.deepEqual(V.checkWorkflows({ '.github/workflows/ci.yml': wf('read-all') }), []);
 });
+test('TC-CIR-R07 quoted YAML keys and values are read too: "contents": write, contents: "write" and "write-all" are refused', () => {
+  const blk = l => `permissions:\n  contents: read\njobs:\n  a:\n    runs-on: x\n    permissions:\n      ${l}\n`;
+  for (const l of ['"contents": write', "'contents': write", 'contents: "write"', "issues: 'write'"]) assert.ok(V.checkWorkflows({ '.github/workflows/ci.yml': blk(l) }).some(e => /write is not allowed/.test(e)), l);
+  const flow = p => `permissions:\n  contents: read\njobs:\n  a:\n    runs-on: x\n    permissions: ${p}\n`;
+  for (const p of ['{ "contents": write }', '{ contents: "write" }', '"write-all"', "'write-all'"]) assert.ok(V.checkWorkflows({ '.github/workflows/ci.yml': flow(p) }).length > 0, p);
+  assert.deepEqual(V.checkWorkflows({ '.github/workflows/ci.yml': blk('"contents": read') }), []);
+});

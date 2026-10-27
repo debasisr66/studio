@@ -305,7 +305,8 @@ function checkWorkflows(sources) {
     }
     if (!/^permissions\s*:/m.test(text)) { errors.push(`${file}: no top-level permissions block (declare the minimum)`); continue; }
     // every permissions key at any depth (job-level blocks too): a write-all anywhere, or a write that is not on the allowed list, is refused
-    const lines = text.split('\n');
+    const lines = text.split('\n').map(l => l.replace(/["']/g, ''));   // quoted keys and values are the same permission to GitHub
+    // Known limit: YAML aliases and anchors are not followed (changing a workflow needs commit access to main anyway); see docs/CI-RED-FIX.md and the review record.
     lines.forEach((ln, i) => {
       const m = ln.match(/^([ \t]*)permissions\s*:\s*([^#\n]*)/);
       if (!m) return;
