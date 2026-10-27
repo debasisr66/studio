@@ -119,6 +119,11 @@ Every content rule CI enforces, with what to do (each is proven by a failing fix
 | podcasts.json | `podcast tags must be`, `podcast comment must be`, `podcast show must be` | At most 5 tags of 24 characters, a take of at most 280 characters, a show name of at most 80 |
 | podcasts.json | `podcast duplicate id` | Two entries share an `id`; change one |
 | podcasts.json | `same link as an earlier podcast` (warning) | The same link appears twice; remove one when convenient |
+| status.json | `status.json: schema_version must be` | The file's shape version is missing, wrong or newer than this page; set `"schema_version": 1` as the first key, or restore the last good commit. The status line stays hidden until it is fixed |
+| status.json | `items must be a list of 1 to 4` | Keep between 1 and 4 items, each `{ "label": "…", "value": "…" }` |
+| status.json | `label must be text`, `value must be text` | A label is 1 to 20 characters and a value 1 to 40; no empty text |
+| status.json | `updated must be a real date`, `is in the future` | `updated` is a real `YYYY-MM-DD` date that is not tomorrow or later; set it to today when you change the status |
+| status.json | `must be plain text (no markup` | No `<`, `>`, links or `www.` in a label or value |
 | changelog.json | `version must look like`, `plain text` | Versions like `1.5`, at most 64 characters; release notes are plain text without `<` or `>` |
 
 ## Browser smoke test fails

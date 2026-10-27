@@ -132,7 +132,7 @@ async function main() {
   const problems = [], notes = [];
 
   // 1. site is up and serves its key files
-  for (const p of ['/', '/css/site.css', '/assets/logo.svg', '/fonts/inter-latin.woff2', '/fonts/jetbrains-mono-latin.woff2', '/js/app.js', '/js/reads-lib.js', '/js/safe-lib.js', '/js/token-store.js', '/js/image-lib.js', '/content/products.json', '/content/cache.json', '/content/reads.json', '/content/blog.json', '/content/podcasts.json', '/content/changelog.json', '/content/profile.json']) {
+  for (const p of ['/', '/css/site.css', '/assets/logo.svg', '/fonts/inter-latin.woff2', '/fonts/jetbrains-mono-latin.woff2', '/js/app.js', '/js/reads-lib.js', '/js/safe-lib.js', '/js/token-store.js', '/js/image-lib.js', '/content/products.json', '/content/cache.json', '/content/reads.json', '/content/blog.json', '/content/podcasts.json', '/content/changelog.json', '/content/profile.json', '/content/status.json']) {
     try {
       const r = await fetch(SITE + p, { redirect: 'follow' });
       if (!r.ok) problems.push(`${SITE}${p} returned ${r.status}`);

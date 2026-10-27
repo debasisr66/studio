@@ -272,6 +272,15 @@ Every removed case id is named in `tests/smoke-trim-coverage.test.js`, which fai
 | Design choices | no email service, secret or third party: the email is GitHub's own notification for a new issue. The runs are read with `event=push` so a pull request from a fork whose branch is called main cannot raise the alarm. The issue code runs only inside Actions, so a local run writes nothing |
 | Not verified | **the red path end to end on the real repository**: no deliberately failing CI was run on `main` and no test issue was opened (the unit tests use a fake API). The first real run is the green one after the merge. Whether the owner's GitHub notification settings send issue email |
 
+## V. Results: owner status line (2026-10-27)
+
+| Check | Result |
+|-------|--------|
+| Tests | unit **409 of 409** (398 before; +11 in `tests/spec-st.test.js`, all failed first); smoke **169 of 169** in about 71 s (166 before; +3 `TC-ST-R*`); validator OK. The six CI rules each have a failing fixture and a runbook entry |
+| Layout | with the line present the SPEC-UX first-screen cases failed at first (portrait, small phone, landscape, desktop); the hero padding was tightened and the line made compact; all pass. Reflow at 320 and 256 px runs with long values (`status-long`) |
+| Privacy and safety | values reach the page through `textContent` only after the same rules as CI; hostile markup hides the line; no new storage key, cookie, host or script; CSP unchanged |
+| Not verified | on a real phone (the sandbox is for that); the content is the owner's example values, dated 27 Oct, to be edited; sizes are close to the budgets (`reads-lib.js` about 28.7 of 30 KB, total about 148.9 of 150 KB) |
+
 ---
 
 ## F. Not claimed in this plan

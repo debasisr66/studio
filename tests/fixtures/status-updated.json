@@ -1,0 +1,12 @@
+{
+  "input": {
+    "schema_version": 1,
+    "updated": "2099-01-01",
+    "items": [
+      {
+        "label": "Studio",
+        "value": "Steady"
+      }
+    ]
+  }
+}

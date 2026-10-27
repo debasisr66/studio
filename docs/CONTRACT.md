@@ -9,6 +9,7 @@
 | `content/reads.json` | Reading list and books | Owner (admin screen) | `validateReads` |
 | `content/podcasts.json` | Podcast links. Validated since v2.0 PC Phase A; shown in the Podcasts section since PC Phase B. A newer `schema_version` than the page knows shows that section's fallback line and blocks publishing over it | Owner (admin screen: Share a podcast) | `validatePodcasts` |
 | `content/blog.json` | Blog posts. An unrendered archive since v2.0 PC Phase B: the page no longer loads it; CI still validates it and the health check still confirms it is served | Owner (file only; there is no editor) | `validateBlog` |
+| `content/status.json` | The owner status line under the hero (SPEC-ST); optional: no file means no line | Owner (edit the file in Git) | `validateStatus` (rules in `js/reads-lib.js`) |
 | `content/changelog.json` | What's new and the visible version | Owner, in the release PR | `validateChangelog` |
 | `content/profile.json`, `content/profile.jpg` | Profile photo manifest and image | Owner (admin screen) | `validateProfileManifest`, `validateProfileImage` |
 
@@ -59,6 +60,10 @@ The platform label on a card comes from a closed host list in `js/reads-lib.js` 
 ## blog.json
 
 `{ "posts": [ { id, date (YYYY-MM-DD), title (required), body (required), link (optional, clean) } ] }` Rule ids: `blog-date`, `blog-title`, `blog-link-clean`. Currently zero posts. Kept as an unrendered archive (PC-05, built in PC Phase B): not fetched by the page, not editable in the admin screen, `#blog` links go to `#podcasts`.
+
+## status.json
+
+`{ "schema_version": 1, "updated": "YYYY-MM-DD", "items": [ { "label", "value" } ] }`. One to four items; a label is 1 to 20 characters and a value 1 to 40, plain text (no `<`, `>`, links or `www.`); `updated` is a real date that is not tomorrow or later and is always shown on the page ("as of …"). A file that breaks any rule hides the line on the page and fails CI. Suggested words: Studio (Active, Steady, Quiet, Paused), Next (Idea, Incubating, Building, Launching soon), Owner (Building, Thinking, Away until …). Rule ids: `status-schema-version`, `status-items`, `status-label`, `status-value`, `status-updated`, `status-plain`. To change the status: edit the file on GitHub (web or the phone app), set `updated` to today, commit.
 
 ## changelog.json
 

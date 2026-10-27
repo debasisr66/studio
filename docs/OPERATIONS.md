@@ -74,3 +74,7 @@ Where does a new product go? Where do I hide one? What do I run when a card is s
 ## When CI is red on main
 
 You get an email from GitHub for an issue titled **CI is red on main** with the steps; the guide is [CI-RED-FIX.md](CI-RED-FIX.md). Check first whether the live site is broken.
+
+## Change the status line
+
+Edit `content/status.json` on GitHub (the web, or the GitHub app on the phone): change the three values (suggested words are in [CONTRACT](CONTRACT.md#statusjson)), set `updated` to today, commit to a branch and merge the pull request (or commit to `main` if you accept that CI will only check it afterwards). CI refuses a file that breaks a rule. To remove the line, delete the file.
