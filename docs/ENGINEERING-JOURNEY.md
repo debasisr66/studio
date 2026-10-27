@@ -74,6 +74,21 @@ The principles the owner applied, as seen in how the work was directed. The AI w
 10. **Plain words, plain steps.** Visitor wording and owner instructions are design work: clear labels, step-by-step checks.
 11. **Freeze, tag, roll back.** Fast iteration needs hard release boundaries and a tested way back.
 
+## If you run an agency that builds products
+
+The same practices, read as an agency owner's responsibilities when building products for clients:
+
+1. **Own the decisions, not the typing.** Scope, risk acceptance and release are the agency owner's. Set explicit sign-off points where the AI stops and a person says go.
+2. **Make quality visible to the client.** A spec, a test plan and a short evidence note per release, including what was not verified, is a deliverable a client can read and trust.
+3. **Separate the builder from the checker.** An independent review (another model, then a human checkpoint on sensitive work) is assurance you can offer, not an overhead.
+4. **Security by default, as a house standard.** A fixed baseline: strict content policy, least privilege, pinned automation, no secrets in the repository, input kept as text. Reuse it on every product.
+5. **Predictable delivery.** Small changes, green checks, tagged releases, a tested rollback and frozen release boundaries make delivery boring in the best way.
+6. **Protect focus; drop what does not earn its place.** Say no to features that add no value, and make removal cheap, so scope and margin stay under control.
+7. **Validate with real users and real devices.** Automation measures; people see. Put a real-device pass in every definition of done.
+8. **Hand over something the client can run.** Runbook, operations guide, content contract, architecture and an alarm that arrives with its fix steps, so the product does not depend on the people who built it.
+9. **Keep a risk register with named owners.** Rate each risk by likelihood, impact and who is affected; accept or fix it explicitly and record the date.
+10. **Turn the process into a playbook.** The spec and test templates, the review gate, size and time budgets and the guard tests carry over to the next product.
+
 ## Where it stands, and what is next
 
 Studio 2.1 is live and frozen for now. Open: the owner's sign-off on the review records and the accepted risks, a real-phone look at the status line, and proving the CI-red email on a real red run. Ideas parked: an owner-tools entry for the status line, greying a stale status, loading owner-only code on demand.
