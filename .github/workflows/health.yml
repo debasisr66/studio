@@ -7,10 +7,21 @@ on:
   schedule:
     - cron: '0 12 * * *'
   workflow_dispatch:
+  # also right after CI finishes on main, so a red main is reported in minutes, not at noon (docs/CI-RED-FIX.md)
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+# one health run at a time, so two red runs close together cannot both open the CI-red issue
+concurrency:
+  group: health
+  cancel-in-progress: false
 
 permissions:
   contents: read
-  actions: read      # lets the check see whether any workflow has been switched off
+  actions: read      # lets the check see whether any workflow has been switched off, and read the CI runs
+  issues: write      # the one issue that carries the fix steps when CI is red on main (the only write this workflow has)
 
 jobs:
   health:
@@ -18,6 +29,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false   # no ref: the default branch is used, never a pull request's code
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:

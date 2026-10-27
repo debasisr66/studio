@@ -70,3 +70,7 @@ Follow [build.md](build.md) §15 (and §18 for 2.0): branch, tests, validator, p
 ## Questions this guide must answer
 
 Where does a new product go? Where do I hide one? What do I run when a card is stale? How do I publish? How do I ship a release and undo it? If an answer is missing, add it here in the same pull request that changed the behaviour.
+
+## When CI is red on main
+
+You get an email from GitHub for an issue titled **CI is red on main** with the steps; the guide is [CI-RED-FIX.md](CI-RED-FIX.md). Check first whether the live site is broken.

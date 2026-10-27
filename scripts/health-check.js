@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const RL = require('../js/reads-lib.js');
+const CIRED = require('./ci-red.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const SITE = (process.env.HEALTH_URL || 'https://debasisr66.github.io/studio').replace(/\/$/, '');
@@ -55,7 +56,7 @@ function findSyncStale(runs, now = Date.now(), maxHours = SYNC_MAX_AGE_HOURS) {
    returns them (newest first). Only a finished run counts; cancelled runs (superseded by a newer push) and running ones are skipped. */
 function findCiRed(runs) {
   var done = (Array.isArray(runs) ? runs : []).filter(function (r) { return r && r.status === 'completed' && r.conclusion && r.conclusion !== 'cancelled' && !isNaN(Date.parse(r.updated_at)); })
-    .sort(function (a, b) { return Date.parse(b.updated_at) - Date.parse(a.updated_at); });
+    .sort(function (a, b) { return (b.run_number || 0) - (a.run_number || 0) || Date.parse(b.updated_at) - Date.parse(a.updated_at); });   // push order (run_number), not the order the runs happened to finish in
   if (!done.length || ['success', 'skipped', 'neutral'].includes(done[0].conclusion)) return [];
   return [`CI is red on main: the newest finished run ${done[0].conclusion} (${done[0].html_url || 'see the Actions tab'}, ${done[0].updated_at}).`];
 }
@@ -95,7 +96,7 @@ function findMissingRepos(registry, existsByRepo) {
 
 /* Every problem line carries a pointer to the matching runbook section (TR-08). */
 const FIXES = [
-  [/CI is red on main/i, 'bad-commit-on-main'],
+  [/CI is red on main/i, 'ci-is-red-on-main'],
   [/last successful sync|no successful run/i, 'sync-failed-or-did-not-run'],
   [/not found on GitHub/i, 'sync-failed-or-did-not-run'],
   [/download_asset|cached download/i, 'release-or-download-missing'],
@@ -182,9 +183,13 @@ async function main() {
     const repo = process.env.GITHUB_REPOSITORY || 'debasisr66/studio';
     const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'studio-health' };
     if (TOKEN) headers.Authorization = 'Bearer ' + TOKEN;
-    const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/ci.yml/runs?branch=main&status=completed&per_page=5`, { headers });
-    if (res.ok) problems.push(...findCiRed((await res.json()).workflow_runs));
-    else notes.push(`could not read CI runs: GitHub API ${res.status}`);
+    const res = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/ci.yml/runs?branch=main&event=push&status=completed&per_page=5`, { headers });
+    if (res.ok) {
+      const runs = (await res.json()).workflow_runs;
+      problems.push(...findCiRed(runs));
+      // inside GitHub Actions only: open, update or close the one issue that carries the fix steps (a local run must not write anything)
+      if (process.env.GITHUB_ACTIONS && process.env.GITHUB_REPOSITORY) notes.push(await CIRED.syncIssue({ fetch, repo: process.env.GITHUB_REPOSITORY, token: TOKEN, runs, doc: fs.readFileSync(path.join(ROOT, CIRED.DOC), 'utf8') }));
+    } else notes.push(`could not read CI runs: GitHub API ${res.status}`);
   } catch (e) { notes.push('could not read CI runs: ' + e.message); }
 
   notes.forEach(n => console.log('note  ' + n));

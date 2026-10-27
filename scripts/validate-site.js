@@ -304,12 +304,33 @@ function checkWorkflows(sources) {
       if (!at || !/^[0-9a-f]{40}$/.test(at)) errors.push(`${file}: ${ref} is not pinned by a 40-character commit hash`);
     }
     if (!/^permissions\s*:/m.test(text)) { errors.push(`${file}: no top-level permissions block (declare the minimum)`); continue; }
-    if (/^permissions\s*:\s*write-all/m.test(text)) errors.push(`${file}: permissions: write-all is not allowed`);
-    const block = (text.match(/^permissions\s*:\s*\n((?:[ \t]+[^\n]*\n?)*)/m) || [, ''])[1];
-    for (const m of block.matchAll(/^[ \t]+([a-z-]+)\s*:\s*write\b/gm)) {
-      if (m[1] === 'contents' && WRITE_ALLOWED.includes(base)) continue;
-      errors.push(`${file}: ${m[1]}: write is not allowed here${m[1] === 'contents' ? ' (only ' + WRITE_ALLOWED.join(' and ') + ' may commit)' : ''}`);
-    }
+    // every permissions key at any depth (job-level blocks too): a write-all anywhere, or a write that is not on the allowed list, is refused
+    const lines = text.split('\n').map(l => l.replace(/["']/g, ''));   // quoted keys and values are the same permission to GitHub
+    // Known limit: YAML aliases and anchors are not followed (changing a workflow needs commit access to main anyway); see docs/CI-RED-FIX.md and the review record.
+    lines.forEach((ln, i) => {
+      const m = ln.match(/^([ \t]*)permissions\s*:\s*([^#\n]*)/);
+      if (!m) return;
+      if (/^write-all\b/.test(m[2].trim())) { errors.push(`${file}: permissions: write-all is not allowed`); return; }
+      const flow = m[2].match(/^\{([^}]*)\}/);   // permissions: { contents: write }
+      if (flow) {
+        for (const w of flow[1].matchAll(/([a-z-]+)\s*:\s*write\b/g)) {
+          if (w[1] === 'contents' && WRITE_ALLOWED.includes(base)) continue;
+          if (w[1] === 'issues' && base === 'health.yml') continue;
+          errors.push(`${file}: ${w[1]}: write is not allowed here`);
+        }
+        return;
+      }
+      for (let j = i + 1; j < lines.length; j++) {
+        if (!lines[j].trim() || /^\s*#/.test(lines[j])) continue;
+        const ind = lines[j].match(/^[ \t]*/)[0].length;
+        if (ind <= m[1].length) break;
+        const w = lines[j].match(/^[ \t]+([a-z-]+)\s*:\s*write\b/);
+        if (!w) continue;
+        if (w[1] === 'contents' && WRITE_ALLOWED.includes(base)) continue;
+        if (w[1] === 'issues' && base === 'health.yml') continue;   // the CI-red issue (docs/CI-RED-FIX.md); nothing else may write issues
+        errors.push(`${file}: ${w[1]}: write is not allowed here${w[1] === 'contents' ? ' (only ' + WRITE_ALLOWED.join(' and ') + ' may commit)' : ''}`);
+      }
+    });
   }
   return errors;
 }

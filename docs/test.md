@@ -262,6 +262,16 @@ Every removed case id is named in `tests/smoke-trim-coverage.test.js`, which fai
 
 **reads-lib size (risk D):** budget raised 26 to 30 KB in `scripts/validate-site.js` (it stood at 26,582 of 26,624 bytes); the total budget (150 KB, now about 144.7 KB) is unchanged. A test pins the budget table.
 
+## U. Results: immediate CI-red alert with emailed fix steps (2026-10-27)
+
+| Check | Result |
+|-------|--------|
+| What was built | the Health check workflow also runs when CI finishes on `main` (daily run kept as a backstop); on a red run it opens one GitHub issue titled "CI is red on main" with the fix steps (GitHub emails new issues), comments while CI stays red, and closes it when CI is green; `docs/CI-RED-FIX.md` is the guide and the single source of the steps; RUNBOOK has a section and the health message points to it; `scripts/ci-red.js` holds the logic |
+| Tests | `tests/ci-red.test.js` (15 cases, written first; none could run before the module existed): doc and markers, issue create, comment, close, no duplicate, exact-title match, API failures never throw, plain-text issue body, workflow trigger and permissions, validator rule, push-only runs. Unit **392 of 392**, validator OK |
+| Workflow permission change | the health workflow gets `issues: write`, its only write; the validator allows it in `health.yml` only (TC-CIR-W02) and still refuses every other write |
+| Design choices | no email service, secret or third party: the email is GitHub's own notification for a new issue. The runs are read with `event=push` so a pull request from a fork whose branch is called main cannot raise the alarm. The issue code runs only inside Actions, so a local run writes nothing |
+| Not verified | **the red path end to end on the real repository**: no deliberately failing CI was run on `main` and no test issue was opened (the unit tests use a fake API). The first real run is the green one after the merge. Whether the owner's GitHub notification settings send issue email |
+
 ---
 
 ## F. Not claimed in this plan
