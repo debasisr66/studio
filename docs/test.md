@@ -288,7 +288,8 @@ Every removed case id is named in `tests/smoke-trim-coverage.test.js`, which fai
 | Release tests | `tests/release-2-1.test.js` (6 cases, written first; 5 failed): the 2.1 entry is newest, directly above 2.0, plain and within limits; it covers the status line, search in Others, landscape phones and section links; each claim is backed by the code (status file and renderer, the search rule, the landscape rule, the section-link fix, the CI alarm); build.md has the tag command and the rollback steps; README, intro, plan and specs name 2.1. `tests/release-2-0.test.js` now allows newer entries above 2.0 |
 | Rollback proven | the full-rollback recipe (`git read-tree -u --reset v2.0`) was tried in a scratch worktree: it removes `content/status.json` and the 2.1 code, and keeps v2.0's file set |
 | After the merge (owner says merge) | push the tag `v2.1`, `gh run list`, `health-check.js`, check the live footer shows "Studio v2.1" and What's new lists 2.1 first, the status line shows |
-| Not done | the live checks (after the merge); a real phone look at the status line (sandbox) |
+| Live checks (2026-10-27, after the merge) | tag `v2.1` pushed at the merge commit `0ae0671`; CI on `main` green; pages build green; the Health check ran by itself after CI (workflow_run) and was green; `health-check.js` HEALTHY; live page: footer "Studio v2.1 · 27 Oct 2026", the status line shows "Studio Steady, Next Incubating, Owner Thinking, as of 27 Oct 2026", 2 products, 6 reads, 4 podcasts, search visible in the reads list, no console errors, only this site's host, only the `studio-theme` key, no cookie; `content/changelog.json` live with 2.1 first; rollback tags `v2.0` and `v1.6` exist |
+| Not done | a real phone look at the status line (the owner); the CI-red email on a real red run |
 
 ---
 
