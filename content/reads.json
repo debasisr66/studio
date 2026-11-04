@@ -11,6 +11,19 @@
   ],
   "articles": [
     {
+      "id": 1793789198210,
+      "added": "2026-11-04",
+      "url": "https://www.aihero.dev/",
+      "title": "AI Hero Site",
+      "comment": "Treasure trove of learning - simple, useful",
+      "kind": "video",
+      "tags": [
+        "ai",
+        "lessons"
+      ],
+      "category": "technical"
+    },
+    {
       "id": 1793348867236,
       "added": "2026-10-30",
       "url": "https://www.youtube.com/watch?v=eGKFTUuJppU&t=11s",
