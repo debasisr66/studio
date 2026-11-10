@@ -2,10 +2,10 @@
   "schema_version": 2,
   "books": [
     {
-      "title": "AI Engineering: Building Applications with Foundation Models (Full Colour Indian Edition)",
-      "author": "by Chip Huyen (Author)",
-      "year": "2024-25",
-      "note": "It is a great book. It would give clarity. Of course after this industry and tech changed a lot, but fundamentals count. \nhttps://www.amazon.in/AI-Engineering-Building-Applications-Foundation/dp/9355426666",
+      "title": "https://hackerbooks.org/topic/programming",
+      "author": "Collection of Many Authors",
+      "year": "1950 onwards",
+      "note": "Programming\n1,246 books, ranked by recommendations. Fundamentals are key to know even if AI tools generates the code.",
       "category": "technical"
     }
   ],
