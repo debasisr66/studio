@@ -11,6 +11,19 @@
   ],
   "articles": [
     {
+      "id": 1794291629005,
+      "added": "2026-11-10",
+      "url": "https://hackerbooks.org/topic/programming",
+      "title": "Hackerbooks on Programming",
+      "comment": "Fundamentals are key, that come from books. These are some key books many of us read. Even if AI writes code, to join hands with AI tools one needs deeper understanding of system, language, networking, db, security, architecture, design to build a solid product and / or system.",
+      "kind": "paper",
+      "tags": [
+        "book",
+        "programming"
+      ],
+      "category": "technical"
+    },
+    {
       "id": 1793789198210,
       "added": "2026-11-04",
       "url": "https://www.aihero.dev/",
