@@ -72,7 +72,7 @@ function installCleanup() {
   process.on('unhandledRejection', e => { console.error('smoke crashed: ' + (e && e.stack || e)); process.exit(1); });
 }
 
-async function launchChrome(bin) {
+async function launchChromeOnce(bin) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'studio-smoke-'));
   live.dir = dir;
   const args = ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--mute-audio', '--hide-scrollbars',
@@ -81,7 +81,7 @@ async function launchChrome(bin) {
   live.proc = proc;
   const wsUrl = await new Promise((resolve, reject) => {
     let buf = '';
-    const t = setTimeout(() => reject(new Error('Chrome did not report a DevTools address in time\n' + buf)), Number(process.env.SMOKE_LAUNCH_TIMEOUT_MS) || 20000);
+    const t = setTimeout(() => reject(new Error('Chrome did not report a DevTools address in time\n' + buf)), Number(process.env.SMOKE_LAUNCH_TIMEOUT_MS) || 12000);
     proc.stderr.on('data', d => { buf += d; const m = buf.match(/DevTools listening on (ws:\/\/\S+)/); if (m) { clearTimeout(t); resolve(m[1]); } });
     proc.on('exit', c => reject(new Error('Chrome exited early (' + c + ')\n' + buf)));
   });
@@ -94,6 +94,19 @@ async function launchChrome(bin) {
   }
   if (!target) throw new Error('no page target');
   return { proc, dir, pageWs: target.webSocketDebuggerUrl };
+}
+
+/* A CI runner now and then starts Chrome too slowly or not at all (CI run 42768438364, 10 Nov 2026). That is a runner fault, so starting the browser is tried twice;
+   the first browser is killed before the second starts. Nothing after the start is retried: a failing test case is never run again. */
+async function launchChrome(bin) {
+  const ATTEMPTS = 2;
+  for (let n = 1; ; n++) {
+    try { return await launchChromeOnce(bin); } catch (e) {
+      if (n >= ATTEMPTS) throw e;
+      console.error(`smoke: Chrome start attempt ${n} of ${ATTEMPTS} failed (${String(e.message).split('\n')[0]}); trying again`);
+      killBrowser();
+    }
+  }
 }
 
 function connect(url) {
@@ -1098,5 +1111,5 @@ async function main() {
   process.exit(failed ? 1 : 0);
 }
 
-module.exports = { startServer, setOverlay: o => { overlay = o; } };   // for tests/smoke-harness.test.js
+module.exports = { findChrome, startServer, setOverlay: o => { overlay = o; } };   // for tests/smoke-harness.test.js
 if (require.main === module) main().catch(e => { console.error('smoke crashed: ' + e.message); process.exit(1); });
