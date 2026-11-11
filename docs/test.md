@@ -887,6 +887,10 @@ DEF-01 to DEF-03 affect the **currently live** v1.0 site and are resolved once v
 | TC-M03 | Native share sheet on a phone | ⏳ |
 | TC-M04 | Click **Share on LinkedIn** and confirm LinkedIn's dialog pre-fills the article | ⏳ (the browser pane blocks script-initiated new tabs) |
 
+## Z. Results: Chrome start retry (2026-11-11)
+
+Cause: CI run 42768438364 (10 Nov) failed at "Browser smoke test" with `Chrome did not report a DevTools address in time`; unit tests and the validator had passed, the site was fine. Second such runner flake. Change: `scripts/smoke.js` starts Chrome up to twice (12 s wait each, was 20 s), killing the first browser before the second; test cases are not retried. Tests first (3 failed before the change): TC-SH-S10 (two failed starts: exactly two attempts, both browsers killed, run fails), TC-SH-S11 (first start hangs, second works: run passes), TC-SH-S12 (one watchdog, short wait). Unit 425 pass; validator OK; smoke 169 of 169 in 70.5 s locally. Not proven on a real CI runner flake (it cannot be forced).
+
 ## 5. Not run (stated plainly)
 
 Screen-reader testing (VoiceOver/NVDA); Lighthouse or axe automated scans; Safari, Firefox and real-device testing; failure injection for missing `reads.json`; load testing (not meaningful for a static site). Contrast and keyboard behavior were verified by measurement and scripted checks rather than assistive technology.

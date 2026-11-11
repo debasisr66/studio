@@ -134,6 +134,7 @@ Every content rule CI enforces, with what to do (each is proven by a failing fix
 - **`the page never finished loading`:** the page stopped before `boot()` finished, usually a JavaScript error; run the page locally and read the console.
 - **`console errors:`** a new error appeared on a healthy page; fix the cause.
 - **`Chrome not found`:** install Chrome, or set `CHROME_BIN`. On GitHub's runner Chrome is preinstalled; a missing Chrome there means the runner image changed.
+- **`Chrome did not report a DevTools address in time` or `Chrome exited early`:** the runner's Chrome would not start. The harness now tries twice (log line `Chrome start attempt 1 of 2 failed`); if the run still fails, both attempts failed, so re-run the job once and, if it repeats, check whether the runner image changed. Test cases themselves are never retried.
 - **Cleanup message such as `ENOTEMPTY`:** harmless temp-folder cleanup; the script ignores it (fixed in v2.0 SH Phase A).
 
 ## CI is red on main
