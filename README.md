@@ -63,6 +63,7 @@ Data flows one way: product repos notify the hub, and the hub only reads them. D
 
 - [Product introduction](docs/product-intro.md): what Studio is and how Penny sits in it (stability, capabilities, open limits)
 - [Architecture](docs/ARCHITECTURE.md): how the hub works
+- [Best practices](docs/BEST-PRACTICES.md): the architecture, design, code, security, deployment and documentation practices Studio follows
 - [Product requirements (PRD)](docs/PRD.md) · [Feature specs](docs/specs/README.md): spec-first work with requirement-to-test traceability
 - [Content contract](docs/CONTRACT.md) · [Operations guide](docs/OPERATIONS.md) · [Independent review gate](docs/REVIEW-GATE.md) ([reviews](docs/reviews/SH-02.md))
 - [Runbook](docs/RUNBOOK.md): symptom → cause → fix for sync, cache, CI and token problems
