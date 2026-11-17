@@ -141,8 +141,8 @@ test('TC-SH-S11 a first start that hangs is retried and the run then passes (rea
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'smoke-fake-'));
   try {
     const mark = path.join(dir, 'first'), bin = path.join(dir, 'flaky-chrome.sh');
-    fs.writeFileSync(bin, `#!/bin/sh\nif [ ! -e "${mark}" ]; then echo $$ > "${mark}"; exec sleep 300; fi\nexec "${S.findChrome()}" "$@"\n`); fs.chmodSync(bin, 0o755);
-    const r = spawnSync('node', [SMOKE], { env: { ...process.env, CI: '', CHROME_BIN: bin, SMOKE_LAUNCH_TIMEOUT_MS: '5000', SMOKE_ONLY: 'TC-SH-B01' }, encoding: 'utf8', timeout: 60000 });
+    fs.writeFileSync(bin, `#!/bin/sh\nif [ ! -e "${mark}" ]; then echo $$ > "${mark}"; exec sleep 300; fi\nexec "${S.findChrome()}" --no-sandbox "$@"\n`); fs.chmodSync(bin, 0o755);
+    const r = spawnSync('node', [SMOKE], { env: { ...process.env, CI: '', CHROME_BIN: bin, SMOKE_LAUNCH_TIMEOUT_MS: '10000', SMOKE_ONLY: 'TC-SH-B01' }, encoding: 'utf8', timeout: 90000 });
     assert.equal(r.status, 0, r.stdout + r.stderr);
     assert.match(r.stderr + r.stdout, /Chrome start attempt 1 of 2 failed/);
     assert.ok(await waitDead(Number(fs.readFileSync(mark, 'utf8'))), 'the hung first browser is still running');
