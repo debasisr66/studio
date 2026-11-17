@@ -1,5 +1,5 @@
 {
-  "synced_at": "2026-11-17T11:39:18.883Z",
+  "synced_at": "2026-11-17T12:44:44.949Z",
   "products": {
     "debasisr66/PennyExpenseManager": {
       "description": "This is a Penny Expense Manager product (ChatGPT)",
@@ -9,20 +9,20 @@
       "pushed_at": "2026-11-17",
       "html_url": "https://github.com/debasisr66/PennyExpenseManager",
       "latest_release": {
-        "tag": "v3.2.1",
-        "name": "Penny 3.2.1",
-        "body": "**Maintenance release: no behaviour change.** Penny works exactly as in 3.2.\n\n## Changes\n- **Readable source.** Runtime JavaScript, CSS and HTML are formatted with Prettier 3.3.3. Before formatting, the longest line was 6,217 characters; 99% of lines now fit in 100. The checks that confirm nothing changed:\n  - The parsed JavaScript is identical for all 10 files.\n  - In a browser, computed styles, text and layout are identical for every element on the page and in all 10 dialogs, at both 320 px and 1280 px.\n  - The test suite, frozen before formatting, passes 639 of 639.\n  - A manual smoke test of the live site passed.\n- **One version source.** The `VERSION` file holds the version, and a test checks every copy against it.\n- **Leaner repository.** The documentation is reduced to the README, the changelog, the security review, the dependency list and `docs/ARCHITECTURE.md`. The v3.2 process records and evidence remain at tag `v3.2`.\n- **Security fixes** (merged after 3.2):\n  - GitHub Pages now publishes only the app's runtime files.\n  - The Docker port is bound to localhost.\n  - The nginx Content Security Policy is complete.\n  - Workflow actions are pinned by commit SHA.\n\n## Assets\n- `PennyExpenseManager-v3.2.1.zip`: the full source at this tag (`git archive`). SHA-256 is in the `.sha256` file.\n\nLive app: https://debasisr66.github.io/PennyExpenseManager/\nFull details: [CHANGELOG](https://github.com/debasisr66/PennyExpenseManager/blob/v3.2.1/CHANGELOG.md)",
-        "published_at": "2026-11-17T11:39:04Z",
-        "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/tag/v3.2.1",
+        "tag": "v3.3.0",
+        "name": "Penny 3.3.0",
+        "body": "**Excel import and export removed. Penny now runs no third-party code.**\n\n## Changes\n- **Excel removed.** Penny no longer imports or exports `.xlsx`, and the SheetJS library (280 KB) is gone.\n  - **Export:** CSV still works, and Excel opens it directly.\n  - **Budgets, saved tags and preferences:** only the full **JSON backup** carries these.\n  - **Old Excel files:** in Excel, use **File › Save As › CSV**. Choosing an Excel file (`.xlsx`, `.xls`, `.xlsm` or `.xlsb`) now explains this.\n- **Fix: imports no longer reset your preferences by mistake.** Before, a CSV or an older JSON backup imported with \"Import preferences and default budget\" ticked silently reset your default budget and voice language. That option is now disabled for files that contain no preferences, and a note explains why.\n- **Stricter security policy.** Penny blocks web workers (`worker-src 'none'`). It needed one only for Excel parsing.\n- **Clearer labels:** **Export CSV**, **Download full backup (JSON)**, and import help that names only CSV and JSON.\n\n## Before you upgrade\nNothing stored in your browser changes, and JSON backups and the linked data file keep working. If you rely on Excel exports to keep **budgets**, download a full JSON backup instead.\n\n## Verification\n- **Tests:** 644 automated tests pass, locally, in CI and inside the Docker build. That includes guard tests that fail if Excel code returns.\n- **Browser checks:** every changed label, the Excel-file message, and the preferences fix tested end to end.\n- **Live site:** the runtime files match this release, the removed files return 404, and a manual smoke test passed.\n- **Review:** built by a Sonnet 5.5 subagent and reviewed independently by Opus 5.5.\n\n## Assets\n- `PennyExpenseManager-v3.3.0.zip`: the full source at this tag. Its SHA-256 checksum is in the `.sha256` file.\n\nLive app: https://debasisr66.github.io/PennyExpenseManager/\nDetails: [CHANGELOG](https://github.com/debasisr66/PennyExpenseManager/blob/v3.3.0/CHANGELOG.md)",
+        "published_at": "2026-11-17T12:44:30Z",
+        "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/tag/v3.3.0",
         "assets": [
           {
-            "name": "PennyExpenseManager-v3.2.1.zip",
-            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.2.1/PennyExpenseManager-v3.2.1.zip",
-            "size": 229437
+            "name": "PennyExpenseManager-v3.3.0.zip",
+            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.3.0/PennyExpenseManager-v3.3.0.zip",
+            "size": 142815
           },
           {
-            "name": "PennyExpenseManager-v3.2.1.zip.sha256",
-            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.2.1/PennyExpenseManager-v3.2.1.zip.sha256",
+            "name": "PennyExpenseManager-v3.3.0.zip.sha256",
+            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.3.0/PennyExpenseManager-v3.3.0.zip.sha256",
             "size": 97
           }
         ]
