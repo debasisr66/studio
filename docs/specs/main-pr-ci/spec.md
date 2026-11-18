@@ -1,7 +1,28 @@
 # SPEC-MP — Pull requests and CI enforced on `main` (Studio)
 
-**Status:** APPROVED 2026-11-18 — D1 **B**, D2 **strict**, D3 **admin bypass**, D4 **pin to Actions**, D5 **auto-delete on**, D6 **all methods** (owner's decisions, all as recommended). Independent review folded in (§13) · **Date:** 2026-11-18 · **Repo:** `debasisr66/studio` (public, user-owned)
+**Status:** **CLOSED — not implemented (owner decision 2026-11-18).** Outcome: Option A, history protection only. Earlier approval of D1–D6 (same day) superseded; plan kept as reference · **Date:** 2026-11-18 · **Repo:** `debasisr66/studio` (public, user-owned)
 **Goal:** match Penny's `main` (PR required, `check` green and up to date, no force-push or deletion, 0 approvals, merged branches deleted) **without breaking** the three direct writers to `main`, above all the Penny → Studio sync.
+
+
+---
+
+## 0. Final decision (2026-11-18) — stop; keep Option A
+
+After the spec was approved and merged (PR #53), the owner reviewed what enforcement would actually add and decided **not to implement it**. Nothing below §0 was applied: no GitHub App, no Environment, no new ruleset, no workflow or setting change.
+
+| What enforcement would add | Value for Studio |
+|---|---|
+| Merging a PR with a red `check` is blocked | Low: releases already merge only when green (process rule) |
+| Owner's direct pushes to `main` | Not blocked: D3 admin bypass (needed for the CMS) skips the rule |
+| Bot commits run CI | Minor: the daily health check already flags a stale or broken cache |
+| Read-only `GITHUB_TOKEN` | Comes from the workflow change, not the rule |
+| Parity with Penny | Cosmetic: Penny has no bots writing to `main` |
+
+**Cost avoided:** one long-lived App private key able to push to `main` past the rule, plus its rotation and failure modes on the Penny → Studio sync path. On *security first and simplicity* the gain does not outweigh it.
+
+**In force (unchanged):** ruleset 25458711 "main: history protected" (no deletion, no force-push, no bypass). CI gating stays a release-process rule: PR, `check` green, then merge ([rulesets README](../../rulesets/README.md)).
+
+**Revisit when:** someone else gets write access to Studio; or the CMS stops writing directly to `main`; or the repo moves to an organisation. Then this plan (Option B, §6–§12, with the review fixes in §13) is ready to run as written.
 
 ---
 
