@@ -1,5 +1,5 @@
 {
-  "synced_at": "2026-11-18T10:59:08.110Z",
+  "synced_at": "2026-11-18T12:53:18.663Z",
   "products": {
     "debasisr66/PennyExpenseManager": {
       "description": "This is a Penny Expense Manager product (ChatGPT)",
@@ -9,20 +9,20 @@
       "pushed_at": "2026-11-18",
       "html_url": "https://github.com/debasisr66/PennyExpenseManager",
       "latest_release": {
-        "tag": "v3.3.0",
-        "name": "Penny 3.3.0",
-        "body": "**Excel import and export removed. Penny now runs no third-party code.**\n\n## Changes\n- **Excel removed.** Penny no longer imports or exports `.xlsx`, and the SheetJS library (280 KB) is gone.\n  - **Export:** CSV still works, and Excel opens it directly.\n  - **Budgets, saved tags and preferences:** only the full **JSON backup** carries these.\n  - **Old Excel files:** in Excel, use **File › Save As › CSV**. Choosing an Excel file (`.xlsx`, `.xls`, `.xlsm` or `.xlsb`) now explains this.\n- **Fix: imports no longer reset your preferences by mistake.** Before, a CSV or an older JSON backup imported with \"Import preferences and default budget\" ticked silently reset your default budget and voice language. That option is now disabled for files that contain no preferences, and a note explains why.\n- **Stricter security policy.** Penny blocks web workers (`worker-src 'none'`). It needed one only for Excel parsing.\n- **Clearer labels:** **Export CSV**, **Download full backup (JSON)**, and import help that names only CSV and JSON.\n\n## Before you upgrade\nNothing stored in your browser changes, and JSON backups and the linked data file keep working. If you rely on Excel exports to keep **budgets**, download a full JSON backup instead.\n\n## Verification\n- **Tests:** 644 automated tests pass, locally, in CI and inside the Docker build. That includes guard tests that fail if Excel code returns.\n- **Browser checks:** every changed label, the Excel-file message, and the preferences fix tested end to end.\n- **Live site:** the runtime files match this release, the removed files return 404, and a manual smoke test passed.\n- **Review:** built by a Sonnet 5.5 subagent and reviewed independently by Opus 5.5.\n\n## Assets\n- `PennyExpenseManager-v3.3.0.zip`: the full source at this tag. Its SHA-256 checksum is in the `.sha256` file.\n\nLive app: https://debasisr66.github.io/PennyExpenseManager/\nDetails: [CHANGELOG](https://github.com/debasisr66/PennyExpenseManager/blob/v3.3.0/CHANGELOG.md)",
-        "published_at": "2026-11-17T12:44:30Z",
-        "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/tag/v3.3.0",
+        "tag": "v3.3.1",
+        "name": "Penny 3.3.1",
+        "body": "**New: \"Looks recurring\", a sidebar panel that lists the bills you pay every month, found from your own entries.**\n\n## Changes\n- **Looks recurring.** Penny now notices the bills you pay every month and lists them for you. You don't have to set anything up. Each row shows:\n  - the usual amount and the usual day;\n  - the evidence, for example \"seen 5 of 6 months\";\n  - \"paid this month\", when this month's payment matches.\n- **Strict by design.** A bill appears only when it has about the same amount (within 10%) and about the same day (within a week) in at least 4 of the last 6 months, and at most once in any month. Penny would rather miss a bill than show a wrong one.\n- **Read-only and private.** The panel only reads the expenses you already have. Nothing is saved or changed, and nothing is sent anywhere. Penny still has no third-party code, and the security policy is unchanged.\n- **Follows the month picker.** Pick another month to see the bills as they stood then.\n- **Sample data shows it working.** A first-time visit, or a Reset, now includes past-month entries for Rent, Train pass and a Music subscription. The sample now has 24 expenses, and this month's sample total is unchanged.\n\n## Before you upgrade\nNothing stored in your browser changes. Data, CSV and JSON formats are frozen, and a golden-file test proves it. The panel needs about 4 months of history before it can show your own bills. Until then it says what it is looking for.\n\n## Why 3.3.1 and not 3.4.0\nThis is the first step of a recurring-bills arc. 3.3.2 adds due bills and one-tap add, and 3.4 adds a forecast. The version number counts towards that arc.\n\n## Verification\n- **Tests:** 692 automated tests pass, locally and in CI. They include 46 detector tests and golden-file checks that the data formats and security headers are unchanged.\n- **Browser checks:**\n  - the panel on sample data;\n  - the month picker;\n  - the empty state;\n  - a 375 px phone width, keyboard and screen reader;\n  - the owner's smoke test.\n- **Live site:** all 11 runtime files on GitHub Pages match this release.\n- **Review:** built by a Sonnet 5.5 subagent and reviewed independently by Opus 5.5. Every finding was fixed before merge.\n- **Real-data check:** run on the owner's own backup, the detector made no wrong calls. There is only about a month of real history so far, so how many real bills it finds can't be measured yet. The automated tests are the gate for this release.\n\n## Assets\n- `PennyExpenseManager-v3.3.1.zip`: the full source at this tag. Its SHA-256 checksum is in the `.sha256` file.\n\nLive app: https://debasisr66.github.io/PennyExpenseManager/\nDetails: [CHANGELOG](https://github.com/debasisr66/PennyExpenseManager/blob/v3.3.1/CHANGELOG.md)\n",
+        "published_at": "2026-11-18T12:53:03Z",
+        "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/tag/v3.3.1",
         "assets": [
           {
-            "name": "PennyExpenseManager-v3.3.0.zip",
-            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.3.0/PennyExpenseManager-v3.3.0.zip",
-            "size": 142815
+            "name": "PennyExpenseManager-v3.3.1.zip",
+            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.3.1/PennyExpenseManager-v3.3.1.zip",
+            "size": 169434
           },
           {
-            "name": "PennyExpenseManager-v3.3.0.zip.sha256",
-            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.3.0/PennyExpenseManager-v3.3.0.zip.sha256",
+            "name": "PennyExpenseManager-v3.3.1.zip.sha256",
+            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.3.1/PennyExpenseManager-v3.3.1.zip.sha256",
             "size": 97
           }
         ]
