@@ -13,7 +13,7 @@ Spec-based work for Studio. A spec is written **before** any change that affects
 | Quick add: paste first, unlock when needed (`SPEC-QA`) | Complete 2026-10-23: Phase A merged (PR #24); QA-09 (Phase B) dropped by the owner | QA-01 … QA-10 | Phase 2.5, planned before UX | [quick-add/](quick-add/spec.md) |
 | Owner status line (`SPEC-ST`) | Shipped in v2.1 (2026-10-27) | ST-01 … ST-06 | After 2.0 | [owner-status/](owner-status/spec.md) |
 | Simpler layout (`SPEC-UX`) | Shipped in v2.0 (2026-10-26) | UX-01 … UX-07 | Phase 2.5, step 4 | [simple-layout/](simple-layout/spec.md) |
-| PR and CI enforced on `main` (`SPEC-MP`) | Approved 2026-11-18 (D1 GitHub App, strict, admin bypass) | §5 D1–D6, §9 T1–T9 | Operations | [main-pr-ci/](main-pr-ci/spec.md) |
+| PR and CI enforced on `main` (`SPEC-MP`) | Closed 2026-11-18, not implemented: owner kept history protection only (§0) | §5 D1–D6, §9 T1–T9 | Operations | [main-pr-ci/](main-pr-ci/spec.md) |
 
 ## Traceability convention
 
