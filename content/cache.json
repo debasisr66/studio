@@ -1,5 +1,5 @@
 {
-  "synced_at": "2026-11-19T08:39:51.832Z",
+  "synced_at": "2026-11-19T10:53:34.807Z",
   "products": {
     "debasisr66/PennyExpenseManager": {
       "description": "This is a Penny Expense Manager product (ChatGPT)",
@@ -9,20 +9,20 @@
       "pushed_at": "2026-11-19",
       "html_url": "https://github.com/debasisr66/PennyExpenseManager",
       "latest_release": {
-        "tag": "v3.3.2",
-        "name": "Penny 3.3.2",
-        "body": "**New: mark your own recurring bills, including ones that vary, such as Indian electricity, gas and water bills. Penny shows which are paid, due soon or overdue this month.**\n\n## Changes\n- **Recurring bill checkbox.** In the expense form, tick **Recurring bill** and choose **Repeats every** 1, 2, 3 or 12 months. You only need one entry. Penny doesn't wait for months of history.\n- **Built for bills that vary.** Penny doesn't expect the same amount or the same date every time:\n  - It reads each bill as **fixed** or **varies** from your last entries and shows varying bills as a range, for example ₹1,840–₹2,610.\n  - It works out the next due date from the last payment and the cadence you chose.\n- **Bills panel.** The sidebar panel is now **Bills**:\n  - **Your recurring bills** shows Paid, Due soon (within 7 days), Overdue or \"Stopped?\" for each bill.\n  - **Looks recurring** stays below it for bills Penny noticed but you haven't marked.\n  - Status shows for the current month. Past months say so.\n- **One locked label.** A marked expense shows one label in the list, such as \"Recurring · every 2 months\". You change it only through the form, so a stray tag edit can't break a bill.\n- **Search.** Use `#recurring` to find every marked bill.\n- **Sample data.** The sample Rent rows are marked as recurring. The sample still has 24 expenses.\n\n## Before you upgrade\nNothing stored in your browser changes. A marked bill is an ordinary expense with the tags `recurring` and, for 2, 3 or 12 months, `every-N-months`. CSV, JSON and schema 4 are unchanged, and a golden-file test proves it. Nothing is sent anywhere, and Penny still has no third-party code.\n\n## Verification\n- **Tests:** 762 automated tests pass in CI, with 0 failures. They include the new marked-bills tests and the golden-file checks that the data formats and security headers are unchanged.\n- **Review:** built by a Sonnet 5.5 session from an approved spec and reviewed independently by a different model. Every finding was fixed before merge.\n- **Live site:** after the merge, the Pages deploy succeeded, the app shows V3.3.2, and `recurring.js` loads.\n- **Owner's smoke test** passed on the live app: a fixed monthly bill and a varying bill every 2 months, their statuses, the locked label and the past-month message.\n\n## What's next\n3.3.3 adds a dark and light theme toggle. 3.4 adds a month-end forecast that counts the bills still to come.\n\n## Assets\n- `PennyExpenseManager-v3.3.2.zip`: the full source at this tag. Its SHA-256 checksum is in the `.sha256` file.\n\nLive app: https://debasisr66.github.io/PennyExpenseManager/\nDetails: [CHANGELOG](https://github.com/debasisr66/PennyExpenseManager/blob/v3.3.2/CHANGELOG.md)\n",
-        "published_at": "2026-11-19T08:39:32Z",
-        "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/tag/v3.3.2",
+        "tag": "v3.3.3",
+        "name": "Penny 3.3.3",
+        "body": "**New: a dark and light theme. The ◐ button in the header switches between System, Light and Dark, and the phone header now fits in two short rows.**\n\n## Changes\n- **Three modes.** System (the default) follows your phone or computer setting live. Light and Dark are your own choice. Your choice is saved on this device only. It is not part of your expenses, backups, CSV or JSON.\n- **No flash on load.** A small `theme.js` applies a saved choice before the page paints. The browser bar on your phone follows the theme too.\n- **Studio lineage.** The dark theme uses Studio's dark neutrals and Penny keeps its green. The footer has a \"Part of Studio\" link with the Studio mark, which opens in a new tab.\n- **Easier to read, in both themes.** Focus rings, input borders and the category chart colours now meet WCAG AA 3:1. The \"+ Tag\" text passes 4.5:1. Placeholders and tag chips are checked in both themes.\n- **Built for phones first.** The header is two rows and about 111 px tall at 320 to 412 px (it was 181 px at 320 px). The theme button is 44 × 44 px. Form fields are 16 px on phones, so iPhone Safari no longer zooms when you tap a field. Hover effects apply only on devices that can hover, so taps leave nothing stuck.\n\n## Before you upgrade\nNothing stored in your browser changes. Schema 4, CSV and JSON are unchanged, a golden-file test proves it, and the security policy is byte-identical. Nothing is sent anywhere, and Penny still has no third-party code. The one new item is a single setting on your device, `penny-theme`.\n\n## Verification\n- **Tests:** 783 automated tests pass in CI, with 0 failures. They include contrast checks for both themes, a light-theme pin and a security check on `theme.js`.\n- **Review:** built by a Sonnet 5.5 session from an approved spec and reviewed independently by Opus 5.5. It found no Blocker or High. Every Medium finding was fixed before merge.\n- **Live site:** after the merge, the Pages deploy succeeded, the app shows V3.3.3, and `theme.js` loads.\n- **Not covered:** the builder could not run the iOS Simulator or VoiceOver. Browser checks were done in Chromium at 320 to 1280 px.\n\n## What's next\n3.3.4 adds the Utilities and Staff salary categories. 3.3.5 is a mobile pass for Edit, Delete and tag-chip tap sizes.\n\n## Assets\n- `PennyExpenseManager-v3.3.3.zip`: the full source at this tag. Its SHA-256 checksum is in the `.sha256` file.\n\nLive app: https://debasisr66.github.io/PennyExpenseManager/\n",
+        "published_at": "2026-11-19T10:53:18Z",
+        "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/tag/v3.3.3",
         "assets": [
           {
-            "name": "PennyExpenseManager-v3.3.2.zip",
-            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.3.2/PennyExpenseManager-v3.3.2.zip",
-            "size": 191202
+            "name": "PennyExpenseManager-v3.3.3.zip",
+            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.3.3/PennyExpenseManager-v3.3.3.zip",
+            "size": 219055
           },
           {
-            "name": "PennyExpenseManager-v3.3.2.zip.sha256",
-            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.3.2/PennyExpenseManager-v3.3.2.zip.sha256",
+            "name": "PennyExpenseManager-v3.3.3.zip.sha256",
+            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.3.3/PennyExpenseManager-v3.3.3.zip.sha256",
             "size": 97
           }
         ]
