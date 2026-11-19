@@ -1,5 +1,5 @@
 {
-  "synced_at": "2026-11-19T06:56:38.602Z",
+  "synced_at": "2026-11-19T08:39:51.832Z",
   "products": {
     "debasisr66/PennyExpenseManager": {
       "description": "This is a Penny Expense Manager product (ChatGPT)",
@@ -9,20 +9,20 @@
       "pushed_at": "2026-11-19",
       "html_url": "https://github.com/debasisr66/PennyExpenseManager",
       "latest_release": {
-        "tag": "v3.3.1",
-        "name": "Penny 3.3.1",
-        "body": "**New: \"Looks recurring\", a sidebar panel that lists the bills you pay every month, found from your own entries.**\n\n## Changes\n- **Looks recurring.** Penny now notices the bills you pay every month and lists them for you. You don't have to set anything up. Each row shows:\n  - the usual amount and the usual day;\n  - the evidence, for example \"seen 5 of 6 months\";\n  - \"paid this month\", when this month's payment matches.\n- **Strict by design.** A bill appears only when it has about the same amount (within 10%) and about the same day (within a week) in at least 4 of the last 6 months, and at most once in any month. Penny would rather miss a bill than show a wrong one.\n- **Read-only and private.** The panel only reads the expenses you already have. Nothing is saved or changed, and nothing is sent anywhere. Penny still has no third-party code, and the security policy is unchanged.\n- **Follows the month picker.** Pick another month to see the bills as they stood then.\n- **Sample data shows it working.** A first-time visit, or a Reset, now includes past-month entries for Rent, Train pass and a Music subscription. The sample now has 24 expenses, and this month's sample total is unchanged.\n\n## Before you upgrade\nNothing stored in your browser changes. Data, CSV and JSON formats are frozen, and a golden-file test proves it. The panel needs about 4 months of history before it can show your own bills. Until then it says what it is looking for.\n\n## Why 3.3.1 and not 3.4.0\nThis is the first step of a recurring-bills arc. 3.3.2 adds due bills and one-tap add, and 3.4 adds a forecast. The version number counts towards that arc.\n\n## Verification\n- **Tests:** 692 automated tests pass, locally and in CI. They include 46 detector tests and golden-file checks that the data formats and security headers are unchanged.\n- **Browser checks:**\n  - the panel on sample data;\n  - the month picker;\n  - the empty state;\n  - a 375 px phone width, keyboard and screen reader;\n  - the owner's smoke test.\n- **Live site:** all 11 runtime files on GitHub Pages match this release.\n- **Review:** built by a Sonnet 5.5 subagent and reviewed independently by Opus 5.5. Every finding was fixed before merge.\n- **Real-data check:** run on the owner's own backup, the detector made no wrong calls. There is only about a month of real history so far, so how many real bills it finds can't be measured yet. The automated tests are the gate for this release.\n\n## Assets\n- `PennyExpenseManager-v3.3.1.zip`: the full source at this tag. Its SHA-256 checksum is in the `.sha256` file.\n\nLive app: https://debasisr66.github.io/PennyExpenseManager/\nDetails: [CHANGELOG](https://github.com/debasisr66/PennyExpenseManager/blob/v3.3.1/CHANGELOG.md)\n",
-        "published_at": "2026-11-18T12:53:03Z",
-        "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/tag/v3.3.1",
+        "tag": "v3.3.2",
+        "name": "Penny 3.3.2",
+        "body": "**New: mark your own recurring bills, including ones that vary, such as Indian electricity, gas and water bills. Penny shows which are paid, due soon or overdue this month.**\n\n## Changes\n- **Recurring bill checkbox.** In the expense form, tick **Recurring bill** and choose **Repeats every** 1, 2, 3 or 12 months. You only need one entry. Penny doesn't wait for months of history.\n- **Built for bills that vary.** Penny doesn't expect the same amount or the same date every time:\n  - It reads each bill as **fixed** or **varies** from your last entries and shows varying bills as a range, for example ₹1,840–₹2,610.\n  - It works out the next due date from the last payment and the cadence you chose.\n- **Bills panel.** The sidebar panel is now **Bills**:\n  - **Your recurring bills** shows Paid, Due soon (within 7 days), Overdue or \"Stopped?\" for each bill.\n  - **Looks recurring** stays below it for bills Penny noticed but you haven't marked.\n  - Status shows for the current month. Past months say so.\n- **One locked label.** A marked expense shows one label in the list, such as \"Recurring · every 2 months\". You change it only through the form, so a stray tag edit can't break a bill.\n- **Search.** Use `#recurring` to find every marked bill.\n- **Sample data.** The sample Rent rows are marked as recurring. The sample still has 24 expenses.\n\n## Before you upgrade\nNothing stored in your browser changes. A marked bill is an ordinary expense with the tags `recurring` and, for 2, 3 or 12 months, `every-N-months`. CSV, JSON and schema 4 are unchanged, and a golden-file test proves it. Nothing is sent anywhere, and Penny still has no third-party code.\n\n## Verification\n- **Tests:** 762 automated tests pass in CI, with 0 failures. They include the new marked-bills tests and the golden-file checks that the data formats and security headers are unchanged.\n- **Review:** built by a Sonnet 5.5 session from an approved spec and reviewed independently by a different model. Every finding was fixed before merge.\n- **Live site:** after the merge, the Pages deploy succeeded, the app shows V3.3.2, and `recurring.js` loads.\n- **Owner's smoke test** passed on the live app: a fixed monthly bill and a varying bill every 2 months, their statuses, the locked label and the past-month message.\n\n## What's next\n3.3.3 adds a dark and light theme toggle. 3.4 adds a month-end forecast that counts the bills still to come.\n\n## Assets\n- `PennyExpenseManager-v3.3.2.zip`: the full source at this tag. Its SHA-256 checksum is in the `.sha256` file.\n\nLive app: https://debasisr66.github.io/PennyExpenseManager/\nDetails: [CHANGELOG](https://github.com/debasisr66/PennyExpenseManager/blob/v3.3.2/CHANGELOG.md)\n",
+        "published_at": "2026-11-19T08:39:32Z",
+        "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/tag/v3.3.2",
         "assets": [
           {
-            "name": "PennyExpenseManager-v3.3.1.zip",
-            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.3.1/PennyExpenseManager-v3.3.1.zip",
-            "size": 169434
+            "name": "PennyExpenseManager-v3.3.2.zip",
+            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.3.2/PennyExpenseManager-v3.3.2.zip",
+            "size": 191202
           },
           {
-            "name": "PennyExpenseManager-v3.3.1.zip.sha256",
-            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.3.1/PennyExpenseManager-v3.3.1.zip.sha256",
+            "name": "PennyExpenseManager-v3.3.2.zip.sha256",
+            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.3.2/PennyExpenseManager-v3.3.2.zip.sha256",
             "size": 97
           }
         ]
