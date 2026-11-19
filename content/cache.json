@@ -1,5 +1,5 @@
 {
-  "synced_at": "2026-11-19T10:53:34.807Z",
+  "synced_at": "2026-11-19T11:17:58.097Z",
   "products": {
     "debasisr66/PennyExpenseManager": {
       "description": "This is a Penny Expense Manager product (ChatGPT)",
@@ -9,20 +9,20 @@
       "pushed_at": "2026-11-19",
       "html_url": "https://github.com/debasisr66/PennyExpenseManager",
       "latest_release": {
-        "tag": "v3.3.3",
-        "name": "Penny 3.3.3",
-        "body": "**New: a dark and light theme. The ◐ button in the header switches between System, Light and Dark, and the phone header now fits in two short rows.**\n\n## Changes\n- **Three modes.** System (the default) follows your phone or computer setting live. Light and Dark are your own choice. Your choice is saved on this device only. It is not part of your expenses, backups, CSV or JSON.\n- **No flash on load.** A small `theme.js` applies a saved choice before the page paints. The browser bar on your phone follows the theme too.\n- **Studio lineage.** The dark theme uses Studio's dark neutrals and Penny keeps its green. The footer has a \"Part of Studio\" link with the Studio mark, which opens in a new tab.\n- **Easier to read, in both themes.** Focus rings, input borders and the category chart colours now meet WCAG AA 3:1. The \"+ Tag\" text passes 4.5:1. Placeholders and tag chips are checked in both themes.\n- **Built for phones first.** The header is two rows and about 111 px tall at 320 to 412 px (it was 181 px at 320 px). The theme button is 44 × 44 px. Form fields are 16 px on phones, so iPhone Safari no longer zooms when you tap a field. Hover effects apply only on devices that can hover, so taps leave nothing stuck.\n\n## Before you upgrade\nNothing stored in your browser changes. Schema 4, CSV and JSON are unchanged, a golden-file test proves it, and the security policy is byte-identical. Nothing is sent anywhere, and Penny still has no third-party code. The one new item is a single setting on your device, `penny-theme`.\n\n## Verification\n- **Tests:** 783 automated tests pass in CI, with 0 failures. They include contrast checks for both themes, a light-theme pin and a security check on `theme.js`.\n- **Review:** built by a Sonnet 5.5 session from an approved spec and reviewed independently by Opus 5.5. It found no Blocker or High. Every Medium finding was fixed before merge.\n- **Live site:** after the merge, the Pages deploy succeeded, the app shows V3.3.3, and `theme.js` loads.\n- **Not covered:** the builder could not run the iOS Simulator or VoiceOver. Browser checks were done in Chromium at 320 to 1280 px.\n\n## What's next\n3.3.4 adds the Utilities and Staff salary categories. 3.3.5 is a mobile pass for Edit, Delete and tag-chip tap sizes.\n\n## Assets\n- `PennyExpenseManager-v3.3.3.zip`: the full source at this tag. Its SHA-256 checksum is in the `.sha256` file.\n\nLive app: https://debasisr66.github.io/PennyExpenseManager/\n",
-        "published_at": "2026-11-19T10:53:18Z",
-        "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/tag/v3.3.3",
+        "tag": "v3.3.4",
+        "name": "Penny 3.3.4",
+        "body": "**New: two more categories, Utilities and Staff salary, in the category list, the filters and the chart. Voice entry knows the words for them in English, Hindi and Spanish.**\n\n## Changes\n- **Utilities and Staff salary.** The list now has 9 categories. The two new ones sit before \"Other\". The form still starts on \"Food & groceries\". Entertainment was already there.\n- **Voice words.** Electricity, water, gas, broadband, wifi, internet, recharge and DTH now go to Utilities, in English, Hindi and Spanish, instead of Housing. Salary, maid, cook, driver, nanny and staff go to Staff salary. Words for food and transport still win when they appear, so \"taxi driver\" stays Transport.\n- **Chart.** Two new colours for the new categories, checked for contrast in both the light and dark themes. \"Other\" keeps its grey.\n\n## Before you upgrade\n- **Past entries are not moved.** Penny never rewrites your data. To move a bill, edit its last entry's category. A bill you marked recurring under Housing becomes a new bill when you log it under Utilities, and the old one shows \"Stopped?\" and then hides.\n- **Backups go one way.** A backup that uses a new category does not import into 3.3.3 or older. Backups from older versions import as before.\n- Schema 4, the CSV and JSON formats and the security policy are unchanged. Nothing is sent anywhere, and Penny still has no third-party code.\n\n## Verification\n- **Tests:** 792 automated tests pass in CI with 0 failures, including the format and security goldens, unedited.\n- **Review:** built by a Sonnet 5.5 session from the approved spec and reviewed independently by Opus 5.5: no Blocker or High. Its Medium finding (new voice rules overriding Transport and Food words) was fixed before merge.\n- **Live site:** after the merge the Pages deploy succeeded, the app shows V3.3.4, and the new categories load.\n- **Not covered:** the 9-row chart and the dropdown were checked in Chromium at 320 and 1280 px in both themes. No real phone, iOS Simulator or VoiceOver check was run.\n\n## Also in this release\nA fix for the phone zoom after Add expense, Cancel, Discard (PR #23). It is a best-effort fix: the zoom could not be reproduced in the builder's browser, so please tell us if it still happens on your phone.\n\n## What's next\n3.3.5 is the mobile pass: bigger tap targets for Edit, Delete and tag chips.\n\n## Assets\n- `PennyExpenseManager-v3.3.4.zip`: the full source at this tag. Its SHA-256 checksum is in the `.sha256` file.\n\nLive app: https://debasisr66.github.io/PennyExpenseManager/\n",
+        "published_at": "2026-11-19T11:17:39Z",
+        "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/tag/v3.3.4",
         "assets": [
           {
-            "name": "PennyExpenseManager-v3.3.3.zip",
-            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.3.3/PennyExpenseManager-v3.3.3.zip",
-            "size": 219055
+            "name": "PennyExpenseManager-v3.3.4.zip",
+            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.3.4/PennyExpenseManager-v3.3.4.zip",
+            "size": 236578
           },
           {
-            "name": "PennyExpenseManager-v3.3.3.zip.sha256",
-            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.3.3/PennyExpenseManager-v3.3.3.zip.sha256",
+            "name": "PennyExpenseManager-v3.3.4.zip.sha256",
+            "download_url": "https://github.com/debasisr66/PennyExpenseManager/releases/download/v3.3.4/PennyExpenseManager-v3.3.4.zip.sha256",
             "size": 97
           }
         ]
