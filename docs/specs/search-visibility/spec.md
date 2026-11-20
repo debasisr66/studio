@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Spec ID | `SPEC-SE` (requirements `SE-01` … `SE-03`) |
-| Status | **In progress (PR `v2/seo-sitemap`, 2026-11-20)** |
+| Status | **Shipped 2026-11-20 (PR #58, merge 0531bf5; live `/studio/sitemap.xml` 200 `application/xml`)** |
 | Owner | Debasis Ray |
 | Created | 2026-11-20 |
 | Parent | [PRD](../../PRD.md); follows the JSON-LD exception ([security log §11.15](../../security.md), [review SE-JSONLD](../../reviews/SE-JSONLD.md)) |
@@ -62,3 +62,4 @@ Not a gated phase ([REVIEW-GATE](../../REVIEW-GATE.md)): a static file with no s
 | Date | Status | Note |
 |------|--------|------|
 | 2026-11-20 | In progress | The owner requested indexing in Search Console and asked for the sitemap PR |
+| 2026-11-20 | Shipped | PR #58 merged at the tested commit; CI, Pages and Health green; the live file matches `main`. Open: the owner submits `sitemap.xml` in Search Console (SE-01 acceptance) |
