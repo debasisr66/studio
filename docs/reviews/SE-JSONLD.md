@@ -9,7 +9,7 @@ Process: [REVIEW-GATE.md](../REVIEW-GATE.md). Reason for the gate: the change re
 | Reviewer model | Claude Sonnet 5.5 (separate agent, fresh context, read-only) |
 | Reviewed commit | 0474589 (first review); fixes re-checked at e37c875 |
 | Reviewer verdict | APPROVE |
-| Owner acknowledgement | 2026-11-20: the owner instructed the merge in chat ("merge PR #56"); a separate confirmation that the checkpoint below was read was not given |
+| Owner acknowledgement | 2026-11-20, Debasis Ray: checked the PR on GitHub ("Looks good") and instructed the merge |
 
 First verdict (0474589), copied verbatim: `VERDICT: APPROVE WITH CONDITIONS` ("fix F1 and F2 … before merge. F3 to F5 can follow"). Re-check verdict (e37c875), copied verbatim: `VERDICT: APPROVE`.
 
