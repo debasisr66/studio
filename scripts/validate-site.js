@@ -110,6 +110,43 @@ const validateReads = reads => RL.validateReadsFile(reads);
 /* SPEC-PC PC-04. The rules live in js/podcast-lib.js (validatePodcastsFile) so the admin screen runs the very same check before every publish. */
 const validatePodcasts = file => RL.validatePodcastsFile(file);
 
+/* The one inline <script> allowed: a single application/ld+json data block for search engines. Browsers never execute it, so the
+   CSP (script-src 'self') is unaffected; it is still checked like content: valid JSON, at most 4 KB, nothing that could close the
+   element or hide markup, and clean profile links (not bare home pages). Any other inline script stays an error. */
+const JSONLD_MAX = 4 * 1024;
+function checkJsonLd(html) {
+  const errors = [], blocks = [];
+  let inline = 0;
+  for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
+    if (/\bsrc\s*=/i.test(m[1])) continue;
+    inline++;
+    const type = (m[1].match(/\btype\s*=\s*["']?([^"'\s>]+)/i) || [, ''])[1].toLowerCase();
+    if (type === 'application/ld+json') blocks.push(m[2]);
+    else errors.push('index.html: inline <script> found (the CSP forbids it); move it to js/ (only one application/ld+json data block may be inline)');
+  }
+  const openers = (html.match(/<script\b(?![^>]*\bsrc\s*=)[^>]*>/gi) || []).length;
+  if (openers !== inline) errors.push('index.html: inline <script> found (the CSP forbids it); move it to js/ (an unclosed script tag)');
+  if (blocks.length > 1) errors.push(`index.html: only one JSON-LD block is allowed (found ${blocks.length})`);
+  for (const body of blocks) {
+    if (Buffer.byteLength(body) > JSONLD_MAX) errors.push('index.html: the JSON-LD block is over 4 KB');
+    if (/<\/|<!--/.test(body)) errors.push('index.html: the JSON-LD block must not contain "</" or "<!--"');
+    let data;
+    try { data = JSON.parse(body); } catch { errors.push('index.html: the JSON-LD block is not valid JSON'); continue; }
+    const links = [];
+    if (isObj(data)) {
+      if (data.url !== undefined) links.push(['url', data.url]);
+      const same = data.sameAs === undefined ? [] : Array.isArray(data.sameAs) ? data.sameAs : [data.sameAs];
+      same.forEach(u => links.push(['sameAs', u]));
+    }
+    for (const [k, u] of links) {
+      if (!isStr(u) || !httpUrl(u)) { errors.push(`index.html: JSON-LD ${k} must be ${URL_HINT} (got ${JSON.stringify(u)})`); continue; }
+      const x = new URL(u);
+      if (x.pathname === '/' && !x.search) errors.push(`index.html: JSON-LD ${k} ${u} is a site's home page, not a profile; link to the profile itself`);
+    }
+  }
+  return errors;
+}
+
 function validateIndex(html, exists) {
   const errors = [];
   if (!/<html[^>]*\blang="[a-z-]+"/i.test(html)) errors.push('index.html: <html> needs a lang attribute');
@@ -130,7 +167,10 @@ function validateIndex(html, exists) {
       if (hosts.length) errors.push(`index.html: CSP ${dir} allows third-party sources (${hosts.join(' ')}); fonts and styles must be self-hosted`);
     }
   }
-  if (/<script(?![^>]*\bsrc=)[^>]*>/i.test(html)) errors.push('index.html: inline <script> found (the CSP forbids it); move it to js/');
+  errors.push(...checkJsonLd(html));
+  const noscriptAt = html.search(/<noscript\b/i), bodyAt = html.search(/<body\b/i);
+  if (noscriptAt >= 0 && (bodyAt < 0 || noscriptAt < bodyAt)) errors.push('index.html: <noscript> must be inside <body> (it is placed before it)');
+  if (/<[a-z][^>]*\s\.\.\.\s*\/?>/i.test(html)) errors.push('index.html: a tag still holds a placeholder ("...") instead of a real attribute value');
   if (/<style[\s>]/i.test(html)) errors.push('index.html: inline <style> block found (the CSP forbids it); move it to css/site.css');
   if (/<[a-z][^>]*\sstyle\s*=/i.test(html)) errors.push('index.html: style= attribute found (the CSP forbids it); use a class');
   for (const m of html.matchAll(/<(?:script|link)\b[^>]*\b(?:src|href)="([^"]+)"/gi)) {
@@ -480,7 +520,7 @@ function checkContractDoc(doc, files, ruleIds) {
 }
 const missingFixtures = (rules, ids) => rules.filter(r => !ids.includes(r.id)).map(r => r.id);
 
-module.exports = { validateStatus, RULES, runRule, missingFixtures, checkContractDoc, productWarnings, checkWorkflows, validateProfileManifest, validateProfileImage, checkSvg, checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validatePodcasts, run, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
+module.exports = { checkJsonLd, validateStatus, RULES, runRule, missingFixtures, checkContractDoc, productWarnings, checkWorkflows, validateProfileManifest, validateProfileImage, checkSvg, checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validatePodcasts, run, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
 
 if (require.main === module) {
   const { errors, warnings, sizes } = run();
