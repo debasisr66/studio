@@ -14,6 +14,7 @@ Spec-based work for Studio. A spec is written **before** any change that affects
 | Owner status line (`SPEC-ST`) | Shipped in v2.1 (2026-10-27) | ST-01 … ST-06 | After 2.0 | [owner-status/](owner-status/spec.md) |
 | Simpler layout (`SPEC-UX`) | Shipped in v2.0 (2026-10-26) | UX-01 … UX-07 | Phase 2.5, step 4 | [simple-layout/](simple-layout/spec.md) |
 | PR and CI enforced on `main` (`SPEC-MP`) | Closed 2026-11-18, not implemented: owner kept history protection only (§0) | §5 D1–D6, §9 T1–T9 | Operations | [main-pr-ci/](main-pr-ci/spec.md) |
+| Search visibility: sitemap (`SPEC-SE`) | In progress (2026-11-20, PR `v2/seo-sitemap`) | SE-01 … SE-03 | Operations | [search-visibility/](search-visibility/spec.md) |
 
 ## Traceability convention
 
