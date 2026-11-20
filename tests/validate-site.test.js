@@ -318,3 +318,19 @@ test('workflows: actions: read is fine; any other write scope is rejected', () =
   const bad = wf(`actions/checkout@${SHA}`, 'permissions:\n  contents: read\n  packages: write\n');
   assert.ok(V.checkWorkflows({ '.github/workflows/health.yml': bad }).some(e => /packages: write/.test(e)));
 });
+
+/* 2026-11-20: three different YouTube videos were reported as "same link as an earlier read" because the check ignored ?v=…
+   The CI check now uses the same key as the admin composer (RL.keyOf: host without www, path, query). */
+test('reads: links that differ only in the query (different YouTube videos) are not duplicates', () => {
+  const yt = v => read({ id: v.length, url: 'https://www.youtube.com/watch?v=' + v });
+  const r = V.validateReads({ schema_version: 2, books: [], articles: [yt('aaa'), yt('bbbb'), yt('ccccc')].map(a => ({ ...a, category: 'other' })) });
+  assert.deepEqual(r.errors, []);
+  assert.deepEqual(r.warnings, []);
+});
+test('reads: the same video with tracking or a fragment is still a duplicate', () => {
+  const a = { ...read({ id: 1, url: 'https://www.youtube.com/watch?v=aaa' }), category: 'other' };
+  const b = { ...read({ id: 2, url: 'https://youtube.com/watch?v=aaa&utm_source=x#t' }), category: 'other' };
+  const r = V.validateReads({ schema_version: 2, books: [], articles: [a, b] });
+  assert.equal(r.warnings.length, 1);
+  assert.match(r.warnings[0], /same link as an earlier read/);
+});
