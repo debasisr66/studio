@@ -129,7 +129,7 @@ test('TC-SH-S10 a Chrome that fails to start twice fails the run after two attem
   try {
     const counter = path.join(dir, 'count'), bin = path.join(dir, 'fake-chrome.sh');
     fs.writeFileSync(bin, `#!/bin/sh\necho $$ >> "${counter}"\nexec sleep 300\n`); fs.chmodSync(bin, 0o755);
-    const r = spawnSync('node', [SMOKE], { env: { ...process.env, CI: '', CHROME_BIN: bin, SMOKE_LAUNCH_TIMEOUT_MS: '1200', SMOKE_ONLY: 'TC-SH-B01' }, encoding: 'utf8', timeout: 30000 });
+    const r = spawnSync('node', [SMOKE], { env: { ...process.env, CI: '', CHROME_BIN: bin, SMOKE_LAUNCH_TIMEOUT_MS: '3000', SMOKE_ONLY: 'TC-SH-B01' }, encoding: 'utf8', timeout: 30000 });   // 3 s: under load the fake script itself may not start within 1.2 s (seen 2026-11-20)
     assert.equal(r.status, 1, r.stdout + r.stderr);
     const pids = fs.readFileSync(counter, 'utf8').trim().split('\n').map(Number);
     assert.equal(pids.length, 2, 'exactly two start attempts, got ' + pids.length);
@@ -137,12 +137,14 @@ test('TC-SH-S10 a Chrome that fails to start twice fails the run after two attem
     for (const p of pids) assert.ok(await waitDead(p), 'browser ' + p + ' is still running');
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+/* CI 44680248272 (20 Nov, twice): with a 10 s limit the REAL second Chrome start was too slow on a busy runner (unit tests run in parallel).
+   This case proves the retry, not Chrome's speed, so it allows 30 s per start; the real smoke step keeps its 12 s default (TC-SH-S12). */
 test('TC-SH-S11 a first start that hangs is retried and the run then passes (real Chrome behind a wrapper that hangs once)', { skip: !S.findChrome() && 'no Chrome here' }, async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'smoke-fake-'));
   try {
     const mark = path.join(dir, 'first'), bin = path.join(dir, 'flaky-chrome.sh');
     fs.writeFileSync(bin, `#!/bin/sh\nif [ ! -e "${mark}" ]; then echo $$ > "${mark}"; exec sleep 300; fi\nexec "${S.findChrome()}" --no-sandbox "$@"\n`); fs.chmodSync(bin, 0o755);
-    const r = spawnSync('node', [SMOKE], { env: { ...process.env, CI: '', CHROME_BIN: bin, SMOKE_LAUNCH_TIMEOUT_MS: '10000', SMOKE_ONLY: 'TC-SH-B01' }, encoding: 'utf8', timeout: 90000 });
+    const r = spawnSync('node', [SMOKE], { env: { ...process.env, CI: '', CHROME_BIN: bin, SMOKE_LAUNCH_TIMEOUT_MS: '30000', SMOKE_ONLY: 'TC-SH-B01' }, encoding: 'utf8', timeout: 150000 });
     assert.equal(r.status, 0, r.stdout + r.stderr);
     assert.match(r.stderr + r.stdout, /Chrome start attempt 1 of 2 failed/);
     assert.ok(await waitDead(Number(fs.readFileSync(mark, 'utf8'))), 'the hung first browser is still running');
