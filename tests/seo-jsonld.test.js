@@ -110,3 +110,8 @@ test('JL15 (F5) a "<body" inside a comment or a JSON-LD string does not hide a <
   assert.ok(V.validateIndex(viaJson, () => true).some(e => /noscript/.test(e)));
 });
 
+
+test('JL16 (F5b) a "<body" inside an attribute value does not hide a <noscript> placed before the body', () => {
+  const html = '<!doctype html><html lang="en"><head><title>T</title><meta name="x" content="<body >"><noscript>x</noscript></head><body><script src="js/app.js"></script></body></html>';
+  assert.ok(V.validateIndex(html, () => true).some(e => /noscript/.test(e)));
+});

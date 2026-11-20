@@ -204,7 +204,8 @@ function validateIndex(html, exists) {
   }
   errors.push(...checkJsonLd(html));
   // comments and script bodies may mention "<body" or "<noscript" as text; only real tags count (review SE-JSONLD, F5)
-  const bare = html.replace(/<!--[\s\S]*?-->/g, '').replace(/<script\b[\s\S]*?<\/script\s*>/gi, '');
+  const bare = html.replace(/<!--[\s\S]*?-->/g, '').replace(/<script\b[\s\S]*?<\/script\s*>/gi, '')
+    .replace(/<[a-z](?:[^>"']|"[^"]*"|'[^']*')*>/gi, tag => tag.replace(/"[^"]*"|'[^']*'/g, '""'));   // and attribute values (F5b)
   const noscriptAt = bare.search(/<noscript[\s>]/i), bodyAt = bare.search(/<body[\s>]/i);
   if (noscriptAt >= 0 && (bodyAt < 0 || noscriptAt < bodyAt)) errors.push('index.html: <noscript> must be inside <body> (it is placed before it)');
   if (/<[a-z][^>]*?(?:\s|=\s*["']?)\.\.\.["']?(?=[\s\/>])/i.test(html)) errors.push('index.html: a tag still holds a placeholder ("...") instead of a real attribute value');

@@ -359,3 +359,18 @@ These are the author's notes only. The independent review is [reviews/UX-05.md](
 | Motion | the reduced-motion block is unchanged and now has a unit test; no scripted smooth scrolling | unit A04 |
 
 Not covered by the author: a human accessibility audit, real devices, assistive technology.
+
+### 11.15 SEO data block (JSON-LD) exception: author's notes (2026-11-20; the verdict is the reviewer's, not the author's)
+
+Context: four edits made directly on `main` through GitHub's web editor on 2026-11-19 (SEO: JSON-LD, a `<noscript>` block, a Google verification file and meta tag) turned CI red because the validator rejected any inline `<script>`. The site itself kept working. These are the author's notes only; the independent review is [reviews/SE-JSONLD.md](reviews/SE-JSONLD.md).
+
+| Item | What changed | Evidence |
+|------|--------------|----------|
+| Rule relaxed | Exactly one inline `<script type="application/ld+json">` is allowed. Browsers never execute this type, so the CSP (`script-src 'self'`) is unchanged and still blocks every inline script | unit JL01-JL02, TC-QA-S03; smoke healthy cases show no console or CSP errors |
+| Guards on the block | Valid JSON, at most 4 KB, no `</` or `<!--`, one block only, top-level `url` and `sameAs` must pass the strict link rule and not be bare home pages | unit JL03-JL08 |
+| Other checks added | `<noscript>` must be inside `<body>`; a tag holding a `...` placeholder fails | unit JL09-JL10 |
+| Data corrected | `url` and `sameAs` now point at the owner's own profiles (Studio, GitHub, LinkedIn, Cybage); the placeholder meta tag removed (verification uses the uploaded file); `<noscript>` moved into `<body>` with the real Penny address | unit JL11 on the real file; the old file fails with six named errors |
+| Not changed | CSP, workflows, permissions, tokens, content files | diff |
+
+Residual: the scan of `index.html` uses regular expressions, not a full HTML parser; the page has a single author (the owner) and CI runs on every change.
+
