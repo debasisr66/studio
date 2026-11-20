@@ -76,3 +76,37 @@ test('JL11 the real index.html passes: one JSON-LD block with real profile links
   assert.deepEqual(errs(html), []);
   assert.ok(!V.validateIndex(html, () => true).some(e => /noscript|placeholder|inline <script>|JSON-LD/.test(e)));
 });
+
+/* Independent review (docs/reviews/SE-JSONLD.md): findings F1-F5, each case taken from the reviewer's report */
+test('JL12 (F1) an inline script is not mistaken for an external one by "src=" text inside another attribute', () => {
+  for (const s of ['<script data-src="x">alert(1)</script>', '<script title="src=x">alert(1)</script>', "<script data-x='a src=b'>alert(1)</script>"]) {
+    assert.ok(errs(page(s)).some(e => /inline <script>/.test(e)), s);
+  }
+  assert.deepEqual(errs(page('<script src="js/x.js"></script>')), []);
+});
+
+test('JL13 (F2, F3) the type comes from the real type attribute; the JSON-LD tag may carry no other attribute', () => {
+  for (const s of ['<script data-x="type=application/ld+json" type="module">{}</script>',
+    '<script type="application/ld+json" onload="x()">{}</script>', '<script type="application/ld+json" data-a="1">{}</script>',
+    '<script/type="module">{}</script>', '<script type="module" type="application/ld+json">{}</script>']) {
+    assert.ok(errs(page(s)).some(e => /inline <script>/.test(e)), s);
+  }
+  assert.deepEqual(errs(page('<script/type="application/ld+json">' + JSON.stringify(person()) + '</script>')), []);
+  assert.deepEqual(errs(page("<script type='application/ld+json'>" + JSON.stringify(person()) + '</script>')), []);
+});
+
+test('JL14 (F4) a "..." placeholder anywhere in a tag, or as a whole value, is an error', () => {
+  for (const t of ['<meta ... name="x">', '<meta name="x" content="...">', "<meta name='x' content='...'>", '<a href=... >x</a>']) {
+    assert.ok(V.validateIndex(page(t), () => true).some(e => /placeholder/.test(e)), t);
+  }
+  assert.ok(!V.validateIndex(page('<p>Loading...</p>'), () => true).some(e => /placeholder/.test(e)));
+});
+
+test('JL15 (F5) a "<body" inside a comment or a JSON-LD string does not hide a <noscript> placed before the body', () => {
+  const ns = '<noscript><p>x</p></noscript>';
+  const viaComment = `<!doctype html><html lang="en"><head><title>T</title><!-- <body> --></head>${ns}<body><script src="js/app.js"></script></body></html>`;
+  const viaJson = `<!doctype html><html lang="en"><head><title>T</title>${block(person({ description: '<body class=x>' }))}</head>${ns}<body><script src="js/app.js"></script></body></html>`;
+  assert.ok(V.validateIndex(viaComment, () => true).some(e => /noscript/.test(e)));
+  assert.ok(V.validateIndex(viaJson, () => true).some(e => /noscript/.test(e)));
+});
+

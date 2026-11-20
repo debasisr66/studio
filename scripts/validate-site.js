@@ -110,22 +110,57 @@ const validateReads = reads => RL.validateReadsFile(reads);
 /* SPEC-PC PC-04. The rules live in js/podcast-lib.js (validatePodcastsFile) so the admin screen runs the very same check before every publish. */
 const validatePodcasts = file => RL.validatePodcastsFile(file);
 
+/* A small tokenizer for <script> tags that follows the HTML rules a regex gets wrong (review SE-JSONLD, F1-F3): attributes are
+   split on whitespace or "/", values may be quoted with " or ' (and may then hold ">" or "src="), the FIRST of a repeated attribute
+   wins. Returns one entry per <script> start tag: { attrs: Map(lowercase name -> value), dup: bool, body } or null when the tag
+   or its </script> is never closed. Scripts inside comments are still counted (fails closed). */
+function scanScripts(html) {
+  const out = [], n = html.length, opener = /<script(?=[\s\/>])/gi;
+  let m;
+  while ((m = opener.exec(html))) {
+    let i = m.index + 7, closed = false, dup = false;
+    const attrs = new Map();
+    while (i < n) {
+      while (i < n && /[\s\/]/.test(html[i])) i++;
+      if (i >= n) break;
+      if (html[i] === '>') { i++; closed = true; break; }
+      let name = html[i++];
+      while (i < n && !/[\s\/>=]/.test(html[i])) name += html[i++];
+      while (i < n && /\s/.test(html[i])) i++;
+      let value = '';
+      if (html[i] === '=') {
+        i++;
+        while (i < n && /\s/.test(html[i])) i++;
+        const q = html[i];
+        if (q === '"' || q === "'") { const j = html.indexOf(q, i + 1); if (j < 0) { i = n; break; } value = html.slice(i + 1, j); i = j + 1; }
+        else while (i < n && !/[\s>]/.test(html[i])) value += html[i++];
+      }
+      const key = name.toLowerCase();
+      if (attrs.has(key)) dup = true; else attrs.set(key, value);
+    }
+    if (!closed) { out.push(null); break; }
+    const end = html.slice(i).search(/<\/script/i);
+    if (end < 0) { out.push(null); break; }
+    out.push({ attrs, dup, body: html.slice(i, i + end) });
+    opener.lastIndex = i + end;
+  }
+  return out;
+}
+
 /* The one inline <script> allowed: a single application/ld+json data block for search engines. Browsers never execute it, so the
-   CSP (script-src 'self') is unaffected; it is still checked like content: valid JSON, at most 4 KB, nothing that could close the
-   element or hide markup, and clean profile links (not bare home pages). Any other inline script stays an error. */
+   CSP (script-src 'self') is unaffected; it is still checked like content: exactly one attribute (type), valid JSON, at most 4 KB,
+   nothing that could close the element or hide markup, and clean profile links (not bare home pages). Any other inline script stays an error. */
 const JSONLD_MAX = 4 * 1024;
+const INLINE_MSG = 'index.html: inline <script> found (the CSP forbids it); move it to js/ (only one application/ld+json data block, with no other attribute, may be inline)';
 function checkJsonLd(html) {
   const errors = [], blocks = [];
-  let inline = 0;
-  for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
-    if (/\bsrc\s*=/i.test(m[1])) continue;
-    inline++;
-    const type = (m[1].match(/\btype\s*=\s*["']?([^"'\s>]+)/i) || [, ''])[1].toLowerCase();
-    if (type === 'application/ld+json') blocks.push(m[2]);
-    else errors.push('index.html: inline <script> found (the CSP forbids it); move it to js/ (only one application/ld+json data block may be inline)');
+  for (const t of scanScripts(html)) {
+    if (!t) { errors.push(INLINE_MSG.replace('(only', '(an unclosed script tag; only')); continue; }
+    if (t.attrs.has('src') && !t.dup) continue;
+    const type = (t.attrs.get('type') || '').trim().toLowerCase();
+    if (type === 'application/ld+json' && t.attrs.size === 1 && !t.dup) blocks.push(t.body);
+    else errors.push(INLINE_MSG);
   }
-  const openers = (html.match(/<script\b(?![^>]*\bsrc\s*=)[^>]*>/gi) || []).length;
-  if (openers !== inline) errors.push('index.html: inline <script> found (the CSP forbids it); move it to js/ (an unclosed script tag)');
   if (blocks.length > 1) errors.push(`index.html: only one JSON-LD block is allowed (found ${blocks.length})`);
   for (const body of blocks) {
     if (Buffer.byteLength(body) > JSONLD_MAX) errors.push('index.html: the JSON-LD block is over 4 KB');
@@ -168,9 +203,11 @@ function validateIndex(html, exists) {
     }
   }
   errors.push(...checkJsonLd(html));
-  const noscriptAt = html.search(/<noscript\b/i), bodyAt = html.search(/<body\b/i);
+  // comments and script bodies may mention "<body" or "<noscript" as text; only real tags count (review SE-JSONLD, F5)
+  const bare = html.replace(/<!--[\s\S]*?-->/g, '').replace(/<script\b[\s\S]*?<\/script\s*>/gi, '');
+  const noscriptAt = bare.search(/<noscript[\s>]/i), bodyAt = bare.search(/<body[\s>]/i);
   if (noscriptAt >= 0 && (bodyAt < 0 || noscriptAt < bodyAt)) errors.push('index.html: <noscript> must be inside <body> (it is placed before it)');
-  if (/<[a-z][^>]*\s\.\.\.\s*\/?>/i.test(html)) errors.push('index.html: a tag still holds a placeholder ("...") instead of a real attribute value');
+  if (/<[a-z][^>]*?(?:\s|=\s*["']?)\.\.\.["']?(?=[\s\/>])/i.test(html)) errors.push('index.html: a tag still holds a placeholder ("...") instead of a real attribute value');
   if (/<style[\s>]/i.test(html)) errors.push('index.html: inline <style> block found (the CSP forbids it); move it to css/site.css');
   if (/<[a-z][^>]*\sstyle\s*=/i.test(html)) errors.push('index.html: style= attribute found (the CSP forbids it); use a class');
   for (const m of html.matchAll(/<(?:script|link)\b[^>]*\b(?:src|href)="([^"]+)"/gi)) {
@@ -520,7 +557,7 @@ function checkContractDoc(doc, files, ruleIds) {
 }
 const missingFixtures = (rules, ids) => rules.filter(r => !ids.includes(r.id)).map(r => r.id);
 
-module.exports = { checkJsonLd, validateStatus, RULES, runRule, missingFixtures, checkContractDoc, productWarnings, checkWorkflows, validateProfileManifest, validateProfileImage, checkSvg, checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validatePodcasts, run, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
+module.exports = { checkJsonLd, scanScripts, validateStatus, RULES, runRule, missingFixtures, checkContractDoc, productWarnings, checkWorkflows, validateProfileManifest, validateProfileImage, checkSvg, checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validatePodcasts, run, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
 
 if (require.main === module) {
   const { errors, warnings, sizes } = run();

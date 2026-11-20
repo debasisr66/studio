@@ -134,8 +134,8 @@ test('TC-QA-S03 the CSP is unchanged: same hosts, no new directive, no inline sc
   const csp = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)[1];
   assert.equal(csp, "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'none'; form-action 'none'");
   // the only inline script allowed is one application/ld+json data block (never executed; checked by checkJsonLd)
-  const inlineScripts = html.match(/<script(?![^>]*\bsrc=)[^>]*>/gi) || [];
-  assert.ok(inlineScripts.length <= 1 && inlineScripts.every(tag => /type="application\/ld\+json"/i.test(tag)), 'an inline script other than one JSON-LD block');
+  const inlineScripts = require('../scripts/validate-site.js').scanScripts(html).filter(t => !t || !t.attrs.has('src'));
+  assert.ok(inlineScripts.length <= 1 && inlineScripts.every(t => t && t.attrs.size === 1 && t.attrs.get('type') === 'application/ld+json'), 'an inline script other than one JSON-LD block');
   assert.deepEqual(require('../scripts/validate-site.js').checkJsonLd(html), []);
   assert.ok(!/\sstyle="/.test(html)); assert.ok(!/\son[a-z]+="/i.test(html));
   assert.ok(!/document\.cookie/.test(app));
