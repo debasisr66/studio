@@ -225,7 +225,7 @@
       if (!isStr(a.title) || !a.title.trim()) errors.push(at + ': title is required');
       var clean = isStr(a.url) ? normalizeUrl(a.url) : null;
       if (!clean || !isPublishableUrl(a.url)) errors.push(at + ': url must be ' + URL_HINT);
-      else { var k = domainOf(clean) + new URL(clean).pathname.replace(/\/+$/, ''); if (urls[k]) warnings.push(at + ': same link as an earlier read'); urls[k] = true; }
+      else { var k = keyOf(clean); if (urls[k]) warnings.push(at + ': same link as an earlier read'); urls[k] = true; }   // same key as the composer's isDuplicate (keeps ?v=…)
       if (a.kind !== undefined && KINDS.indexOf(a.kind) < 0) errors.push(at + ': kind must be one of ' + KINDS.join(', '));
       if (a.tags !== undefined && (!Array.isArray(a.tags) || a.tags.length > LIMITS.tags || a.tags.some(function (t) { return !isStr(t); }))) errors.push(at + ': tags must be an array of at most ' + LIMITS.tags + ' strings');
       if (a.comment !== undefined && (!isStr(a.comment) || a.comment.length > LIMITS.comment)) errors.push(at + ': comment must be text up to ' + LIMITS.comment + ' characters');
