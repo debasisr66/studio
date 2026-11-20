@@ -314,7 +314,7 @@ gh run list --status failure --limit 10     # what is red right now?
 |---------|---------|-----|
 | `reads.json articles[3]: url must be a clean http(s) address …` | A read has a bad, unsafe or oddly spaced link | Edit it in admin (⚙ → Edit) and publish |
 | `blog.json: … is not valid JSON` | A content file was hand-edited badly | `git revert` that commit |
-| `index.html: inline <script> found` | A script was put back into the page | Move it into `js/` (the CSP blocks inline scripts) |
+| `index.html: inline <script> found` | A script was put back into the page (only one `application/ld+json` data block may be inline) | Move it into `js/` (the CSP blocks inline scripts) |
 | `index.html: CSP script-src must not allow 'unsafe-inline'` | CSP was loosened | Restore the strict policy |
 | `… exceeds the …-byte budget` | A file grew a lot | Check what was added; raise the budget in `validate-site.js` only on purpose |
 | `cache says v3.1, GitHub says v3.2` | The hub missed a release | `gh workflow run sync.yml`; if it recurs, check the dispatch token (Step 9 runbook) |

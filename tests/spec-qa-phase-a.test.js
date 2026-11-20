@@ -130,10 +130,14 @@ test('TC-QA-E03 no visitor navigation links to the sheet; only the gear and the 
   assert.ok(!/href="#add/.test(html), 'a link to #add in the page');
   assert.match(html, /<button id="gear"[^>]*aria-label="Add to Studio[^"]*"[^>]*aria-haspopup="dialog"/);
 });
-test('TC-QA-S03 the CSP is unchanged: same hosts, no new directive, no inline script or style, no cookie code', () => {
+test('TC-QA-S03 the CSP is unchanged: same hosts, no new directive, no inline script (one checked JSON-LD data block aside) or style, no cookie code', () => {
   const csp = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)[1];
   assert.equal(csp, "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'none'; form-action 'none'");
-  assert.ok(!/<script(?![^>]*\bsrc=)[^>]*>/i.test(html)); assert.ok(!/\sstyle="/.test(html)); assert.ok(!/\son[a-z]+="/i.test(html));
+  // the only inline script allowed is one application/ld+json data block (never executed; checked by checkJsonLd)
+  const inlineScripts = require('../scripts/validate-site.js').scanScripts(html).filter(t => !t || !t.attrs.has('src'));
+  assert.ok(inlineScripts.length <= 1 && inlineScripts.every(t => t && t.attrs.size === 1 && t.attrs.get('type') === 'application/ld+json'), 'an inline script other than one JSON-LD block');
+  assert.deepEqual(require('../scripts/validate-site.js').checkJsonLd(html), []);
+  assert.ok(!/\sstyle="/.test(html)); assert.ok(!/\son[a-z]+="/i.test(html));
   assert.ok(!/document\.cookie/.test(app));
   const V = require('../scripts/validate-site.js');   // the budgets: one deliberate change (reads-lib 20 -> 26 KB, the Quick add helpers); the total and every other file are as before
   assert.deepEqual(V.BUDGETS, { 'index.html': 60 * 1024, 'css/site.css': 30 * 1024, 'js/app.js': 80 * 1024, 'js/reads-lib.js': 24 * 1024, 'js/podcast-lib.js': 10 * 1024, 'js/status-lib.js': 6 * 1024, 'js/quickadd-lib.js': 8 * 1024, 'js/safe-lib.js': 10 * 1024, 'js/token-store.js': 10 * 1024, 'js/image-lib.js': 10 * 1024, total: 160 * 1024 });

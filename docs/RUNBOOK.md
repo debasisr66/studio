@@ -90,6 +90,11 @@ Each health problem line ends with `Fix: docs/RUNBOOK.md#<section>`.
 
 | Message | Cause | Fix |
 |---------|-------|-----|
+| `index.html: inline <script> found` | A script was added inside `index.html` | Move code into `js/`. The only inline script allowed is one `<script type="application/ld+json">` data block for search engines |
+| `index.html: only one JSON-LD block is allowed`, `the JSON-LD block is not valid JSON`, `is over 4 KB`, `must not contain "</"` | The search-engine data block in `index.html` was edited by hand and broken | Keep one block; check it with a JSON validator; keep it short; no HTML inside it |
+| `index.html: JSON-LD url/sameAs … is a site's home page, not a profile` | A profile link points at a site's home page (for example `https://linkedin.com`) | Use the full profile address, for example `https://www.linkedin.com/in/<name>/` or `https://github.com/<name>` |
+| `index.html: <noscript> must be inside <body>` | The no-JavaScript fallback was pasted between `</head>` and `<body>` | Move it just after `<body …>` |
+| `index.html: a tag still holds a placeholder ("...")` | A snippet was pasted with `...` left in place of its value (for example a verification meta tag) | Put the real value in, or delete the tag |
 | `…url must be a clean http(s) address (no spaces, control characters or login details)` | A link has a leading or trailing space, a hidden character, `user:pass@`, a non-http(s) scheme, or is over 2048 characters | Edit the entry (admin ⚙ → Edit, or the JSON) so it is a plain `https://…` link |
 | `cache.json: synced_at is required and must be an ISO-8601 UTC time` | Cache hand-edited or truncated | Restore from the last good commit (see [bad commit](#bad-commit-on-main)) or re-run the sync |
 | `cache.json: synced_at (…) is in the future` | Clock or hand edit | Restore, or re-run the sync |

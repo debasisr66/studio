@@ -27,7 +27,7 @@ Details: [design.md](design.md).
 
 - **No framework, no build step, no npm packages.** Plain, readable code with nothing to keep upgrading.
 - **Logic kept in small modules.** Rules such as link checks, categories and safety helpers live in small pure modules that are unit-tested on their own, apart from the page code.
-- **No inline scripts or styles anywhere**, which is what makes the strict security policy possible.
+- **No inline scripts or styles anywhere**, which is what makes the strict security policy possible. The one exception is a single checked `application/ld+json` data block for search engines: browsers never run it, and CI checks that it is valid JSON, small, holds no markup and links to real profiles.
 - **Self-hosted fonts and assets**, with a size budget per file checked in CI to stop bloat.
 - **Semantic HTML**, with all displayed text escaped before it reaches the page.
 
