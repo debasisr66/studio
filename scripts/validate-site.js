@@ -182,6 +182,32 @@ function checkJsonLd(html) {
   return errors;
 }
 
+/* SPEC-SE: sitemap.xml at the repo root lists the site's pages for search engines. It must stay a plain list of https addresses
+   under SITE_URL (no fragment, query or entity tricks) and include the JSON-LD url from index.html. xml === null means missing. */
+const SITE_URL = 'https://debasisr66.github.io/studio/';
+const SITEMAP_NS = 'http://www.sitemaps.org/schemas/sitemap/0.9';
+function checkSitemap(xml, html) {
+  if (xml === null || xml === undefined) return ['sitemap.xml: missing at the repo root (SPEC-SE SE-01)'];
+  const errors = [];
+  if (/<!DOCTYPE|<!ENTITY/i.test(xml)) errors.push('sitemap.xml: <!DOCTYPE and <!ENTITY are not allowed; keep it a plain list');
+  const ns = xml.match(/<urlset\b[^>]*\bxmlns\s*=\s*"([^"]*)"[^>]*>/);
+  if (!/^<\?xml version="1\.0" encoding="UTF-8"\?>/.test(xml) || !ns || ns[1] !== SITEMAP_NS || !/<\/urlset>\s*$/.test(xml))
+    errors.push(`sitemap.xml: not a sitemap (it must start with <?xml version="1.0" encoding="UTF-8"?> and be one <urlset xmlns="${SITEMAP_NS}">)`);
+  const locs = [...xml.matchAll(/<loc>([\s\S]*?)<\/loc>/g)].map(m => m[1].trim());
+  if (!locs.length) errors.push('sitemap.xml: no <loc> (list at least the home page)');
+  const seen = new Set();
+  for (const u of locs) {
+    if (!u.startsWith(SITE_URL) || /[\s#?&<>"']/.test(u) || !httpUrl(u)) errors.push(`sitemap.xml: ${u} is not a page of this site (use https addresses under ${SITE_URL}, no # ? &)`);
+    if (seen.has(u)) errors.push(`sitemap.xml: duplicate <loc> ${u}`);
+    seen.add(u);
+  }
+  const ld = scanScripts(html || '').find(t => t && (t.attrs.get('type') || '').trim().toLowerCase() === 'application/ld+json');
+  let url;
+  try { url = ld && JSON.parse(ld.body).url; } catch { /* checkJsonLd reports bad JSON */ }
+  if (isStr(url) && !seen.has(url)) errors.push(`sitemap.xml: does not list the JSON-LD url ${url} from index.html`);
+  return errors;
+}
+
 function validateIndex(html, exists) {
   const errors = [];
   if (!/<html[^>]*\blang="[a-z-]+"/i.test(html)) errors.push('index.html: <html> needs a lang attribute');
@@ -459,6 +485,7 @@ function run() {
 
   const html = read('index.html');
   errors.push(...validateIndex(html, ref => fs.existsSync(path.join(ROOT, ref))));
+  errors.push(...checkSitemap(fs.existsSync(path.join(ROOT, 'sitemap.xml')) ? read('sitemap.xml') : null, html));
 
   const dirFiles = (dir, ext) => fs.existsSync(path.join(ROOT, dir)) ? fs.readdirSync(path.join(ROOT, dir)).filter(f => f.endsWith(ext)).map(f => dir + '/' + f) : [];
   const files = ['index.html', ...dirFiles('css', '.css'), ...dirFiles('js', '.js')];
@@ -558,7 +585,7 @@ function checkContractDoc(doc, files, ruleIds) {
 }
 const missingFixtures = (rules, ids) => rules.filter(r => !ids.includes(r.id)).map(r => r.id);
 
-module.exports = { checkJsonLd, scanScripts, validateStatus, RULES, runRule, missingFixtures, checkContractDoc, productWarnings, checkWorkflows, validateProfileManifest, validateProfileImage, checkSvg, checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validatePodcasts, run, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
+module.exports = { checkJsonLd, checkSitemap, scanScripts,validateStatus, RULES, runRule, missingFixtures, checkContractDoc, productWarnings, checkWorkflows, validateProfileManifest, validateProfileImage, checkSvg, checkCss, checkCssSanity, checkFonts, checkFontCoverage, validateProducts, validateCache, validateBlog, validateReads, validatePodcasts, run, validateIndex, validateChangelog, checkNoInlineStyles, checkSizes, checkSyntax, BUDGETS };
 
 if (require.main === module) {
   const { errors, warnings, sizes } = run();

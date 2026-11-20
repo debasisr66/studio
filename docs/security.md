@@ -374,3 +374,15 @@ Context: four edits made directly on `main` through GitHub's web editor on 2026-
 
 Residual: the scan of `index.html` uses regular expressions, not a full HTML parser; the page has a single author (the owner) and CI runs on every change.
 
+
+### 11.16 Sitemap for search engines: author's notes (2026-11-20; not a gated phase)
+
+Context: Google did not list Studio. A check found nothing blocking it (200, no `noindex`, ownership verified) but no sitemap. [SPEC-SE](specs/search-visibility/spec.md) adds `sitemap.xml` at the repo root and a validator check.
+
+| Item | What changed | Evidence |
+|------|--------------|----------|
+| New public file | `sitemap.xml` lists one address, `https://debasisr66.github.io/studio/`, which is already public. Nothing about visitors, no script, not read by the page | the file; TC-SE-M09 |
+| CI check | `checkSitemap`: XML declaration and sitemaps.org namespace; every `<loc>` an `https` address under the site with no `#`, `?`, `&`, space or quote; no duplicates; no `<!DOCTYPE`/`<!ENTITY`; the JSON-LD `url` listed | unit TC-SE-M01 … M08 |
+| Not changed | `index.html`, CSP, `js/`, `css/`, `content/`, workflows, permissions, tokens | diff |
+
+Residual: the check reads the XML with regular expressions, not a parser; the file is four lines, has one author and CI runs on every change. Not gated under [REVIEW-GATE](REVIEW-GATE.md) (no token, link rendering or CSP change); the owner may still ask for a review.

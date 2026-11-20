@@ -94,6 +94,17 @@ Each health problem line ends with `Fix: docs/RUNBOOK.md#<section>`.
 | `index.html: only one JSON-LD block is allowed`, `the JSON-LD block is not valid JSON`, `is over 4 KB`, `must not contain "</"` | The search-engine data block in `index.html` was edited by hand and broken | Keep one block; check it with a JSON validator; keep it short; no HTML inside it |
 | `index.html: JSON-LD url/sameAs … is a site's home page, not a profile` | A profile link points at a site's home page (for example `https://linkedin.com`) | Use the full profile address, for example `https://www.linkedin.com/in/<name>/` or `https://github.com/<name>` |
 | `index.html: <noscript> must be inside <body>` | The no-JavaScript fallback was pasted between `</head>` and `<body>` | Move it just after `<body …>` |
+| `sitemap.xml: missing`, `sitemap.xml: not a sitemap`, `sitemap.xml: no <loc>` | The search-engine page list at the repo root was deleted or edited by hand ([SPEC-SE](specs/search-visibility/spec.md)) | Restore it from Git history: an XML declaration, one `<urlset>` in the sitemaps.org 0.9 namespace, one `<url><loc>…</loc></url>` per page |
+| `sitemap.xml: … is not a page of this site`, `duplicate <loc>` | An address outside `https://debasisr66.github.io/studio/`, with `#`, `?` or `&`, or listed twice | List only Studio's own `https` pages, once each. Sections (`#reads`) are not separate pages |
+| `sitemap.xml: <!DOCTYPE and <!ENTITY are not allowed` | Markup beyond a plain list was added | Remove it |
+| `sitemap.xml: does not list the JSON-LD url` | The JSON-LD `url` in `index.html` changed but the sitemap did not | Make the two addresses match |
+
+### Search engines: getting Studio listed (owner steps)
+
+1. In Google Search Console, open the `https://debasisr66.github.io/studio/` property. Paste the address into the URL Inspection bar at the top, then click **Request indexing** (or **Test live URL** first, if the button is missing).
+2. Go to **Indexing → Sitemaps**, enter `sitemap.xml` and click **Submit**. The status should read "Success".
+3. To check: search Google for `site:debasisr66.github.io/studio`. Indexing takes days to a few weeks. Links from your GitHub profile "Website" field and from LinkedIn help most.
+4. A `robots.txt` in this repo would be ignored: search engines read it only from the host root (`debasisr66.github.io/robots.txt`), which is a different repo.
 | `index.html: a tag still holds a placeholder ("...")` | A snippet was pasted with `...` left in place of its value (for example a verification meta tag) | Put the real value in, or delete the tag |
 | `…url must be a clean http(s) address (no spaces, control characters or login details)` | A link has a leading or trailing space, a hidden character, `user:pass@`, a non-http(s) scheme, or is over 2048 characters | Edit the entry (admin ⚙ → Edit, or the JSON) so it is a plain `https://…` link |
 | `cache.json: synced_at is required and must be an ISO-8601 UTC time` | Cache hand-edited or truncated | Restore from the last good commit (see [bad commit](#bad-commit-on-main)) or re-run the sync |
